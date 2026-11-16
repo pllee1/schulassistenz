@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>IServ-Helfer · Einstellungen</title>
+<style>
+ body{font-family:system-ui,"Segoe UI",sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#1d2321;background:#f7f9f8}
+ h1{font-size:22px;color:#2f5d50} h2{font-size:16px;margin-top:28px}
+ .karte{background:#fff;border:1px solid #d5dedb;border-radius:12px;padding:16px;margin:12px 0}
+ .drop{border:2px dashed #9cb8ad;border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#fbfdfc}
+ .drop.over{background:#e6f3ee}
+ input[type=text]{padding:7px;border:1px solid #c9d3cf;border-radius:8px;width:280px}
+ button{padding:8px 12px;border-radius:8px;border:1px solid #2f5d50;background:#2f5d50;color:#fff;cursor:pointer}
+ button.b2{background:#fff;color:#2f5d50}
+ table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px} td,th{border-bottom:1px solid #eee;padding:4px 6px;text-align:left}
+ .info{font-size:13px;color:#4a5552} .ok{color:#1f7a55} .err{color:#a33}
+ .test{width:100%;min-height:90px;font-family:Consolas,monospace;font-size:12px}
+</style></head><body>
+<h1>IServ-Helfer</h1>
+<p class="info">Die Erweiterung holt Mails und Messenger-Nachrichten aus IServ (oder markierten Text von jeder Webseite), ersetzt Namen durch Kürzel und gibt nur das Ergebnis an Claude. Die Kürzelliste wird nur in diesem Browser gespeichert und nie verschickt.</p>
+
+<div class="karte">
+ <h2 style="margin-top:0">1. Kürzelliste laden</h2>
+ <div class="drop" id="drop">Kürzelliste (Excel oder CSV) hierher ziehen oder klicken<br><span class="info">Dieselbe Liste wie im Pseudonymisierer: Vorname | Nachname | Kürzel, weitere Blätter z. B. „Weitere Personen“ (Eltern, Kolleg:innen).</span></div>
+ <input type="file" id="datei" accept=".xlsx,.xls,.csv,.txt" hidden>
+ <p id="status" class="info"></p>
+ <button class="b2" id="leeren">Liste aus dem Browser löschen</button>
+ <details><summary class="info">Geladene Einträge ansehen</summary><table id="tab"><thead><tr><th>Original</th><th>Kürzel</th></tr></thead><tbody></tbody></table></details>
+</div>
+
+<div class="karte">
+ <h2 style="margin-top:0">2. Dein eigener Name</h2>
+ <p class="info">Steht in jeder Mail (Anrede, Signatur). Er wird zu <b>L-ICH</b>.</p>
+ <input type="text" id="ich" placeholder="Vorname Nachname"> <button id="ichSpeichern">Speichern</button> <span id="ichOk" class="ok"></span>
+</div>
+
+<div class="karte">
+ <h2 style="margin-top:0">Weitere Personen (automatisch)</h2>
+ <p class="info">Namen aus Kopfzeilen (Von, An) und Signaturen, die nicht in deiner Kürzelliste stehen (z. B. Kolleg:innen), bekommen automatisch ein Kürzel P1, P2 … Dieselbe Person behält ihr Kürzel. Die Zuordnung bleibt nur in diesem Browser.</p>
+ <p id="autoInfo" class="info"></p>
+ <details><summary class="info">Zuordnung ansehen</summary><table id="autoTab"><tbody></tbody></table></details>
+ <button class="b2" id="autoLeeren">Automatische Kürzel löschen</button>
+</div>
+
+<div class="karte">
+ <h2 style="margin-top:0">3. Wie arbeitest du mit Claude?</h2>
+ <label><input type="radio" name="ziel" value="web"> Im Browser (claude.ai): Claude öffnet sich mit dem Text in einem neuen Tab.</label><br>
+ <label><input type="radio" name="ziel" value="kopieren"> In der Claude-App: Text wird nur kopiert, du fügst ihn mit Strg+V ein.</label><br><br>
+ <label><input type="checkbox" id="knopf"> Knopf „✉ An Claude“ unten rechts in IServ anzeigen</label>
+</div>
+
+<div class="karte">
+ <h2 style="margin-top:0">4. Ausprobieren</h2>
+ <p class="info">Text mit Namen einfügen und prüfen, was ersetzt wird. Nichts davon verlässt den Rechner.</p>
+ <textarea class="test" id="testEin">Liebe Frau Muster,&#10;Max fehlt morgen wegen eines Arzttermins. Bitte melden Sie sich unter 0511 1234567.&#10;Viele Grüße&#10;Erika Muster (erika.muster@example.de)</textarea>
+ <button id="testen">Testen</button>
+ <textarea class="test" id="testAus" readonly></textarea>
+</div>
+<script src="lib/xlsx.mini.min.js"></script>
+<script src="pseudo.js"></script>
+<script src="einstellungen.js"></script>
+</body></html>

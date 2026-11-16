@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "IServ-Helfer",
+  "version": "0.4.2",
+  "description": "Holt Mails und Messenger-Nachrichten aus IServ (oder markierten Text von jeder Seite), ersetzt Namen durch Kürzel und gibt sie an Claude. Rückweg: Kürzel wieder zu Namen. Die Kürzelliste bleibt auf diesem Rechner.",
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "alarms"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "IServ-Helfer öffnen"
+  },
+  "options_page": "einstellungen.html",
+  "icons": {
+    "128": "icon128.png",
+    "48": "icon48.png",
+    "16": "icon16.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*/iserv/*",
+        "http://*/iserv/*"
+      ],
+      "js": [
+        "pseudo.js",
+        "helfer.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "file:///*Schulassistenz-Start.html"
+      ],
+      "js": [
+        "startseite-bruecke.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://*/iserv/calendar*"
+      ],
+      "js": [
+        "kalender-finder.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://*.webuntis.com/*",
+    "https://*/iserv/*",
+    "https://*/caldav/*",
+    "https://*/webdav/*"
+  ]
+}

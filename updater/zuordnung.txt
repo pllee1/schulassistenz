@@ -1,0 +1,16 @@
+# Welche Dateien aus GitHub wohin im Datenordner kommen.
+# Format: Quelle im Repository  =>  Ziel im Datenordner (relativ)
+# Ein Pfad mit / am Ende ist ein ganzer Ordner (mit Unterordnern).
+# Nie aktualisiert werden: meine-einstellungen.js, Profil, Planung, Lerngruppen, Kürzellisten, Ausgaben.
+plugin/skills/schulprofil/werkzeuge/startseite/Schulassistenz-Start.html  =>  Schulassistenz-Start.html
+plugin/skills/schulprofil/werkzeuge/startseite/kacheln.js                 =>  werkzeuge/startseite/kacheln.js
+plugin/skills/schulprofil/werkzeuge/startseite/Anleitung.md               =>  werkzeuge/startseite/Anleitung.md
+plugin/skills/schulprofil/werkzeuge/startseite/meine-einstellungen-vorlage.js => werkzeuge/startseite/meine-einstellungen-vorlage.js
+plugin/skills/schulprofil/werkzeuge/pseudonymisierer/                     =>  werkzeuge/pseudonymisierer/
+plugin/skills/schulprofil/werkzeuge/abschluss-check/                      =>  werkzeuge/abschluss-check/
+plugin/skills/postfach-assistent/werkzeuge/iserv-helfer/                  =>  werkzeuge/iserv-helfer/
+updater/schulassistenz-update.ps1                                         =>  werkzeuge/updater/schulassistenz-update.ps1
+updater/einrichten.cmd                                                    =>  werkzeuge/updater/einrichten.cmd
+updater/zuordnung.txt                                                     =>  werkzeuge/updater/zuordnung.txt
+updater/jetzt-aktualisieren.cmd                                            =>  werkzeuge/updater/jetzt-aktualisieren.cmd
+updater/LIESMICH.md                                                       =>  werkzeuge/updater/LIESMICH.md

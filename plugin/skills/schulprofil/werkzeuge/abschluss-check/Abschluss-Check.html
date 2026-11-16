@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abschluss-Check – Welchen Abschluss schaffe ich?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1d2733; --muted:#5d6b7a; --line:#dfe4ea; --bg:#f5f7f9; --card:#fff;
+  --pri:#24476B; --pri-soft:#E7EEF6;
+  --ok:#1E7A4C; --ok-soft:#E3F3EA; --warn:#A86A00; --warn-soft:#FBF0D9; --bad:#B23A3A; --bad-soft:#FBE7E7;
+  --r:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Atkinson Hyperlegible",system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:16px;line-height:1.45}
+header{background:var(--pri);color:#fff;padding:22px 20px 18px}
+header .wrap{max-width:1180px;margin:0 auto;display:flex;gap:18px;align-items:flex-start}
+.logo{flex:none;background:#fff;border-radius:12px;padding:6px 8px;line-height:0}
+.logo img{height:58px;width:auto}
+@media (max-width:520px){.logo img{height:42px}}
+.card.legal{border-left:4px solid var(--pri);background:var(--pri-soft)}
+.legal h2{font-size:1rem}
+.legal p{margin:.35rem 0;font-size:.9rem}
+header h1{margin:0;font-size:1.6rem}
+header p{margin:.35rem 0 0;opacity:.88;max-width:720px}
+.privacy{display:inline-flex;gap:.45rem;align-items:center;margin-top:.7rem;background:rgba(255,255,255,.13);padding:.35rem .7rem;border-radius:999px;font-size:.88rem}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 40px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:1.08rem;margin:0 0 .7rem;display:flex;align-items:center;gap:.5rem}
+.step{display:inline-grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--pri);color:#fff;font-size:.85rem}
+.opts{display:flex;flex-wrap:wrap;gap:14px 22px}
+.opt label.lbl{display:block;font-size:.85rem;color:var(--muted);margin-bottom:.3rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.seg button{border:0;background:none;padding:.45rem .8rem;font:inherit;cursor:pointer;color:var(--ink);min-width:2.4rem}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--pri);color:#fff}
+.seg.small button{padding:.35rem .55rem;min-width:2.1rem}
+select,input[type=text]{font:inherit;padding:.42rem .6rem;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:.5rem 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row .name{font-weight:700}
+.row .name small{display:block;font-weight:400;color:var(--muted);font-size:.8rem}
+.row .lvl{justify-self:end}
+.row.nofld{grid-template-columns:minmax(0,1fr) auto}
+.grades button.on{background:var(--pri)}
+.grades button[data-v="5"].on,.grades button[data-v="6"].on{background:var(--bad)}
+@media (max-width:520px){.row{grid-template-columns:1fr auto}.row .lvl{grid-column:2;grid-row:1}.row .grades{grid-column:1/-1}.row.nofld .grades{grid-column:1/-1}}
+.hint{font-size:.85rem;color:var(--muted);margin:.4rem 0 0}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{font:inherit;border:1px solid var(--line);background:#fff;padding:.5rem .9rem;border-radius:10px;cursor:pointer}
+.btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+/* Ergebnis */
+#result{position:sticky;top:12px}
+@media (max-width:900px){#result{position:static}}
+.hero{border-radius:var(--r);padding:18px;margin-bottom:14px;border:1px solid}
+.hero.ok{background:var(--ok-soft);border-color:#bfe2cd}
+.hero.warn{background:var(--warn-soft);border-color:#f0d9a6}
+.hero.bad{background:var(--bad-soft);border-color:#f1c3c3}
+.hero.empty{background:#fff;border-color:var(--line)}
+.hero .k{font-size:.85rem;color:var(--muted)}
+.hero .v{font-size:1.45rem;font-weight:700;margin:.15rem 0 .4rem}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:.78rem;padding:.2rem .55rem;border-radius:999px;background:#fff;border:1px solid var(--line)}
+.ladder{list-style:none;margin:0;padding:0}
+.ladder li{display:flex;gap:.7rem;align-items:flex-start;padding:.55rem 0;border-top:1px solid var(--line)}
+.ladder li:first-child{border-top:0}
+.ico{flex:none;width:1.7rem;height:1.7rem;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.9rem;color:#fff}
+.ico.ok{background:var(--ok)}.ico.warn{background:var(--warn)}.ico.bad{background:#c9cfd6}
+.ladder .t{font-weight:700}.ladder .s{font-size:.86rem;color:var(--muted)}
+ul.tips{margin:.2rem 0 0;padding-left:1.15rem}ul.tips li{margin:.25rem 0}
+details{margin-top:.4rem}
+summary{cursor:pointer;font-weight:700;color:var(--pri)}
+table{border-collapse:collapse;width:100%;font-size:.86rem;margin:.6rem 0}
+th,td{border-bottom:1px solid var(--line);padding:.32rem .4rem;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:700}
+td.num{text-align:center}
+td.def{color:var(--bad);font-weight:700;text-align:center}
+.calc{font-size:.86rem;background:var(--bg);padding:.5rem .7rem;border-radius:10px}
+.disclaimer{font-size:.84rem;color:var(--muted)}
+.lvl-title{margin:.9rem 0 .2rem;font-weight:700}
+.missing{color:var(--warn)}
+#mbar{display:none}
+@media (max-width:900px){#mbar{display:flex;position:fixed;left:10px;right:10px;bottom:10px;z-index:5;gap:.6rem;align-items:center;justify-content:space-between;padding:.65rem .9rem;border-radius:12px;color:#fff;background:var(--pri);box-shadow:0 6px 20px rgba(0,0,0,.2);border:0;font:inherit;text-align:left}
+#mbar.ok{background:var(--ok)}#mbar.warn{background:var(--warn)}#mbar.bad{background:var(--bad)}body{padding-bottom:70px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div>
+  <h1>Abschluss-Check</h1>
+  <p>Trag deine Noten ein und sieh sofort, welchen Abschluss du nach der AVO-Sek I voraussichtlich erreichst – und was dir noch fehlt.</p>
+  <div class="privacy">🔒 Kein Name nötig · nichts wird gespeichert oder verschickt · Berechnung nur auf deinem Gerät</div>
+  </div>
+</div></header>
+
+<main>
+<section>
+  <div class="card">
+    <h2><span class="step">1</span> Ausgangslage</h2>
+    <div class="opts">
+      <div class="opt"><label class="lbl">Jahrgang</label>
+        <div class="seg" data-field="jg"><button data-v="9">9</button><button data-v="10" class="on">10</button></div></div>
+      <div class="opt"><label class="lbl">Welche Noten trägst du ein?</label>
+        <div class="seg" data-field="stand"><button data-v="prognose" class="on">Halbjahr / Vornoten</button><button data-v="final">Zeugnis nach Prüfung</button></div></div>
+      <div class="opt"><label class="lbl">Wahlpflichtkurs</label>
+        <div class="seg" data-field="wpk"><button data-v="frz">Französisch</button><button data-v="other" class="on">anderer WPK</button></div></div>
+      <div class="opt"><label class="lbl" for="muendlich">Mündliches Prüfungsfach</label>
+        <select id="muendlich"></select></div>
+    </div>
+    <p class="hint" id="standHint"></p>
+  </div>
+
+  <div class="card">
+    <h2><span class="step">2</span> Kursfächer (G- oder E-Kurs)</h2>
+    <div id="fld"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step">3</span> Weitere Fächer</h2>
+    <div id="nonfld"></div>
+    <p class="hint">Fach nicht belegt oder Note noch unbekannt? Einfach leer lassen – das Ergebnis wird dann unsicherer.</p>
+  </div>
+
+  <div class="btns">
+    <button class="btn" id="reset">Alles zurücksetzen</button>
+    <button class="btn" id="example">Beispiel ausprobieren</button>
+  </div>
+</section>
+
+<section id="result"></section>
+<button id="mbar" type="button"></button>
+</main>
+
+<script>
+// Regel-Engine Abschluss-Check (AVO-Sek I, IGS Niedersachsen, Stand 13.09.2023)
+// Grundlage: Wissensbasis "Regelwissen AVO-Sek I – Integrierte Gesamtschule"
+const SUBJECTS = [
+  { k: 'D', n: 'Deutsch', h: 4, fld: true, core: true },
+  { k: 'M', n: 'Mathematik', h: 4, fld: true, core: true },
+  { k: 'E', n: 'Englisch', h: 4, fld: true, core: true },
+  { k: 'NW', n: 'Naturwissenschaften', h: 4, fld: true, core: false },
+  { k: 'GL', n: 'Gesellschaftslehre', h: 3 },
+  { k: 'WN', n: 'Werte und Normen', h: 2 },
+  { k: 'SP', n: 'Sport', h: 2 },
+  { k: 'KU', n: 'Kunst', h: 2 },
+  { k: 'MU', n: 'Musik', h: 2 },
+  { k: 'IN', n: 'Informatik', h: 2 },
+  { k: 'AWT', n: 'Arbeit-Wirtschaft-Technik', h: 1 },
+  { k: 'WPK', n: 'Wahlpflichtkurs', h: 4 },
+];
+const FLD_KEYS = ['D', 'M', 'E', 'NW'];
+
+const LEVELS = {
+  S15: { id: 'S15', name: 'Erweiterter Sekundarabschluss I', short: 'Erweiterter Sek I', par: '§ 15' },
+  S14: { id: 'S14', name: 'Sekundarabschluss I – Realschulabschluss', short: 'Realschulabschluss', par: '§ 14' },
+  S13: { id: 'S13', name: 'Sekundarabschluss I – Hauptschulabschluss', short: 'Sek I – Hauptschulabschluss', par: '§ 13' },
+  H16b: { id: 'H16b', name: 'Hauptschulabschluss', short: 'Hauptschulabschluss', par: '§ 16 Abs. 2' },
+  H16a: { id: 'H16a', name: 'Hauptschulabschluss', short: 'Hauptschulabschluss', par: '§ 16 Abs. 1' },
+};
+
+function buildSubjects(input) {
+  const out = [];
+  const missing = [];
+  for (const s of SUBJECTS) {
+    const g = input.grades[s.k];
+    const sub = { ...s };
+    if (s.k === 'WPK') {
+      sub.frz = !!input.wpkFrz;
+      sub.n = sub.frz ? 'Französisch (WPK, 2. Fremdsprache)' : (input.wpkName ? 'WPK ' + input.wpkName : 'Wahlpflichtkurs');
+      sub.core = sub.frz; // § 24 Abs. 2: Pflicht- und Wahlpflichtfremdsprachen
+    }
+    if (s.fld) sub.level = input.levels[s.k] || null;
+    if (!g) { missing.push(sub.n); continue; }
+    sub.grade = +g;
+    out.push(sub);
+  }
+  return { subs: out, missing };
+}
+
+const fmt2 = (x) => x.toFixed(2).replace('.', ',');
+const label = (s) => (s.fld ? `${s.n} (${s.level}-Kurs)` : s.n);
+
+// ---- Ausgleich ---------------------------------------------------------
+function eligible(comp, def) {
+  // D1 Stundenregel, D3 Kernfächer nur durch Kernfächer
+  if (comp.h < def.h - 1) return false;
+  if (def.core && !comp.core) return false;
+  return true;
+}
+function effSurplus(comp, def, c4) {
+  let s = comp.soll - comp.grade;
+  // C4 (nur § 13): 4 im E-Kurs genügt als Ausgleich für eine 5 im G-Kurs / Fach ohne FLD
+  if (c4 && comp.fld && comp.level === 'E' && comp.grade === 4 && def.grade === 5 && (!def.fld || def.level === 'G')) s = Math.max(s, 1);
+  return s;
+}
+function pairsOf(arr) { const r = []; for (let i = 0; i < arr.length; i++) for (let j = 0; j < arr.length; j++) if (i !== j) r.push([arr[i], arr[j]]); return r; }
+
+function compensate(rows, opts) {
+  const defs = rows.filter((r) => r.def > 0);
+  const comps = rows.filter((r) => r.def === 0 && !r.ignored);
+  const n = defs.length;
+  const can = (c, d, min) => eligible(c, d) && effSurplus(c, d, opts.c4) >= min;
+  const txt = (d, cs) => `${d.n} (${d.grade}) durch ${cs.map((c) => `${c.n} (${c.grade})`).join(' und ')}`;
+  if (n === 0) return { rank: 3, text: 'keine Unterschreitung' };
+  if (n === 1 && defs[0].def === 1) return { rank: 2, text: `${defs[0].n}: eine Stufe unter Soll – unschädlich nach § 23 Abs. 3`, c1: true };
+  // C2: zwei Fächer je eine Stufe
+  if (n === 2 && defs.every((d) => d.def === 1)) {
+    for (const [a, b] of pairsOf(comps)) if (can(a, defs[0], 1) && can(b, defs[1], 1))
+      return { rank: 1, par: '§ 23 Abs. 4' + (opts.c4 && (effSurplus(a, defs[0], false) < 1 || effSurplus(b, defs[1], false) < 1) ? ' i. V. m. Abs. 6 Satz 2' : ''), text: `${txt(defs[0], [a])}; ${txt(defs[1], [b])}` };
+  }
+  // C3: ein Fach zwei Stufen
+  const sixComp = (d) => {
+    for (const c of comps) if (can(c, d, 2)) return [c];
+    for (const [a, b] of pairsOf(comps)) if (a.k < b.k && can(a, d, 1) && can(b, d, 1)) return [a, b];
+    return null;
+  };
+  if (n === 1 && defs[0].def === 2) {
+    const cs = sixComp(defs[0]);
+    if (cs) return { rank: 1, par: '§ 23 Abs. 5', text: txt(defs[0], cs) };
+  }
+  if (opts.c5) {
+    // C5a: 5 in drei Fächern durch 3 in zwei Fächern (+ ein weiteres Fach 5 ohne Ausgleich)
+    if ((n === 3 || n === 4) && defs.every((d) => d.def === 1)) {
+      const frees = n === 4 ? defs.map((d) => [d]) : [[]];
+      for (const free of frees) {
+        const rest = defs.filter((d) => !free.includes(d));
+        for (const [a, b] of pairsOf(comps)) {
+          if (a.k > b.k) continue;
+          if (a.soll - a.grade < 1 || b.soll - b.grade < 1) continue; // beide Ausgleichsfächer mind. 3
+          if (rest.every((d) => can(a, d, 1) || can(b, d, 1)))
+            return { rank: 1, par: '§ 23 Abs. 6 Satz 1', text: `${rest.map((d) => `${d.n} (${d.grade})`).join(', ')} durch ${a.n} (${a.grade}) und ${b.n} (${b.grade})` + (free.length ? `; ${free[0].n} (${free[0].grade}) als weitere 5 ohne Ausgleich` : '') };
+        }
+      }
+    }
+    // C5b: 6 in einem Fach durch 2 in einem oder 3 in zwei (+ eine weitere 5 ohne Ausgleich)
+    const sixes = defs.filter((d) => d.def === 2);
+    const others = defs.filter((d) => d.def !== 2);
+    if (sixes.length === 1 && others.length <= 1 && others.every((d) => d.def === 1)) {
+      const cs = sixComp(sixes[0]);
+      if (cs) return { rank: 1, par: '§ 23 Abs. 6 Satz 1', text: txt(sixes[0], cs) + (others.length ? `; ${others[0].n} (${others[0].grade}) als weitere 5 ohne Ausgleich` : '') };
+    }
+  }
+  return { rank: 0, text: 'Unterschreitungen nicht ausgleichbar (§ 23 Abs. 6 / C6) oder keine geeigneten Ausgleichsfächer (§ 24)' };
+}
+
+// ---- Soll-Zuordnungen je Stufe -----------------------------------------
+function combos(arr, k) { if (k === 0) return [[]]; if (arr.length < k) return []; const [h, ...t] = arr; return [...combos(t, k - 1).map((c) => [h, ...c]), ...combos(t, k)]; }
+
+function assignments(levelId, subs) {
+  const E = subs.filter((s) => s.fld && s.level === 'E');
+  const G = subs.filter((s) => s.fld && s.level === 'G');
+  const non = subs.filter((s) => !s.fld);
+  const base = () => Object.fromEntries(subs.map((s) => [s.k, { soll: 4, why: 'Mindestanforderung (§ 13 Satz 1)' }]));
+  if (levelId === 'S13' || levelId === 'H16a' || levelId === 'H16b') return { list: [base()] };
+  if (levelId === 'S14') {
+    if (E.length < 2) return { structural: `Für den Realschulabschluss brauchst du mindestens 2 E-Kurse – belegt: ${E.length} (§ 14 Abs. 1, B2.1).` };
+    const list = [];
+    for (const pair of combos(non, Math.min(2, non.length))) {
+      const a = base();
+      for (const s of E) a[s.k] = { soll: 4, why: 'E-Kurs (§ 14)' };
+      for (const s of G) a[s.k] = { soll: 3, why: 'G-Kurs (§ 14)' };
+      for (const s of pair) a[s.k] = { soll: 3, why: 'eines der 2 Fächer ohne FLD (§ 14)' };
+      list.push(a);
+    }
+    return { list };
+  }
+  if (levelId === 'S15') {
+    if (E.length < 3) return { structural: `Für den Erweiterten Sek I brauchst du mindestens 3 E-Kurse – belegt: ${E.length} (§ 15 Abs. 1, B3.1).` };
+    const list = [];
+    if (E.length === 4) {
+      for (const fourth of E) {
+        const a = base();
+        for (const s of E) a[s.k] = s === fourth ? { soll: 4, why: 'vierter E-Kurs (§ 15)' } : { soll: 3, why: 'einer der 3 E-Kurse (§ 15)' };
+        list.push(a);
+      }
+    } else {
+      const a = base();
+      for (const s of E) a[s.k] = { soll: 3, why: 'einer der 3 E-Kurse (§ 15)' };
+      for (const s of G) a[s.k] = { soll: 2, why: 'G-Kurs (§ 15)' };
+      list.push(a);
+    }
+    return { list };
+  }
+}
+
+function average15(subs) {
+  // B3.3: Fächer ohne FLD + bis zu zwei E-Kurse mit 1–3, nur wenn sie den Schnitt verbessern (H2)
+  const non = subs.filter((s) => !s.fld);
+  const eGood = subs.filter((s) => s.fld && s.level === 'E' && s.grade <= 3).sort((a, b) => a.grade - b.grade);
+  let best = null;
+  for (let k = 0; k <= Math.min(2, eGood.length); k++) {
+    const items = [...non, ...eGood.slice(0, k)];
+    if (!items.length) continue;
+    const sum = items.reduce((x, s) => x + s.grade, 0);
+    const val = Math.floor((sum * 100) / items.length) / 100; // abschneiden, nicht runden
+    if (!best || val < best.val) best = { items, sum, cnt: items.length, val };
+  }
+  if (!best) return null;
+  best.ok = best.val <= 3.0;
+  best.text = `(${best.items.map((s) => s.grade).join(' + ')}) / ${best.cnt} = ${best.sum} / ${best.cnt} = ${fmt2(best.val)}`;
+  best.names = best.items.map((s) => (s.fld ? s.n + ' (E)' : s.n));
+  return best;
+}
+
+function evalLevel(levelId, subs) {
+  const L = LEVELS[levelId];
+  const A = assignments(levelId, subs);
+  const res = { ...L, rank: 0 };
+  if (A.structural) { res.structural = A.structural; res.rows = null; return res; }
+  const ignoreFL2 = levelId === 'S13' || levelId === 'H16a' || levelId === 'H16b';
+  const opts = { c4: levelId === 'S13', c5: levelId === 'H16a' || levelId === 'H16b' };
+  let best = null;
+  for (const a of A.list) {
+    const rows = subs.map((s) => {
+      const r = { ...s, soll: a[s.k].soll, why: a[s.k].why };
+      r.def = Math.max(0, r.grade - r.soll);
+      if (ignoreFL2 && s.frz && s.grade >= 5) { r.def = 0; r.ignored = true; r.why = '2. Fremdsprache: 5/6 bleibt unberücksichtigt'; }
+      return r;
+    });
+    const c = compensate(rows, opts);
+    const total = rows.reduce((x, r) => x + r.def, 0);
+    if (!best || c.rank > best.c.rank || (c.rank === best.c.rank && total < best.total)) best = { rows, c, total };
+  }
+  res.rows = best.rows;
+  res.comp = best.c;
+  res.rank = best.c.rank;
+  if (levelId === 'S15') {
+    res.avg = average15(subs);
+    if (!res.avg || !res.avg.ok) res.rank = 0;
+  }
+  return res;
+}
+
+// ---- Gesamtprüfung -----------------------------------------------------
+function check(input) {
+  const { subs, missing } = buildSubjects(input);
+  const need = [];
+  for (const k of FLD_KEYS) {
+    const s = SUBJECTS.find((x) => x.k === k);
+    if (!input.grades[k]) need.push(`Note in ${s.n}`);
+    if (!input.levels[k]) need.push(`Kurs (G/E) in ${s.n}`);
+  }
+  if (need.length) return { incomplete: need };
+  const jg = +input.jg;
+  const order = jg === 10 ? ['S15', 'S14', 'S13', 'H16b'] : ['H16a'];
+  const levels = order.map((id) => evalLevel(id, subs));
+
+  // Prüfungsschranke § 1 Abs. 3
+  const pKeys = jg === 10 ? ['D', 'M', 'E'] : ['D', 'M'];
+  if (input.muendlich && !pKeys.includes(input.muendlich)) pKeys.push(input.muendlich);
+  const pSubs = pKeys.map((k) => subs.find((s) => s.k === k)).filter(Boolean);
+  const pBad = pSubs.filter((s) => s.grade >= 5);
+  const schranke = { subs: pSubs, bad: pBad, ok: pBad.length <= 1, below4: pSubs.filter((s) => s.grade > 4), muendlichFehlt: !input.muendlich };
+
+  let reached = null, konferenz = [];
+  for (const L of levels) {
+    if (L.rank >= 2) { reached = L; break; }
+    if (L.rank === 1) konferenz.push(L);
+  }
+  const above = reached ? levels.slice(0, levels.indexOf(reached)) : levels;
+  const next = above.length ? above[above.length - 1] : null; // direkt höhere Stufe
+
+  // Was-wäre-wenn: welche einzelne Verbesserung um eine Stufe reicht für die nächsthöhere Stufe?
+  let hints = [];
+  const target = konferenz.length ? konferenz[konferenz.length - 1] : next;
+  if (target) {
+    for (const s of subs) {
+      if (s.grade <= 1) continue;
+      const mod = subs.map((x) => (x === s ? { ...x, grade: x.grade - 1 } : x));
+      if (evalLevel(target.id, mod).rank >= 2) hints.push(s);
+    }
+  }
+
+  const final = input.stand === 'final';
+  let sicherheit = 'hoch';
+  if (!final || konferenz.length || missing.length || (schranke.muendlichFehlt)) sicherheit = 'mittel';
+
+  return { jg, final, levels, reached: schranke.ok ? reached : null, reachedIgnoringSchranke: reached, konferenz: schranke.ok ? konferenz : [], schranke, missing, next, target, hints, sicherheit, subs };
+}
+
+if (typeof module !== 'undefined') module.exports = { check, evalLevel, buildSubjects, SUBJECTS, LEVELS };
+
+</script>
+<script>
+const state = { jg: 10, stand: 'prognose', wpk: 'other', muendlich: '', grades: {}, levels: {} };
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function gradeSeg(k) {
+  return `<div class="seg small grades" data-grade="${k}">${[1,2,3,4,5,6].map((v) => `<button data-v="${v}" aria-label="Note ${v}">${v}</button>`).join('')}</div>`;
+}
+function buildForm() {
+  $('#fld').innerHTML = SUBJECTS.filter((s) => s.fld).map((s) => `
+    <div class="row"><div class="name">${s.n}</div>
+      <div class="seg small lvl" data-level="${s.k}"><button data-v="G">G</button><button data-v="E">E</button></div>
+      ${gradeSeg(s.k)}</div>`).join('');
+  $('#nonfld').innerHTML = SUBJECTS.filter((s) => !s.fld).map((s) => `
+    <div class="row nofld"><div class="name" id="name-${s.k}">${s.n}</div>${gradeSeg(s.k)}</div>`).join('');
+}
+function muendlichOptions() {
+  const excl = state.jg === 10 ? ['D', 'M', 'E'] : ['D', 'M'];
+  const opts = SUBJECTS.filter((s) => !excl.includes(s.k));
+  const sel = $('#muendlich');
+  if (excl.includes(state.muendlich)) state.muendlich = '';
+  sel.innerHTML = `<option value="">– noch nicht festgelegt –</option>` + opts.map((s) => `<option value="${s.k}">${s.k === 'WPK' ? (state.wpk === 'frz' ? 'Französisch' : 'Wahlpflichtkurs') : s.n}</option>`).join('');
+  sel.value = state.muendlich;
+}
+function syncButtons() {
+  document.querySelectorAll('[data-field]').forEach((seg) => {
+    const f = seg.dataset.field; const val = String(state[f]);
+    seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === val));
+  });
+  document.querySelectorAll('[data-grade]').forEach((seg) => {
+    const v = String(state.grades[seg.dataset.grade] || '');
+    seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+  });
+  document.querySelectorAll('[data-level]').forEach((seg) => {
+    const v = state.levels[seg.dataset.level] || '';
+    seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+  });
+  $('#name-WPK').innerHTML = state.wpk === 'frz' ? 'Französisch<small>Wahlpflichtkurs · 2. Fremdsprache</small>' : 'Wahlpflichtkurs<small>ohne Fremdsprache</small>';
+  $('#standHint').textContent = state.stand === 'prognose'
+    ? 'Prognose: Mit deinen aktuellen Noten wird geschätzt, wo du stehst. Die Prüfungsnoten fließen später noch in die Zeugnisnoten ein.'
+    : 'Trag die Zeugnisnoten (Jahresnoten) nach der Abschlussprüfung ein – nicht die einzelnen Klausurnoten.';
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const seg = b.parentElement;
+  if (seg.dataset.field) { const f = seg.dataset.field; state[f] = f === 'jg' ? +b.dataset.v : b.dataset.v; if (f === 'jg' || f === 'wpk') muendlichOptions(); }
+  else if (seg.dataset.grade) { const k = seg.dataset.grade; state.grades[k] = state.grades[k] === +b.dataset.v ? undefined : +b.dataset.v; }
+  else if (seg.dataset.level) { const k = seg.dataset.level; state.levels[k] = state.levels[k] === b.dataset.v ? undefined : b.dataset.v; }
+  else return;
+  update();
+});
+$('#muendlich').addEventListener('change', (e) => { state.muendlich = e.target.value; update(); });
+$('#reset').addEventListener('click', () => { Object.assign(state, { jg: 10, stand: 'prognose', wpk: 'other', muendlich: '', grades: {}, levels: {} }); muendlichOptions(); update(); });
+$('#example').addEventListener('click', () => {
+  Object.assign(state, { jg: 10, stand: 'prognose', wpk: 'frz', muendlich: 'GL',
+    levels: { D: 'E', M: 'G', E: 'E', NW: 'E' },
+    grades: { D: 3, M: 3, E: 4, NW: 3, GL: 2, WN: 3, SP: 2, KU: 3, MU: 4, IN: 3, AWT: 3, WPK: 4 } });
+  muendlichOptions(); update();
+});
+
+// ---------- Ergebnis ----------
+const subjName = (s) => s.fld ? `${s.n} (${s.level}-Kurs)` : s.n;
+function plainReason(L) {
+  if (L.structural) return [L.structural];
+  const out = [];
+  const defs = L.rows.filter((r) => r.grade - r.soll > 0 && !r.ignored);
+  for (const r of defs) out.push(`${subjName(r)}: du hast eine ${r.grade}, nötig ist mindestens eine ${r.soll}.`);
+  if (L.comp && L.comp.rank === 0 && defs.length) out.push('Das lässt sich nach den Regeln nicht mehr ausgleichen.');
+  if (L.avg && !L.avg.ok) out.push(`Dein Durchschnitt in den Fächern ohne Kurse liegt bei ${L.avg.val.toFixed(2).replace('.', ',')} – nötig ist 3,00 oder besser.`);
+  return out;
+}
+function levelLine(L, reached, konf) {
+  let cls = 'bad', icon = '–', sub = '';
+  if (L.rank >= 2) { cls = 'ok'; icon = '✓'; sub = L.comp.c1 ? 'geschafft – eine Note liegt eine Stufe darunter, das ist erlaubt' : 'geschafft'; }
+  else if (L.rank === 1) { cls = 'warn'; icon = '?'; sub = 'nur mit Ausgleich – darüber entscheidet die Zeugniskonferenz'; }
+  else sub = plainReason(L)[0] || 'nicht erreicht';
+  return `<li><span class="ico ${cls}">${icon}</span><div><div class="t">${L.short} <span class="s">${L.par}</span></div><div class="s">${esc(sub)}</div></div></li>`;
+}
+function detailTable(L) {
+  if (L.structural) return `<div class="lvl-title">${L.name} (${L.par})</div><p class="calc">${esc(L.structural)}</p>`;
+  const rows = L.rows.map((r) => `<tr><td>${esc(r.n)}</td><td class="num">${r.fld ? r.level : '–'}</td><td class="num">${r.grade}</td><td class="num">${r.soll}</td><td class="${r.grade - r.soll > 0 && !r.ignored ? 'def' : 'num'}">${r.ignored ? '(unberücks.)' : (r.def || '–')}</td><td>${esc(r.why)}</td></tr>`).join('');
+  let extra = `<p class="calc"><b>Bewertung:</b> ${esc(L.comp.text)}${L.comp.par ? ` – formal möglich nach ${L.comp.par}, Konferenzentscheidung` : ''}</p>`;
+  if (L.avg) extra += `<p class="calc"><b>Durchschnitt § 15 Abs. 1 Nr. 3</b> (${esc(L.avg.names.join(', '))}):<br>${L.avg.text} → ${L.avg.ok ? 'erfüllt (≤ 3,00)' : 'nicht erfüllt (> 3,00)'}</p>`;
+  return `<div class="lvl-title">${L.name} (${L.par})</div><table><thead><tr><th>Fach</th><th>Kurs</th><th>Note</th><th>Soll</th><th>Unterschr.</th><th>Grund</th></tr></thead><tbody>${rows}</tbody></table>${extra}`;
+}
+
+function render(r) {
+  const el = $('#result');
+  if (r.incomplete) {
+    setBar('', 'Noch ein paar Angaben …');
+    el.innerHTML = `<div class="hero empty"><div class="k">Ergebnis</div><div class="v">Noch ein paar Angaben …</div>
+      <p>Für die Berechnung brauche ich noch:</p><ul class="tips">${r.incomplete.map((x) => `<li>${x}</li>`).join('')}</ul></div>`;
+    return;
+  }
+  const { jg, reached, konferenz, schranke } = r;
+  let cls, title, sub;
+  const hsaLevel = r.levels[r.levels.length - 1];
+  if (!schranke.ok) {
+    cls = 'bad'; title = 'Zurzeit kein Abschluss';
+    sub = `In ${schranke.bad.map((s) => s.n).join(' und ')} steht eine 5 oder 6. Ein Abschluss geht nur, wenn höchstens ein Prüfungsfach schlechter als 4 ist (§ 1 Abs. 3).`;
+  } else if (reached) {
+    cls = konferenz.length ? 'warn' : 'ok'; title = reached.name;
+    sub = konferenz.length ? `Mit Ausgleich wäre sogar „${konferenz[0].short}“ möglich – das entscheidet aber die Konferenz.` : (r.final ? 'Nach deinen Zeugnisnoten erreichst du diesen Abschluss voraussichtlich.' : 'Wenn deine Noten so bleiben, erreichst du diesen Abschluss voraussichtlich.');
+  } else if (konferenz.length) {
+    cls = 'warn'; title = `${konferenz[konferenz.length - 1].name} – nur mit Ausgleich`;
+    sub = 'Einige Noten sind zu schwach. Ein Ausgleich ist formal möglich, darüber entscheidet die Zeugniskonferenz.';
+  } else {
+    cls = 'bad'; title = 'Zurzeit kein Abschluss';
+    sub = 'Mit diesen Noten wird keine Abschlussstufe erreicht.';
+  }
+  const auffang = jg === 10 && (!reached || !schranke.ok)
+    ? `<p class="hint">Gut zu wissen: Wer am Ende von Jahrgang 10 ohne Abschluss die Schule verlässt, bekommt den Hauptschulabschluss über einen Vermerk im Abgangszeugnis (§ 1 Abs. 4). Wer den Jahrgang wiederholt, bekommt dagegen keinen Abschluss bescheinigt.</p>` : '';
+
+  // Was fehlt zum nächsten Abschluss?
+  let tips = '';
+  const target = r.target;
+  if (target && schranke.ok) {
+    const reasons = plainReason(target);
+    let hintTxt = '';
+    if (r.hints.length) hintTxt = `<p><b>Schon eine Notenstufe besser würde reichen</b> – ${r.hints.length > 1 ? 'in einem dieser Fächer' : 'in'}: ${r.hints.map((s) => esc(s.n)).join(', ')}.</p>`;
+    else if (target.structural) hintTxt = '';
+    else hintTxt = '<p>Dafür müssten sich mehrere Noten verbessern.</p>';
+    const head = target.rank === 1 ? `So klappt „${target.short}“ auch ohne Konferenz-Ausgleich` : `Das fehlt dir noch für „${target.short}“`;
+    tips = `<div class="card"><h2>🎯 ${head}</h2><ul class="tips">${reasons.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>${hintTxt}</div>`;
+  } else if (!schranke.ok) {
+    tips = `<div class="card"><h2>🎯 Was jetzt wichtig ist</h2><p>Verbessere dich in ${schranke.bad.length > 1 ? 'einem der Prüfungsfächer' : 'dem Prüfungsfach'} ${schranke.bad.map((s) => s.n).join(' oder ')} auf mindestens eine 4.</p></div>`;
+  }
+
+  const pf = schranke.subs.map((s) => `${s.n}: ${s.grade}`).join(' · ');
+  const warnings = [];
+  if (r.missing.length) warnings.push(`Ohne Note: ${r.missing.join(', ')}. Das Ergebnis ist deshalb unsicherer.`);
+  if (schranke.muendlichFehlt) warnings.push('Mündliches Prüfungsfach nicht gewählt – die Prüfungsschranke wurde nur mit ' + (jg === 10 ? 'Deutsch, Mathe und Englisch' : 'Deutsch und Mathe') + ' geprüft.');
+
+  setBar(cls, title);
+  el.innerHTML = `
+    <div class="hero ${cls}">
+      <div class="k">Voraussichtlicher Abschluss</div>
+      <div class="v">${esc(title)}</div>
+      <div>${esc(sub)}</div>
+      <div class="badges" style="margin-top:.7rem">
+        <span class="badge">${r.final ? 'nach Prüfung' : 'Prognose vor der Prüfung'}</span>
+        <span class="badge">Sicherheit: ${r.sicherheit}</span>
+        <span class="badge">Jahrgang ${jg}</span>
+      </div>
+      ${auffang}
+    </div>
+    ${tips}
+    <div class="card"><h2>Alle Abschlussstufen</h2><ul class="ladder">${r.levels.map((L) => levelLine(L)).join('')}</ul>
+      <p class="hint"><b>Prüfungsfächer</b> (§ 1 Abs. 3): ${esc(pf)} → ${schranke.ok ? 'in Ordnung' : 'zu viele 5er/6er'}</p>
+      ${warnings.map((w) => `<p class="hint missing">⚠ ${esc(w)}</p>`).join('')}
+    </div>
+    ${r.jg9outlook ? r.jg9outlook : ''}
+    <div class="card"><details><summary>Genaue Berechnung ansehen (für dich oder deine Lehrkraft)</summary>
+      ${r.levels.map(detailTable).join('')}
+      <p class="hint">Soll = nötige Mindestnote für diese Stufe. Unterschr. = um wie viele Notenstufen du darunter liegst. Bei Wahlmöglichkeiten wird immer die für dich günstigste Zuordnung genommen.</p>
+    </details></div>
+    <div class="card legal">
+      <h2>💬 Fragen? Sprich immer mit deinen Lehrkräften!</h2>
+      <p>Wenn du unsicher bist, etwas nicht verstehst oder dir Sorgen um deinen Abschluss machst: Wende dich an deine Klassenleitung oder deine Fachlehrkräfte. Sie kennen deine Situation und beraten dich verbindlich.</p>
+      <h2 style="margin-top:.8rem">⚖️ Haftungsausschluss</h2>
+      <p>Der Abschluss-Check ist eine <b>unverbindliche Orientierungshilfe</b>. Er berechnet automatisch eine <b>voraussichtliche</b> Einschätzung nach der AVO-Sek I (Stand 13.09.2023) und kann Fehler enthalten oder Sonderfälle nicht berücksichtigen. Das Ergebnis ist <b>keine Entscheidung und keine rechtsverbindliche Auskunft</b> der Schule.</p>
+      <p>Über deinen Abschluss und über jeden Notenausgleich entscheidet allein die Klassen- bzw. Abschlusskonferenz. Aus dem Ergebnis dieses Rechners können keine Ansprüche abgeleitet werden; eine Gewähr für Richtigkeit und Vollständigkeit wird nicht übernommen.</p>
+    </div>`;
+}
+
+function setBar(cls, title) { const m = $('#mbar'); m.className = cls; m.innerHTML = `<span><small style="opacity:.85">Voraussichtlich</small><br><b>${esc(title)}</b></span><span>Details ↓</span>`; }
+$('#mbar').addEventListener('click', () => $('#result').scrollIntoView({ behavior: 'smooth' }));
+function update() {
+  syncButtons();
+  const input = { jg: state.jg, stand: state.stand, wpkFrz: state.wpk === 'frz', muendlich: state.muendlich, grades: { ...state.grades }, levels: { ...state.levels } };
+  const r = check(input);
+  if (!r.incomplete && state.jg === 9) {
+    const r10 = check({ ...input, jg: 10, stand: 'prognose', muendlich: state.muendlich === 'E' ? '' : state.muendlich });
+    const best = r10.schranke.ok && r10.reached;
+    r.jg9outlook = `<div class="card"><h2>🔭 Ausblick auf Jahrgang 10</h2><p>Wären das deine Noten am Ende von Jahrgang 10, käme voraussichtlich heraus: <b>${best ? esc(r10.reached.name) : (r10.konferenz.length ? esc(r10.konferenz[r10.konferenz.length-1].short) + ' (nur mit Ausgleich)' : 'kein Abschluss nach § 1 Abs. 1')}</b>.</p><p class="hint">In Jahrgang 10 gelten andere Anforderungen, und Englisch wird zusätzlich Prüfungsfach. Stell zum Ausprobieren oben auf „Jahrgang 10“.</p></div>`;
+  }
+  render(r);
+}
+
+buildForm(); muendlichOptions(); update();
+</script>
+</body>
+</html>
