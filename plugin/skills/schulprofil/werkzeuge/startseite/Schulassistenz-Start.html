@@ -152,7 +152,12 @@ footer{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 1
 .r-zeile .r-notiz2{flex:1;font:inherit;font-size:13.5px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);min-width:0}
 .r-zeile .r-ok{min-width:40px}
 .r-regler{display:inline-flex;align-items:center;gap:6px;padding:2px 8px 2px 4px;border:1px solid var(--line);border-radius:8px;background:var(--accent-soft)}
-.r-regler input[type=range]{width:170px;accent-color:var(--accent)}
+.r-regler input[type=range]{-webkit-appearance:none;appearance:none;width:180px;height:22px;margin:0;padding:0;background:transparent;cursor:pointer}
+.r-regler input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--accent)}
+.r-regler input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--accent)}
+.r-regler input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;margin-top:-7px;background:var(--surface);border:2px solid var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.r-regler input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.r-regler input[type=range]:disabled{opacity:.4;cursor:default}
 .r-regler output{font-family:var(--f-mono);font-size:12.5px;min-width:70px;font-weight:600}
 .r-regler .btn{padding:3px 8px}
 .r-zeile .r-anw{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
@@ -2009,7 +2014,7 @@ function rasterZeichnen(){
    $("#r-notiz").value=R.rNotiz||"";$("#r-notiz").addEventListener("input",e=>{R.rNotiz=e.target.value});
    $("#r-notiz-ok").disabled=!R.wahl;$("#r-notiz-ok").addEventListener("click",nOk);
    $("#r-notiz").addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();nOk()}});
-   reglerVerdrahten($("#r-leiste"),()=>R.wahl);$("#r-leiste").querySelectorAll(".r-rg,.r-rg-ok").forEach(x=>x.disabled=!R.wahl);
+   reglerVerdrahten($("#r-leiste"),()=>R.wahl);$("#r-leiste").querySelectorAll(".r-rg").forEach(x=>x.disabled=!R.wahl);
    $("#r-leiste").querySelectorAll(".sym").forEach(b=>{b.disabled=!R.wahl;b.addEventListener("click",()=>{if(R.wahl)rasterEintragen(R.wahl,+b.dataset.i)})});}
   $("#r-undo").disabled=!R.eintraege.length;
   $("#r-undo").addEventListener("click",()=>{R.eintraege.pop();rasterSpeichernEntwurf();rasterZeichnen()});
@@ -2032,10 +2037,15 @@ function reglerText(sk,v){return sk==="note"?`${komma(-v)} (${notenTendenz(-v)})
 function reglerEintrag(k,v){const sk=R.skala;
   if(sk==="note")eintragMachen(k,"MM",komma(-v),"note");else if(sk==="np")eintragMachen(k,"MM",komma(v),"np");else eintragMachen(k,"MM",komma(v),"symw")}
 function reglerHTML(k){const r=REGLER[R.skala];const v=R.regler[k||"_"]??r.start;
-  return `<span class="r-regler"><input type="range" class="r-rg" data-k="${esc(k||"")}" min="${r.min}" max="${r.max}" step="any" value="${v}" aria-label="Mitarbeit stufenlos${k?" "+esc(k):""}"><output class="r-rg-w">${esc(reglerText(R.skala,v))}</output><button class="btn ghost small r-rg-ok" data-k="${esc(k||"")}" title="Wert vom Regler eintragen" aria-label="Reglerwert eintragen">✓</button></span>`}
+  return `<span class="r-regler"><input type="range" class="r-rg" data-k="${esc(k||"")}" min="${r.min}" max="${r.max}" step="any" value="${v}" aria-label="Mitarbeit stufenlos${k?" "+esc(k):""}"><output class="r-rg-w">${esc(reglerText(R.skala,v))}</output></span>`}
 function reglerVerdrahten(box,kFn){
   box.querySelectorAll(".r-rg").forEach(inp=>inp.addEventListener("input",()=>{const k=inp.dataset.k||"_";R.regler[k]=+inp.value;inp.nextElementSibling.textContent=reglerText(R.skala,+inp.value)}));
-  box.querySelectorAll(".r-rg-ok").forEach(b=>b.addEventListener("click",()=>{const k=kFn(b);if(!k)return;const key=b.dataset.k||"_";const v=R.regler[key]??REGLER[R.skala].start;delete R.regler[key];reglerEintrag(k,v)}));
+  // Loslassen trägt den Wert ein, an dem der Regler stehen bleibt (Maus, Finger, Stift). Tastatur: Pfeile verschieben, Enter trägt ein.
+  box.querySelectorAll(".r-rg").forEach(inp=>{let zeiger=false;
+    const ein=()=>{const k=kFn(inp);if(!k)return;const key=inp.dataset.k||"_";const v=+inp.value;delete R.regler[key];reglerEintrag(k,v)};
+    inp.addEventListener("pointerdown",()=>{zeiger=true});
+    inp.addEventListener("change",()=>{if(zeiger){zeiger=false;ein()}});
+    inp.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();ein()}})});
 }
 function sortiereKuerzel(ks,namen,art){
   const n=k=>(namen&&namen[k])||{};const cmp=(a,b)=>a.localeCompare(b,"de",{numeric:true,sensitivity:"base"});
