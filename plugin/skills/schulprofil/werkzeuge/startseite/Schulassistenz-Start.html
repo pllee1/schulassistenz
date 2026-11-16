@@ -1887,9 +1887,10 @@ const symKnopf=([k,st,c],i,kind)=>`<button class="sym ${c}${k==="MM"&&R.skala===
 const chipHTML=i=>{const e=R.eintraege[i];return `<span class="r-chip${R.ersetze===i?" aktiv":""}"><button class="r-chip-w" data-i="${i}" title="Antippen und dann ein neues Symbol wählen, um diesen Eintrag zu ersetzen">${esc(symText(e.kat,e.st,e.sk))}${e.text?` <small>${esc(e.text.slice(0,40))}</small>`:""}</button><button class="r-chip-x" data-x="${i}" aria-label="Eintrag ${esc(symText(e.kat,e.st,e.sk))} löschen" title="Löschen">✕</button></span>`};
 function rasterNotizFeld(k){return R.ansicht==="liste"&&!R.anordnen?[...document.querySelectorAll("#r-kinder .r-notiz2")].find(x=>x.dataset.k===k):$("#r-notiz")}
 function rasterNotizBestaetigen(k){
+  if(!(R.ansicht==="liste"&&!R.anordnen))R.wahl=null;
   const f=rasterNotizFeld(k);const notiz=f?f.value.trim():"";if(!notiz){f&&f.focus();return}
   const w=notizPruefen(notiz);if(w){$("#r-guard").hidden=false;$("#r-guard").textContent=`${k}: ${w}`;return}
-  $("#r-guard").hidden=true;delete R.notizen[k];
+  $("#r-guard").hidden=true;delete R.notizen[k];R.rNotiz="";
   if(R.ersetze!=null&&R.eintraege[R.ersetze]&&R.eintraege[R.ersetze].k===k){R.eintraege[R.ersetze].text=notiz;R.ersetze=null}
   else R.eintraege.push({k,kat:"N",st:"",text:notiz,zeit:hhmm(new Date())});
   rasterSpeichernEntwurf();rasterZeichnen();
@@ -1915,8 +1916,8 @@ function spaetSpeichern(k){
 function rasterEintragen(k,i){
   const [kat,st]=leisteSym()[i];const nf=rasterNotizFeld(k);const notiz=nf?nf.value.trim():"";
   const w=notizPruefen(notiz);if(w){$("#r-guard").hidden=false;$("#r-guard").textContent=w;return}
-  if(R.ersetze!=null&&R.eintraege[R.ersetze]&&R.eintraege[R.ersetze].k===k){const alt=R.eintraege[R.ersetze];R.eintraege[R.ersetze]={...alt,kat,st,sk:kat==="MM"?R.skala:undefined,text:notiz||alt.text};R.ersetze=null;if(nf)nf.value="";delete R.notizen[k];$("#r-guard").hidden=true;rasterSpeichernEntwurf();rasterZeichnen();return}
-  R.eintraege.push({k,kat,st,sk:kat==="MM"?R.skala:undefined,text:notiz,zeit:hhmm(new Date())});if(R.ansicht!=="liste")R.wahl=null;R.ersetze=null;if(nf)nf.value="";delete R.notizen[k];$("#r-guard").hidden=true;rasterSpeichernEntwurf();rasterZeichnen();
+  if(R.ersetze!=null&&R.eintraege[R.ersetze]&&R.eintraege[R.ersetze].k===k){const alt=R.eintraege[R.ersetze];R.eintraege[R.ersetze]={...alt,kat,st,sk:kat==="MM"?R.skala:undefined,text:notiz||alt.text};R.ersetze=null;if(nf)nf.value="";delete R.notizen[k];R.rNotiz="";$("#r-guard").hidden=true;rasterSpeichernEntwurf();rasterZeichnen();return}
+  R.eintraege.push({k,kat,st,sk:kat==="MM"?R.skala:undefined,text:notiz,zeit:hhmm(new Date())});if(R.ansicht!=="liste")R.wahl=null;R.ersetze=null;if(nf)nf.value="";delete R.notizen[k];R.rNotiz="";$("#r-guard").hidden=true;rasterSpeichernEntwurf();rasterZeichnen();
 }
 function rasterZeichnen(){
   const sec=$("#raster");if(!R)return;
@@ -1934,7 +1935,7 @@ function rasterZeichnen(){
     <div class="r-leiste" id="r-leiste">
       ${liste?`<span class="wer">Notizen direkt in der Zeile des Kindes</span><span class="sp" style="flex:1"></span>`:`<span class="wer" id="r-wer">Kind antippen</span>
       ${leisteSym().map((x,i)=>symKnopf(x,i)).join("")}
-      <input id="r-notiz" placeholder="Situation in Stichworten (optional, keine Namen)" autocomplete="off">`}
+      <input id="r-notiz" placeholder="Notiz (keine Namen): Enter/✓ speichert sie, oder Symbol antippen hängt sie an" autocomplete="off"><button class="btn ghost small" id="r-notiz-ok" aria-label="Notiz für das gewählte Kind speichern" title="Notiz für das gewählte Kind als eigenen Eintrag speichern">✓</button>`}
       <button class="btn ghost small" id="r-undo">Rückgängig</button>
     </div>
     <div class="guard" id="r-guard" hidden></div>
@@ -1980,6 +1981,10 @@ function rasterZeichnen(){
    m.querySelectorAll(".r-chip-w").forEach(b=>b.addEventListener("click",()=>{const i=+b.dataset.i;R.ersetze=R.ersetze===i?null:i;rasterZeichnen()}));
    m.querySelectorAll(".r-chip-x").forEach(b=>b.addEventListener("click",()=>{R.eintraege.splice(+b.dataset.x,1);R.ersetze=null;rasterSpeichernEntwurf();rasterZeichnen()}));
    $("#r-wer").textContent=R.wahl?`${R.wahl}${anzeigeName(R.wahl)?" · "+anzeigeName(R.wahl):""}`:"Kind antippen";
+   const nOk=()=>{if(!R.wahl){$("#r-guard").hidden=false;$("#r-guard").textContent="Erst ein Kind antippen, dann die Notiz bestätigen.";return}const k=R.wahl;rasterNotizBestaetigen(k)};
+   $("#r-notiz").value=R.rNotiz||"";$("#r-notiz").addEventListener("input",e=>{R.rNotiz=e.target.value});
+   $("#r-notiz-ok").disabled=!R.wahl;$("#r-notiz-ok").addEventListener("click",nOk);
+   $("#r-notiz").addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();nOk()}});
    $("#r-leiste").querySelectorAll(".sym").forEach(b=>{b.disabled=!R.wahl;b.addEventListener("click",()=>{if(R.wahl)rasterEintragen(R.wahl,+b.dataset.i)})});}
   $("#r-undo").disabled=!R.eintraege.length;
   $("#r-undo").addEventListener("click",()=>{R.eintraege.pop();rasterSpeichernEntwurf();rasterZeichnen()});
