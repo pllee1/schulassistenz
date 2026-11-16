@@ -166,6 +166,7 @@ footer{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 1
 .r-anw-b[aria-pressed="true"]{background:var(--warn-soft);border-color:var(--warn);color:var(--ink);font-weight:600}
 .r-min{display:inline-flex;gap:4px;align-items:center;font-size:12.5px}.r-min input{width:58px;font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
 .r-zeile.abw .r-knoepfe,.r-zeile.abw .r-notizzeile{opacity:.4}
+.kind.abw{opacity:.5}.kind.abw .k,.kind.abw .n{text-decoration:line-through}
 .r-zeile.abw .r-wer2 .k,.r-zeile.abw .r-wer2 .n{text-decoration:line-through;text-decoration-color:var(--muted)}
 @media (max-width:640px){.r-zeile .r-wer2{flex-basis:100%}}
 .kind.ueber{outline:2px dashed var(--accent)}
@@ -1912,6 +1913,7 @@ const symKnopf=([k,st,c],i,kind)=>`<button class="sym ${c}${k==="MM"&&R.skala===
 const chipHTML=i=>{const e=R.eintraege[i];return `<span class="r-chip${R.ersetze===i?" aktiv":""}"><button class="r-chip-w" data-i="${i}" title="Antippen und dann ein neues Symbol wählen, um diesen Eintrag zu ersetzen">${esc(symText(e.kat,e.st,e.sk))}${e.text?` <small>${esc(e.text.slice(0,40))}</small>`:""}</button><button class="r-chip-x" data-x="${i}" aria-label="Eintrag ${esc(symText(e.kat,e.st,e.sk))} löschen" title="Löschen">✕</button></span>`};
 function rasterNotizFeld(k){return R.ansicht==="liste"&&!R.anordnen?[...document.querySelectorAll("#r-kinder .r-notiz2")].find(x=>x.dataset.k===k):$("#r-notiz")}
 function rasterNotizBestaetigen(k){
+  if(abwesend(k))return abwesendHinweis(k);
   if(!(R.ansicht==="liste"&&!R.anordnen))R.wahl=null;
   const f=rasterNotizFeld(k);const notiz=f?f.value.trim():"";if(!notiz){f&&f.focus();return}
   const w=notizPruefen(notiz);if(w){$("#r-guard").hidden=false;$("#r-guard").textContent=`${k}: ${w}`;return}
@@ -1921,9 +1923,15 @@ function rasterNotizBestaetigen(k){
   rasterSpeichernEntwurf();rasterZeichnen();
 }
 function spaetVorschlag(){const [h,m]=String(R.zeit||"").split(":").map(Number);const d=new Date();const n=Number.isFinite(h)?d.getHours()*60+d.getMinutes()-(h*60+m):0;return n>=1&&n<=120?n:5}
+const abwesend=k=>!!R&&R.eintraege.some(e=>e.k===k&&e.kat==="A"&&e.st!=="spät");
+function abwesendHinweis(k){$("#r-guard").hidden=false;$("#r-guard").textContent=`${k} ist als krank bzw. fehlend markiert. Dafür kann nichts eingetragen werden. Erst die Markierung aufheben.`}
 function anwesenheit(k,a){
   if(a==="spät"){R.spaetOffen=R.spaetOffen===k?null:k;rasterZeichnen();return}
   const i=R.eintraege.findIndex(e=>e.k===k&&e.kat==="A"&&e.st!=="spät");
+  // Wer fehlt, bekommt keine Einträge: vorhandene der Stunde erst nach Rückfrage entfernen
+  if(i<0){const andere=R.eintraege.filter(e=>e.k===k&&e.kat!=="A").length;
+    if(andere&&R.abwFrage!==k+a){R.abwFrage=k+a;$("#r-guard").hidden=false;$("#r-guard").textContent=`${k} hat in dieser Stunde schon ${andere} ${andere===1?"Eintrag":"Einträge"}. Wer fehlt, bekommt keine Einträge. Nochmal „${a}“ antippen, dann werden sie gelöscht.`;return}
+    R.abwFrage=null;R.eintraege=R.eintraege.filter(e=>!(e.k===k&&e.kat!=="A"));delete R.bewegt[k];delete R.notizen[k]}
   if(i>=0&&R.eintraege[i].st===a)R.eintraege.splice(i,1);
   else if(i>=0)R.eintraege[i].st=a;
   else R.eintraege.push({k,kat:"A",st:a,text:"",zeit:hhmm(new Date())});
@@ -1940,6 +1948,7 @@ function spaetSpeichern(k){
 }
 function rasterEintragen(k,i){const [kat,st]=leisteSym()[i];eintragMachen(k,kat,st,kat==="MM"?R.skala:undefined)}
 function eintragMachen(k,kat,st,sk){
+  if(abwesend(k))return abwesendHinweis(k);
   const nf=rasterNotizFeld(k);const notiz=nf?nf.value.trim():"";
   const w=notizPruefen(notiz);if(w){$("#r-guard").hidden=false;$("#r-guard").textContent=w;return}
   if(R.ersetze!=null&&R.eintraege[R.ersetze]&&R.eintraege[R.ersetze].k===k){const alt=R.eintraege[R.ersetze];R.eintraege[R.ersetze]={...alt,kat,st,sk,text:notiz||alt.text};R.ersetze=null;if(nf)nf.value="";delete R.notizen[k];R.rNotiz="";$("#r-guard").hidden=true;rasterSpeichernEntwurf();rasterZeichnen();return}
@@ -1981,6 +1990,7 @@ function rasterZeichnen(){
     box.querySelectorAll(".r-notiz2").forEach(f=>{f.addEventListener("input",()=>{R.notizen[f.dataset.k]=f.value});f.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();rasterNotizBestaetigen(f.dataset.k)}})});
     box.querySelectorAll(".r-ok").forEach(b=>b.addEventListener("click",()=>rasterNotizBestaetigen(b.dataset.k)));
     reglerVerdrahten(box,x=>x.dataset.k);
+    box.querySelectorAll(".r-zeile.abw").forEach(z=>z.querySelectorAll(".r-knoepfe button,.r-knoepfe input,.r-notiz2,.r-ok").forEach(x=>x.disabled=true));
     box.querySelectorAll(".r-anw-b").forEach(b=>b.addEventListener("click",()=>anwesenheit(b.dataset.k,b.dataset.a)));
     box.querySelectorAll(".r-min-ok").forEach(b=>b.addEventListener("click",()=>spaetSpeichern(b.dataset.k)));
     box.querySelectorAll(".r-min-in").forEach(f=>{f.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();spaetSpeichern(f.dataset.k)}if(ev.key==="Escape"){R.spaetOffen=null;rasterZeichnen()}})});
@@ -1989,7 +1999,7 @@ function rasterZeichnen(){
     box.querySelectorAll(".r-chip-w").forEach(b=>b.addEventListener("click",()=>{const i=+b.dataset.i;R.ersetze=R.ersetze===i?null:i;rasterZeichnen()}));
     box.querySelectorAll(".r-chip-x").forEach(b=>b.addEventListener("click",()=>{R.eintraege.splice(+b.dataset.x,1);R.ersetze=null;rasterSpeichernEntwurf();rasterZeichnen()}));
   }else kinderListe().forEach(k=>{
-    const b=document.createElement("button");b.className="kind"+(R.fokus.includes(k)?" fokus":"")+(R.anordnen?" ziehen":"");b.dataset.k=k;b.setAttribute("aria-pressed",R.wahl===k?"true":"false");
+    const b=document.createElement("button");b.className="kind"+(R.fokus.includes(k)&&!abwesend(k)?" fokus":"")+(abwesend(k)?" abw":"")+(R.anordnen?" ziehen":"");b.dataset.k=k;b.setAttribute("aria-pressed",R.wahl===k?"true":"false");
     const meine=R.eintraege.filter(e=>e.k===k);
     b.innerHTML=`<span class="k">${esc(k)}</span><span class="n">${esc(anzeigeName(k))||"&nbsp;"}</span><span class="e">${meine.map(e=>esc(symText(e.kat,e.st,e.sk))).join(" ")}</span>`;
     if(R.anordnen){b.draggable=true;
@@ -2015,8 +2025,9 @@ function rasterZeichnen(){
    $("#r-notiz").value=R.rNotiz||"";$("#r-notiz").addEventListener("input",e=>{R.rNotiz=e.target.value});
    $("#r-notiz-ok").disabled=!R.wahl;$("#r-notiz-ok").addEventListener("click",nOk);
    $("#r-notiz").addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();nOk()}});
-   reglerVerdrahten($("#r-leiste"),()=>R.wahl);$("#r-leiste").querySelectorAll(".r-rg").forEach(x=>x.disabled=!R.wahl);
-   $("#r-leiste").querySelectorAll(".sym").forEach(b=>{b.disabled=!R.wahl;b.addEventListener("click",()=>{if(R.wahl)rasterEintragen(R.wahl,+b.dataset.i)})});}
+   reglerVerdrahten($("#r-leiste"),()=>R.wahl);$("#r-leiste").querySelectorAll(".r-rg").forEach(x=>x.disabled=!R.wahl||abwesend(R.wahl));
+   if(R.wahl&&abwesend(R.wahl))abwesendHinweis(R.wahl);
+   $("#r-leiste").querySelectorAll(".sym").forEach(b=>{b.disabled=!R.wahl||abwesend(R.wahl);b.addEventListener("click",()=>{if(R.wahl)rasterEintragen(R.wahl,+b.dataset.i)})});}
   if($("#r-rg-alle")){$("#r-rg-alle").addEventListener("click",reglerAlleEintragen);reglerKnopfAktualisieren()}
   $("#r-undo").disabled=!R.eintraege.length;
   $("#r-undo").addEventListener("click",()=>{R.eintraege.pop();rasterSpeichernEntwurf();rasterZeichnen()});
@@ -2044,11 +2055,11 @@ const reglerOffen=()=>Object.keys(R.bewegt).filter(k=>R.bewegt[k]).length;
 function reglerKnopfAktualisieren(){const b=$("#r-rg-alle");if(!b)return;const n=reglerOffen();b.disabled=!n;b.textContent=n?`Regler eintragen (${n})`:"Regler eintragen"}
 // Regler bleiben stehen, wo sie hingeschoben wurden. Erst „Regler eintragen“ übernimmt alle verschobenen Werte auf einmal.
 function reglerVerdrahten(box,kFn){
-  box.querySelectorAll(".r-rg").forEach(inp=>inp.addEventListener("input",()=>{const k=kFn(inp);if(!k)return;R.regler[k]=+inp.value;R.bewegt[k]=true;
+  box.querySelectorAll(".r-rg").forEach(inp=>inp.addEventListener("input",()=>{const k=kFn(inp);if(!k||abwesend(k))return;R.regler[k]=+inp.value;R.bewegt[k]=true;
     inp.nextElementSibling.textContent=reglerText(R.skala,+inp.value);inp.parentElement.classList.add("bewegt");reglerKnopfAktualisieren()}));
 }
 function reglerAlleEintragen(){
-  const ks=Object.keys(R.bewegt).filter(k=>R.bewegt[k]);if(!ks.length)return;const z=hhmm(new Date());
+  const ks=Object.keys(R.bewegt).filter(k=>R.bewegt[k]&&!abwesend(k));Object.keys(R.bewegt).forEach(k=>{if(abwesend(k))delete R.bewegt[k]});if(!ks.length){reglerKnopfAktualisieren();return}const z=hhmm(new Date());
   for(const k of ks){const v=R.regler[k];const sk=R.skala;
     const [st,skw]=sk==="note"?[komma(-v),"note"]:sk==="np"?[komma(v),"np"]:[komma(v),"symw"];
     R.eintraege.push({k,kat:"MM",st,sk:skw,text:"",zeit:z})}
