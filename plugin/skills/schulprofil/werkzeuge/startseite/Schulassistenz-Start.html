@@ -159,7 +159,7 @@ footer{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 1
 .r-regler input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
 .r-regler input[type=range]:disabled{opacity:.4;cursor:default}
 .r-regler output{font-family:var(--f-mono);font-size:12.5px;min-width:70px;font-weight:600}
-.r-regler .btn{padding:3px 8px}
+.r-regler.bewegt{background:var(--warn-soft);border-color:var(--warn)}
 .r-zeile .r-anw{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .r-anw-b{font:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
 .r-anw-b:hover{border-color:var(--accent)}
@@ -1897,7 +1897,7 @@ async function rasterStarten(gid,stunde){
   const fokus=[...g.akten].sort((a,b)=>zaehl(a)-zaehl(b)||a.kuerzel.localeCompare(b.kuerzel,"de",{numeric:true})).slice(0,Math.min(5,Math.floor(g.akten.length/4))).map(a=>a.kuerzel);
   const zeit=stunde&&stunde.start?hhmm(stunde.start):hhmm(new Date());
   R={gid,fach,heute,schluessel,namen,fokus,zeit,eintraege:entwurf?entwurf.eintraege:[],wahl:null,anordnen:false,
-     reihenfolge:store.get(`sitzplan-${gid}`,null),skala:store.get(`skala-${gid}`,null)||skalaStandard(gid,g.gruppeText),namenZeigen:store.get("namen-zeigen",true),ansicht:store.get("live-ansicht","liste"),notizen:{},spaetOffen:null,regler:{},eingabe:store.get("live-eingabe","beides"),sort:store.get("live-sort","sitzplan"),ende:false};
+     reihenfolge:store.get(`sitzplan-${gid}`,null),skala:store.get(`skala-${gid}`,null)||skalaStandard(gid,g.gruppeText),namenZeigen:store.get("namen-zeigen",true),ansicht:store.get("live-ansicht","liste"),notizen:{},spaetOffen:null,regler:{},bewegt:{},eingabe:store.get("live-eingabe","beides"),sort:store.get("live-sort","sitzplan"),ende:false};
   rasterZeichnen();sec.hidden=false;sec.scrollIntoView({block:"start",behavior:"smooth"});
 }
 function rasterSpeichernEntwurf(){store.set(R.schluessel,{eintraege:R.eintraege})}
@@ -1964,6 +1964,7 @@ function rasterZeichnen(){
       ${liste?`<span class="wer">Notizen direkt in der Zeile des Kindes</span><span class="sp" style="flex:1"></span>`:`<span class="wer" id="r-wer">Kind antippen</span>
       ${leisteSym().map((x,i)=>symKnopf(x,i)).join("")}${R.eingabe!=="knoepfe"?reglerHTML(""):""}
       <input id="r-notiz" placeholder="Notiz (keine Namen): Enter/✓ speichert sie, oder Symbol antippen hängt sie an" autocomplete="off"><button class="btn ghost small" id="r-notiz-ok" aria-label="Notiz für das gewählte Kind speichern" title="Notiz für das gewählte Kind als eigenen Eintrag speichern">✓</button>`}
+      ${R.eingabe!=="knoepfe"?`<button class="btn primary small" id="r-rg-alle" title="Alle verschobenen Regler auf einmal als Mitarbeit eintragen">Regler eintragen</button>`:""}
       <button class="btn ghost small" id="r-undo">Rückgängig</button>
     </div>
     <div class="guard" id="r-guard" hidden></div>
@@ -1979,7 +1980,7 @@ function rasterZeichnen(){
       return `<div class="r-zeile${aktiv?" aktiv":""}${anw?" abw":""}" data-k="${esc(k)}"><div class="r-wer2"><span class="k">${esc(k)}</span><span class="n">${esc(anzeigeName(k))}</span>${R.fokus.includes(k)&&!anw?`<span class="r-fok">Fokus</span>`:""}</div><div class="r-anw" role="group" aria-label="Anwesenheit ${esc(k)}"><button class="r-anw-b" data-k="${esc(k)}" data-a="krank" aria-pressed="${anw&&anw.st==="krank"?"true":"false"}" title="Kind ist krank (nochmal antippen hebt auf)">krank</button><button class="r-anw-b" data-k="${esc(k)}" data-a="fehlt" aria-pressed="${anw&&anw.st==="fehlt"?"true":"false"}" title="Kind fehlt, Grund unbekannt (nochmal antippen hebt auf)">fehlt</button><button class="r-anw-b" data-k="${esc(k)}" data-a="spät" aria-pressed="${spaet?"true":"false"}" title="Verspätung mit Minuten eintragen">zu spät</button>${R.spaetOffen===k?`<span class="r-min"><input type="number" min="1" max="120" class="r-min-in" data-k="${esc(k)}" value="${spaet?spaet.sk:spaetVorschlag()}" aria-label="Minuten Verspätung ${esc(k)}"> min <button class="btn ghost small r-min-ok" data-k="${esc(k)}" aria-label="Verspätung speichern">✓</button></span>`:""}</div><div class="r-knoepfe">${R.eingabe!=="knoepfe"?reglerHTML(k):""}${sy.map((x,i)=>symKnopf(x,i,k)).join("")}</div><div class="r-heute">${idx.length?idx.map(chipHTML).join(""):`<span class="r-leer">noch nichts</span>`}${aktiv?`<small class="r-tipp">Neues Symbol wählen oder Notiz bestätigen</small>`:""}</div><div class="r-notizzeile"><input class="r-notiz2" data-k="${esc(k)}" placeholder="Notiz zu ${esc(k)} (keine Namen), Enter speichert" autocomplete="off" aria-label="Notiz zu ${esc(k)}" value="${esc(R.notizen[k]||"")}"><button class="btn ghost small r-ok" data-k="${esc(k)}" aria-label="Notiz zu ${esc(k)} speichern" title="Notiz als Eintrag speichern">✓</button></div></div>`}).join("");
     box.querySelectorAll(".r-notiz2").forEach(f=>{f.addEventListener("input",()=>{R.notizen[f.dataset.k]=f.value});f.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();rasterNotizBestaetigen(f.dataset.k)}})});
     box.querySelectorAll(".r-ok").forEach(b=>b.addEventListener("click",()=>rasterNotizBestaetigen(b.dataset.k)));
-    reglerVerdrahten(box,b=>b.dataset.k);
+    reglerVerdrahten(box,x=>x.dataset.k);
     box.querySelectorAll(".r-anw-b").forEach(b=>b.addEventListener("click",()=>anwesenheit(b.dataset.k,b.dataset.a)));
     box.querySelectorAll(".r-min-ok").forEach(b=>b.addEventListener("click",()=>spaetSpeichern(b.dataset.k)));
     box.querySelectorAll(".r-min-in").forEach(f=>{f.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();spaetSpeichern(f.dataset.k)}if(ev.key==="Escape"){R.spaetOffen=null;rasterZeichnen()}})});
@@ -2016,16 +2017,17 @@ function rasterZeichnen(){
    $("#r-notiz").addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();nOk()}});
    reglerVerdrahten($("#r-leiste"),()=>R.wahl);$("#r-leiste").querySelectorAll(".r-rg").forEach(x=>x.disabled=!R.wahl);
    $("#r-leiste").querySelectorAll(".sym").forEach(b=>{b.disabled=!R.wahl;b.addEventListener("click",()=>{if(R.wahl)rasterEintragen(R.wahl,+b.dataset.i)})});}
+  if($("#r-rg-alle")){$("#r-rg-alle").addEventListener("click",reglerAlleEintragen);reglerKnopfAktualisieren()}
   $("#r-undo").disabled=!R.eintraege.length;
   $("#r-undo").addEventListener("click",()=>{R.eintraege.pop();rasterSpeichernEntwurf();rasterZeichnen()});
   $("#r-ansicht").addEventListener("click",()=>{R.ansicht=R.ansicht==="liste"?"raster":"liste";store.set("live-ansicht",R.ansicht);R.wahl=null;R.ersetze=null;R.anordnen=false;rasterZeichnen()});
   $("#r-ordnen").addEventListener("click",()=>{R.anordnen=!R.anordnen;R.halte=null;R.wahl=null;rasterZeichnen()});
   if($("#r-tausch"))$("#r-tausch").addEventListener("click",async()=>{store.set("namen-tausch",!store.get("namen-tausch",false));R.namen=await namenLesen(R.gid);rasterZeichnen()});
   if($("#r-namen"))$("#r-namen").addEventListener("click",()=>{R.namenZeigen=!R.namenZeigen;store.set("namen-zeigen",R.namenZeigen);rasterZeichnen()});
-  $("#r-ende").addEventListener("click",()=>{R.ende=true;rasterZeichnen()});
+  $("#r-ende").addEventListener("click",()=>{const n=reglerOffen();if(n&&!R.endeTrotz){R.endeTrotz=true;$("#r-guard").hidden=false;$("#r-guard").textContent=`${n} verschobene Regler sind noch nicht eingetragen. Erst „Regler eintragen“ drücken, oder nochmal „Stunde beenden“, um sie zu verwerfen.`;return}R.endeTrotz=false;R.bewegt={};R.ende=true;rasterZeichnen()});
   $("#r-eingabe").addEventListener("change",e=>{R.eingabe=e.target.value;store.set("live-eingabe",R.eingabe);R.ersetze=null;rasterZeichnen()});
   $("#r-sort").addEventListener("change",e=>{R.sort=e.target.value;store.set("live-sort",R.sort);rasterZeichnen()});
-  $("#r-skala").addEventListener("change",e=>{R.regler={};R.skala=e.target.value;store.set(`skala-${R.gid}`,R.skala);R.wahl=null;rasterZeichnen()});
+  $("#r-skala").addEventListener("change",e=>{R.regler={};R.bewegt={};R.skala=e.target.value;store.set(`skala-${R.gid}`,R.skala);R.wahl=null;rasterZeichnen()});
 }
 const leisteSym=()=>[...(R.eingabe==="regler"?[]:SKALEN[R.skala].werte.map(v=>["MM",v,"mm"])),...SYM.filter(x=>x[0]!=="MM")];
 /* Stufenloser Regler: links schwächer, rechts stärker. Noten intern negativ, damit rechts besser ist. */
@@ -2036,16 +2038,21 @@ function notenTendenz(n){const g=Math.round(n),d=n-g;return Math.abs(d)<0.17?Str
 function reglerText(sk,v){return sk==="note"?`${komma(-v)} (${notenTendenz(-v)})`:sk==="np"?`${komma(v)} P`:`${SYMW[Math.round(v)]} (${komma(v)})`}
 function reglerEintrag(k,v){const sk=R.skala;
   if(sk==="note")eintragMachen(k,"MM",komma(-v),"note");else if(sk==="np")eintragMachen(k,"MM",komma(v),"np");else eintragMachen(k,"MM",komma(v),"symw")}
-function reglerHTML(k){const r=REGLER[R.skala];const v=R.regler[k||"_"]??r.start;
-  return `<span class="r-regler"><input type="range" class="r-rg" data-k="${esc(k||"")}" min="${r.min}" max="${r.max}" step="any" value="${v}" aria-label="Mitarbeit stufenlos${k?" "+esc(k):""}"><output class="r-rg-w">${esc(reglerText(R.skala,v))}</output></span>`}
+function reglerHTML(k){const r=REGLER[R.skala];const key=k||R.wahl||"";const v=R.regler[key]??r.start;
+  return `<span class="r-regler${R.bewegt[key]?" bewegt":""}"><input type="range" class="r-rg" data-k="${esc(k||"")}" min="${r.min}" max="${r.max}" step="any" value="${v}" aria-label="Mitarbeit stufenlos${k?" "+esc(k):""}"><output class="r-rg-w">${esc(reglerText(R.skala,v))}</output></span>`}
+const reglerOffen=()=>Object.keys(R.bewegt).filter(k=>R.bewegt[k]).length;
+function reglerKnopfAktualisieren(){const b=$("#r-rg-alle");if(!b)return;const n=reglerOffen();b.disabled=!n;b.textContent=n?`Regler eintragen (${n})`:"Regler eintragen"}
+// Regler bleiben stehen, wo sie hingeschoben wurden. Erst „Regler eintragen“ übernimmt alle verschobenen Werte auf einmal.
 function reglerVerdrahten(box,kFn){
-  box.querySelectorAll(".r-rg").forEach(inp=>inp.addEventListener("input",()=>{const k=inp.dataset.k||"_";R.regler[k]=+inp.value;inp.nextElementSibling.textContent=reglerText(R.skala,+inp.value)}));
-  // Loslassen trägt den Wert ein, an dem der Regler stehen bleibt (Maus, Finger, Stift). Tastatur: Pfeile verschieben, Enter trägt ein.
-  box.querySelectorAll(".r-rg").forEach(inp=>{let zeiger=false;
-    const ein=()=>{const k=kFn(inp);if(!k)return;const key=inp.dataset.k||"_";const v=+inp.value;delete R.regler[key];reglerEintrag(k,v)};
-    inp.addEventListener("pointerdown",()=>{zeiger=true});
-    inp.addEventListener("change",()=>{if(zeiger){zeiger=false;ein()}});
-    inp.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();ein()}})});
+  box.querySelectorAll(".r-rg").forEach(inp=>inp.addEventListener("input",()=>{const k=kFn(inp);if(!k)return;R.regler[k]=+inp.value;R.bewegt[k]=true;
+    inp.nextElementSibling.textContent=reglerText(R.skala,+inp.value);inp.parentElement.classList.add("bewegt");reglerKnopfAktualisieren()}));
+}
+function reglerAlleEintragen(){
+  const ks=Object.keys(R.bewegt).filter(k=>R.bewegt[k]);if(!ks.length)return;const z=hhmm(new Date());
+  for(const k of ks){const v=R.regler[k];const sk=R.skala;
+    const [st,skw]=sk==="note"?[komma(-v),"note"]:sk==="np"?[komma(v),"np"]:[komma(v),"symw"];
+    R.eintraege.push({k,kat:"MM",st,sk:skw,text:"",zeit:z})}
+  R.bewegt={};R.endeTrotz=false;R.ersetze=null;rasterSpeichernEntwurf();rasterZeichnen();
 }
 function sortiereKuerzel(ks,namen,art){
   const n=k=>(namen&&namen[k])||{};const cmp=(a,b)=>a.localeCompare(b,"de",{numeric:true,sensitivity:"base"});
