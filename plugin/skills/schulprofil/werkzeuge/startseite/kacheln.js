@@ -14,7 +14,7 @@
      skill       zugehöriger Skill (nur zur Information)
      neu_seit    Datum JJJJ-MM-TT; 14 Tage lang mit „neu“ markiert
 */
-window.SA_PLUGIN_VERSION = "0.9";
+window.SA_PLUGIN_VERSION = "1.0";
 window.SA_KACHELN = [
   // Planen & Material
   { id: "stunde", titel: "Stunde planen", kurz: "Tiefenstruktur, Verlaufsplan als Übersicht", bereich: "planen", typ: "claude", felder: ["gruppe", "thema", "datum"], auftrag: "Unterricht planen: Plane die Stunde am {datum} für {gruppe} zum Thema {thema}.", stichworte: "unterricht planen verlauf doppelstunde stundenentwurf unterrichtsbesuch", skill: "unterricht-planen", neu_seit: "2026-11-15" },
