@@ -153,7 +153,7 @@ Erst wenn die Lehrkraft die Noten festgelegt hat (nach ihren Änderungen in der 
 - **Gruppen-Akte** `gruppe.md`: unter Leistungen Notenspiegel, Durchschnitt, Durchschnitt je Aufgabe in Prozent; unter Schwerpunkte die zwei bis drei Aufgabenbereiche mit dem niedrigsten Erfüllungsgrad („Klausur 2: Logarithmus anwenden 38 %, Sachaufgaben Zinseszins 45 %“). Keine einzelnen Kinder in gruppe.md.
 - Nachschreiber und fehlende Kürzel als `Termine`-Eintrag in gruppe.md („Nachschreiben Klausur 2: M04, M17“), nach Bestätigung auch als Aufgabe in `planung/aufgaben.md` für den **wochenplaner**.
 
-Danach in einem Satz anbieten: Wiederholung oder Förderaufgaben zu den Schwerpunkten über **unterricht-planen** bzw. **material-gestalten**.
+Danach in einem Satz anbieten: Wiederholung oder Förderaufgaben zu den Schwerpunkten über **unterricht-planen** bzw. **material-gestalten**, oder individuelle Lernpläne je Kind aus den Lücken über **lernplan-erstellen**.
 
 ### 10.4 Zeit für den Wochenplaner
 

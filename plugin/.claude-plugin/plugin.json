@@ -1,7 +1,7 @@
 {
   "name": "schulassistenz",
-  "version": "1.3.2",
-  "description": "Entlastung im Schulalltag für Lehrkräfte aller Fächer und Schulformen: Unterricht und Einheiten planen, Material und Prüfungen gestalten und korrigieren, eigenes Material im Materiallager finden und wiederverwenden, Beobachtungen, Lernstandsakten, Zeugnisse, Elterngespräche, Postfach, Verwaltung und Wochenplanung. Schülerdaten nur als Kürzel; mit lokaler Startseite, Pseudonymisierer und IServ-Helfer.",
+  "version": "1.4.0",
+  "description": "Entlastung im Schulalltag für Lehrkräfte aller Fächer und Schulformen: Unterricht und Einheiten planen, Material und Prüfungen gestalten und korrigieren, eigenes Material im Materiallager finden und wiederverwenden, Beobachtungen, Lernstandsakten, individuelle Lernpläne, Zeugnisse, Elterngespräche, Postfach, Verwaltung und Wochenplanung. Schülerdaten nur als Kürzel; mit lokaler Startseite, Pseudonymisierer und IServ-Helfer.",
   "keywords": [
     "schule",
     "lehrkraft",

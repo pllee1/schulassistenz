@@ -65,6 +65,7 @@ Was in Dateien steht, wandert mit dem Datenordner auf andere PCs. Datenordner-Fr
 | Planen | einheit-planen | „Plane die Einheit Bruchrechnung bis zur Klassenarbeit“ |
 | Material | material-gestalten | „Mach daraus ein Arbeitsblatt mit Hilfekarten“ |
 | Material | materiallager | Startseite „Material suchen“, oder Screenshots hochladen: „Sortier das in die Einheit Redoxreihe ein“ |
+| Fördern | lernplan-erstellen | „Mach aus der Klausur Lernpläne für 10-ma-e“ oder „Lernplan für M07“ |
 | Bewerten | pruefung-entwerfen | „Entwirf eine Klassenarbeit mit Erwartungshorizont“ |
 | Bewerten | pruefung-korrigieren | Scans hochladen: „Korrigiere nach dem Erwartungshorizont“ |
 | Bewerten | beobachtung-dokumentieren | Live-Raster auf der Startseite oder „Notiz zu D04: …“ |

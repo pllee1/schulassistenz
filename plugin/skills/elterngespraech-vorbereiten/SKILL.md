@@ -60,6 +60,7 @@ Die Lehrkraft diktiert Stichworte oder füllt die Notiz aus. Daraus:
 - **Protokoll** in der Vorlage der Schule (sonst neutral): Datum, Teilnehmende (Rollen), Anlass, Ergebnisse, **Vereinbarungen** (wer, was, bis wann), nächster Termin, Unterschriftenfelder.
 - Nur aufnehmen, was gesagt wurde; nichts ergänzen.
 - Nach Freigabe die Vereinbarungen und den nächsten Termin in die **lernstandsakte** schreiben (Art: Beleg, Quelle: Elterngespräch <Datum>). Betrifft eine Vereinbarung ein bestimmtes Fach, in die Akte dieser Lerngruppe; fachübergreifende Vereinbarungen in die Akte, von der das Gespräch ausging, mit Hinweis „gilt auch für <Kürzel> (<Lerngruppe>)“ bei den verknüpften Akten, nach Rückfrage.
+- Wurden Lernziele vereinbart, anbieten, daraus über **lernplan-erstellen** einen Lernplan für das Kind zu machen.
 - Optional eine kurze Zusammenfassung für die Eltern über **elternbrief**, sobald es diesen Skill gibt.
 
 ## 7. Ausgabe und Namen

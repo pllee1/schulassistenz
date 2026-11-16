@@ -110,7 +110,7 @@ Auf Wunsch, z. B. vor Zeugnissen, Konferenzen oder Elterngesprächen:
 
 ## 8. Weitergabe
 
-Abnehmer lesen die Einträge aus der lernstandsakte: zeugnis-vorbereiten, lernentwicklung-dokumentieren (LEB, ILE), elterngespraech-vorbereiten, konferenz-vorbereiten, foerderplan-schreiben.
+Abnehmer lesen die Einträge aus der lernstandsakte: zeugnis-vorbereiten, lernentwicklung-dokumentieren (LEB, ILE), elterngespraech-vorbereiten, konferenz-vorbereiten, lernplan-erstellen (individuelle Lernpläne).
 
 ## 9. Grundsätze
 

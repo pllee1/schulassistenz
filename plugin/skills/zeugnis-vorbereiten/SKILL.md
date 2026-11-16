@@ -61,7 +61,7 @@ Für Zeugnis- oder Pädagogische Konferenzen eine **Tischvorlage** je Klasse, nu
 3. **Kinder mit Gesprächsbedarf**, je Kind ein Block: Leistungsbild je Fach, ASV, Fehlzeiten, bisherige Maßnahmen und Vereinbarungen, Entwicklung seit der letzten Konferenz. Punkte, die rechtlich zählen (Versetzung, Abschluss oder Abschlussprognose, Kurszuweisung, Nachprüfung, Warnbrief an Eltern), nur als Frage `[prüfen: … nach Schulrecht und Erlasslage]`; der Skill rechnet keine Abschlüsse aus.
 4. **Vorschläge** je Kind als offen: Maßnahme, Gespräch mit Eltern, Förderangebot, Beratung, mit wem (Rolle) und bis wann.
 5. **Positives nicht vergessen:** Kinder mit deutlicher Verbesserung oder besonderem Engagement nennen.
-6. Ausgabe: Tischvorlage (.docx) im Layout des Profils oder in der Konferenzvorlage der Schule, Kopf mit Klasse, Konferenzart, Datum; dazu eine Mitschrift-Spalte „Beschluss“. Nach der Konferenz aus den Stichworten der Lehrkraft die Beschlüsse je Kind in die Akte (Bereich Ziele und Maßnahmen bzw. Vereinbarungen) und Folgeaufgaben (Elternbrief, Gespräch) an elterngespraech-vorbereiten oder wochenplaner geben.
+6. Ausgabe: Tischvorlage (.docx) im Layout des Profils oder in der Konferenzvorlage der Schule, Kopf mit Klasse, Konferenzart, Datum; dazu eine Mitschrift-Spalte „Beschluss“. Nach der Konferenz aus den Stichworten der Lehrkraft die Beschlüsse je Kind in die Akte (Bereich Ziele und Maßnahmen bzw. Vereinbarungen) und Folgeaufgaben (Elternbrief, Gespräch, Lernplan) an elterngespraech-vorbereiten, lernplan-erstellen oder wochenplaner geben.
 
 ## 5. Lernentwicklungsbericht und Zeugnis in Berichtsform
 
