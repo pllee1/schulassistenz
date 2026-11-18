@@ -158,11 +158,24 @@ if (chrome.downloads && chrome.downloads.onCreated) {
     chrome.downloads.search({ id: c.id }, l => { const d = l && l[0]; if (d && wuPasst(d.finalUrl || d.url, c.filename.current)) chrome.storage.local.set({ saWuExport: { url: d.finalUrl || d.url, gelernt: Date.now() } }); });
   });
 }
-const wuIso = d => d.replace(/-/g, "");
+const WU_DATUM = /^(\d{8}|\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?|\d{1,2}\.\d{1,2}\.\d{4}|1\d{12})$/;
+function wuFormat(alt, iso) {
+  if (/^\d{8}$/.test(alt)) return iso.replace(/-/g, "");
+  if (/^\d{4}-\d{2}-\d{2}T/.test(alt)) return iso + alt.slice(10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(alt)) return iso;
+  if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(alt)) { const [j, m, t] = iso.split("-"); return `${t}.${m}.${j}`; }
+  if (/^1\d{12}$/.test(alt)) return String(new Date(iso + "T00:00:00").getTime());
+  return alt;
+}
+// Aufbau der Adresse ohne Werte (für die Fehlersuche): Pfad, Namen der Parameter und welche wie ein Datum aussehen
+function wuAufbau(url) {
+  const u = new URL(url);
+  return u.host + u.pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, "<id>").replace(/\d{5,}/g, "<zahl>") + (u.search ? "?" + [...u.searchParams.entries()].map(([k, v]) => k + "=" + (WU_DATUM.test(v) ? "<datum>" : /^\d+$/.test(v) ? "<zahl>" : v.length > 24 ? "<text>" : v)).join("&") : "") + (u.hash ? " #" + u.hash.length : "");
+}
 function wuZeitraum(url, von, bis) {
   const u = new URL(url); const keys = [...u.searchParams.keys()];
-  const datumsKeys = keys.filter(k => /^\d{8}$|^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get(k)));
-  const setze = (k, iso) => { const alt = u.searchParams.get(k); u.searchParams.set(k, alt.includes("-") ? iso : wuIso(iso)); };
+  const datumsKeys = keys.filter(k => WU_DATUM.test(u.searchParams.get(k)));
+  const setze = (k, iso) => { u.searchParams.set(k, wuFormat(u.searchParams.get(k), iso)); };
   const istVon = k => /(^|_)(sd|start|von|from|begin)|startdate|^rpt_sd$/i.test(k), istBis = k => /(^|_)(ed|end|bis|to)|enddate|^rpt_ed$/i.test(k);
   let kv = datumsKeys.find(istVon), kb = datumsKeys.find(istBis);
   if (!kv && !kb && datumsKeys.length === 2) [kv, kb] = datumsKeys;
@@ -171,7 +184,7 @@ function wuZeitraum(url, von, bis) {
 }
 async function wuExport(m) {
   const d = await chrome.storage.local.get(["saWuExport", "saWuExportBlob"]);
-  if (m.op === "status") return { ok: true, gelernt: d.saWuExport ? d.saWuExport.gelernt : 0, host: d.saWuExport ? new URL(d.saWuExport.url).host : "", blob: d.saWuExportBlob || 0 };
+  if (m.op === "status") return { ok: true, aufbau: d.saWuExport ? wuAufbau(d.saWuExport.url) : "", gelernt: d.saWuExport ? d.saWuExport.gelernt : 0, host: d.saWuExport ? new URL(d.saWuExport.url).host : "", blob: d.saWuExportBlob || 0 };
   if (m.op === "vergessen") { await chrome.storage.local.remove(["saWuExport", "saWuExportBlob"]); return { ok: true }; }
   if (m.op === "anmelden") { if (d.saWuExport) chrome.tabs.create({ url: new URL(d.saWuExport.url).origin + "/WebUntis/" }); return { ok: true }; }
   if (m.op !== "holen") return { ok: false, fehler: "Unbekannter Befehl" };
@@ -188,7 +201,7 @@ async function wuExport(m) {
   }
   const cd = r.headers.get("content-disposition") || "";
   const name = decodeURIComponent(((cd.match(/filename\*=UTF-8''([^;]+)/i) || cd.match(/filename="?([^";]+)"?/i) || [])[1] || "WebUntis-Export").trim());
-  return { ok: true, daten: b64aus(buf), typ, name, zeitraum: z.zeitraum };
+  return { ok: true, daten: b64aus(buf), typ, name, zeitraum: z.zeitraum, aufbau: wuAufbau(d.saWuExport.url), gelernt: d.saWuExport.gelernt };
 }
 chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   if (m.cmd !== "wu-export") return;

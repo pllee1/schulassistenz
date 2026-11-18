@@ -176,6 +176,9 @@ async function verarbeiten(buf){
   return {daten,fehlend,klassen,doppelt,regeln:r};
 }
 function gruppeVorschlag(erg){
+  const kl=[...erg.klassen.entries()].sort((a,b)=>b[1]-a[1])[0];
+  if(kl){const k=kl[0].toLowerCase().replace(/\s+/g,"");const passend=ordner.gruppen.filter(g=>g.id.toLowerCase()===k||g.id.toLowerCase().startsWith(k+"-"));
+    if(passend.length){const treffer=g=>erg.daten.filter(d=>d.treffer.some(t=>t.gruppe===g.id)).length;return passend.sort((a,b)=>treffer(b)-treffer(a))[0].id}}
   const gezaehlt=new Map();for(const d of erg.daten)for(const t of d.treffer)gezaehlt.set(t.gruppe,(gezaehlt.get(t.gruppe)||0)+1);
   const best=[...gezaehlt.entries()].sort((a,b)=>b[1]-a[1])[0];return best?best[0]:(ordner.gruppen[0]||{}).id||"";
 }
@@ -300,6 +303,8 @@ function zeichnen(meldung){
       return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td><td class="z">${fmt(x.unent)}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td><td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
   }
   const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (rechts „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>`<li>${esc(n)} (${c} Zeilen)</li>`).join("")}</ul></div>`:"";
+  const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> ${F.kurz?"Der Helfer konnte den Zeitraum in der WebUntis-Adresse nicht umstellen und hat den Zeitraum deines ersten Downloads geholt.":"Ist der Zeitraum im Export ab Schuljahresbeginn eingestellt?"} Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung. ${F.kurz?`Lade den Bericht einmal neu mit Zeitraum ab Schuljahresbeginn herunter, dann lernt der Helfer die Adresse neu.${F.aufbau?` Wenn das nicht hilft, gib Claude diesen Aufbau der Adresse (ohne Daten): <code style="overflow-wrap:anywhere">${esc(F.aufbau)}</code>`:""}`:""}</div>`:"";
+  const klasseHinweis=F.neu&&F.klassen&&F.klassen.length===1&&!F.gid.toLowerCase().startsWith(F.klassen[0].toLowerCase())?`<div class="fz-warn">Die Datei ist für die Klasse ${esc(F.klassen[0])}, angezeigt wird ${esc(F.gid)}. Oben unter „Lerngruppe“ kannst du wechseln.</div>`:"";
   const ohne=F.ohne?`<div class="fz-warn">${F.ohne} Zeilen gehören zu Kindern aus anderen Lerngruppen und sind hier nicht enthalten. Andere Lerngruppe wählen, um sie zu sehen.</div>`:"";
   const helfer=helferKann()?`<button class="btn primary" id="fz-holen">Aus WebUntis holen</button>`:"";
   slot.innerHTML=`<div class="panel" role="region" aria-label="Fehlzeiten-Ampel"><div class="p-kopf"><h4>Fehlzeiten-Ampel</h4><span class="sp"></span><label class="r-skala">Lerngruppe <select id="fz-gruppe">${gruppenOpt}</select></label><label class="r-skala"><input type="checkbox" id="fz-namen"${zeigeNamen?" checked":""}> Namen zeigen</label></div>
@@ -307,7 +312,7 @@ function zeichnen(meldung){
     <div class="fz-drop" id="fz-drop">WebUntis-Export „Abwesenheiten“ hierher ziehen (.xls, .xlsx oder .csv). Die Datei wird nur in diesem Fenster gelesen.</div>
     <p class="guard" id="fz-guard" hidden></p>
     <div id="fz-lernen"></div>
-    ${fehl}${ohne}${sum}${tabelle}
+    ${kurz}${klasseHinweis}${fehl}${ohne}${sum}${tabelle}
     ${F.zeilen?"":`<p class="note">Für ${esc(F.gid||"diese Lerngruppe")} ist noch kein Stand gespeichert.</p>`}
     <p class="note">${esc(regelText)}</p>
     <p class="note">Datenschutz: Gespeichert und an Claude gegeben werden nur Kürzel, Datum, Stunden und Status. Namen, Externe Id, Abwesenheitsgründe, Texte und Lehrkräfte werden verworfen. Ablage: ${esc(sdPfad("ausgaben/fehlzeiten/"+DATEI(F.gid||"<gruppe>")))}.</p>
@@ -332,7 +337,8 @@ async function einlesen(bufP,quelle,zeitraum){
   const g=$("#fz-guard");g.hidden=true;$("#fz-toast").textContent="Lese …";
   try{const erg=await verarbeiten(await bufP);const gid=F.gid&&erg.daten.some(d=>d.treffer.some(t=>t.gruppe===F.gid))?F.gid:gruppeVorschlag(erg);
     const p=pseudoZeilen(erg,gid);
-    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,fehlend:erg.fehlend,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||"",quelle,neu:true,namen:await namenLesen(gid)};
+    const tage=erg.daten.map(d=>d.iso).sort();const daten=`${datumDE(tage[0])}–${datumDE(tage[tage.length-1])}`;
+    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,fehlend:erg.fehlend,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()],aufbau:F.aufbauNeu||"",kurz:!!F.kurzNeu};
     zeichnen(`${erg.daten.length} Zeilen gelesen. Noch nicht gespeichert.`)}
   catch(e){$("#fz-toast").textContent="";g.hidden=false;g.textContent=e.message||String(e)}
 }
@@ -344,8 +350,8 @@ async function holen(){
       g.hidden=false;g.textContent=a.fehler||"WebUntis hat nicht geantwortet.";
       if(a.anmelden){const b=document.createElement("button");b.className="btn small ghost";b.textContent="WebUntis öffnen";b.style.marginLeft="8px";b.addEventListener("click",()=>wuRuf("anmelden"));g.appendChild(b)}
       return}
-    const buf=davBuf(a.daten);
-    await einlesen(Promise.resolve(buf),"WebUntis über den Helfer",a.zeitraum?`${datumDE(von)}–${datumDE(bis)}`:"Zeitraum wie beim ersten Export")}
+    const buf=davBuf(a.daten);F.aufbauNeu=a.aufbau||"";F.kurzNeu=!a.zeitraum;
+    await einlesen(Promise.resolve(buf),"WebUntis über den Helfer",a.zeitraum?`${datumDE(von)}–${datumDE(bis)}`:"")}
   catch(e){t.textContent="";g.hidden=false;g.textContent=e.message||String(e)}
 }
 async function lernenZeigen(){
