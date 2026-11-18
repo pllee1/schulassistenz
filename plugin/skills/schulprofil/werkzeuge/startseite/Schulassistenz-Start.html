@@ -2593,7 +2593,7 @@ async function zeigeMaterial(){
     <label style="flex:1 1 130px">Fach<select id="m-fach"><option value="">alle</option>${opt("fach",f.fach)}</select></label>
     <label style="flex:1 1 90px">Jahrgang<select id="m-jg"><option value="">alle</option>${opt("jahrgang",f.jahrgang)}</select></label>
     <label style="flex:1 1 130px">Art<select id="m-art"><option value="">alle</option>${opt("art",f.art)}</select></label>
-    ${schulAn()?`<label style="flex:1 1 130px">Ablage<select id="m-quelle"><option value="">alle</option><option value="eigen"${f.quelle==="eigen"?" selected":""}>mein Material</option><option value="schule"${f.quelle==="schule"?" selected":""}>Schulserver</option></select></label>`:""}</div>
+    ${schulAn()?`<label style="flex:1 1 130px">Quelle<select id="m-quelle"><option value="">alle</option><option value="eigen"${f.quelle==="eigen"?" selected":""}>mein Material</option><option value="schule"${f.quelle==="schule"?" selected":""}>Schulserver</option></select></label>`:""}</div>
     <label class="note m-check"><input type="checkbox" id="m-wissen" ${f.wissen?"checked":""}> nur Wissensbasis (Quellen der Einheiten)</label>
     <div id="m-liste" class="m-liste"></div>
     <div class="guard" id="m-guard" hidden></div>

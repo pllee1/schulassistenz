@@ -152,7 +152,7 @@ Schuleigene Arbeitspläne, Vorlagen und Material der Fachgruppen liegen oft in d
 
 1. **Startseite:** In `meine-einstellungen.js` eintragen:
    `schulordner: { web: "https://<eure-iserv-adresse>/webdav/Groups", laufwerk: "S:\\" },`
-   IServ-Helfer ab 0.5 nötig (in `chrome://extensions` aktualisieren), Startseite neu laden. Unter „Material suchen“ dann „Gruppenordner wählen“ (Klassen- und Kursgruppen sind abgewählt, weil dort Abgaben von Schülerinnen und Schülern liegen) und „Schulserver einlesen“. Treffer tragen das Zeichen „Schulserver“; der Filter „Ablage“ trennt dein Material vom Schulserver. „Für Claude speichern“ legt zusätzlich `materiallager/bestand-schulserver.csv` an.
+   IServ-Helfer ab 0.5 nötig (in `chrome://extensions` aktualisieren), Startseite neu laden. Unter „Material suchen“ dann „Gruppenordner wählen“ (Klassen- und Kursgruppen sind abgewählt, weil dort Abgaben von Schülerinnen und Schülern liegen) und „Schulserver einlesen“. Treffer tragen das Zeichen „Schulserver“; der Filter „Quelle“ trennt dein Material vom Schulserver. „Für Claude speichern“ legt zusätzlich `materiallager/bestand-schulserver.csv` an.
 2. **Claude:** Explorer › „Dieser PC“ rechtsklicken › „Netzlaufwerk verbinden“, Laufwerk **S:**, Ordner `https://<eure-iserv-adresse>/webdav/Groups`, „Verbindung bei Anmeldung wiederherstellen“ anhaken, mit IServ-Daten anmelden (wie beim Laufwerk für die Schülerdaten). In der Claude-App nur die Gruppenordner freigeben, die Claude lesen soll, z. B. `S:\Fachgruppe-NaWi` und `S:\Lehrer`. Klassen- und Kursgruppen nicht freigeben. Im Profil steht das unter `ablage.schulserver`.
 3. **Auf jedem PC** einmal: Netzlaufwerk verbinden und in der Claude-App freigeben; auf der Startseite „Gruppenordner wählen“ und „Schulserver einlesen“.
 
