@@ -55,11 +55,22 @@ Die Kachel „Material suchen“ (Reiter Material) macht deine vorhandenen Mater
 - **Wochenansicht:** Montag bis Freitag mit deinen Stunden, Terminen und Fristen aus `planung/aufgaben.md`. Am Wochenende zeigt sie schon die kommende Woche. Klick auf eine Stunde: Lerngruppe zuordnen (einmal je Kurs), dann direkt Live-Beobachtung, Stunde planen oder Akten.
 - **Termine:** Die Wochenansicht zeigt neben den Stunden alle Termine: aus der Aufgabenliste (`planung/aufgaben.md`) und aus weiteren Kalendern. Ganztägige Termine stehen oben.
 - **Kalender:** Knopf „Kalender“ klappt eine Monatsansicht auf (und wieder zu). Je Tag: Zahl der Stunden, Termine, Fristen. Klick auf einen Tag zeigt alles dazu; dort kannst du auch einen Termin eintragen. Er landet in `planung/aufgaben.md`, die auch der Wochenplaner liest. Die farbigen Punkte oben blenden einzelne Kalender aus und ein.
-- **Weitere Kalender** (IServ-Kalender, Schulkalender, Prüfungstermine): im Kalender auf „Kalender hinzufügen“, Namen und iCal-Link (Abo- oder Export-Link) einfügen. Der IServ-Helfer ruft WebUntis- und IServ-Kalender ab. Andere Kalender oder ohne Helfer: die .ics-Datei herunterladen und hineinziehen. Sie liegt dann in `planung/kalender/`. Links mit Schlüssel bleiben nur im Browser.
-- **IServ-Kalender** (Öffentlich, Lehrer, Klausurplan, Teams, Ferien): im Kalender auf „Kalender hinzufügen“, dann „IServ verbinden“ mit der Adresse eurer IServ-Seite. Der IServ-Helfer (ab 0.3.0) holt bei jedem Öffnen alle Kalender, die du in IServ eingeblendet hast, über deine Anmeldung in diesem Browser. Bist du nicht angemeldet, sagt die Seite Bescheid. Einzelne Kalender blendest du über die farbigen Punkte aus. (CalDAV-Adressen gehen nur, wenn eure Schule das ohne extra Anmeldung erlaubt.)
+- **Weitere Kalender** (IServ-Kalender, Schulkalender, Prüfungstermine): im Kalender auf „Kalender hinzufügen“, Namen und iCal-Link (Abo- oder Export-Link) einfügen. Der Schulassistenz-Helfer ruft WebUntis- und IServ-Kalender ab. Andere Kalender oder ohne Helfer: die .ics-Datei herunterladen und hineinziehen. Sie liegt dann in `planung/kalender/`. Links mit Schlüssel bleiben nur im Browser.
+- **IServ-Kalender** (Öffentlich, Lehrer, Klausurplan, Teams, Ferien): im Kalender auf „Kalender hinzufügen“, dann „IServ verbinden“ mit der Adresse eurer IServ-Seite. Der Schulassistenz-Helfer (ab 0.3.0) holt bei jedem Öffnen alle Kalender, die du in IServ eingeblendet hast, über deine Anmeldung in diesem Browser. Bist du nicht angemeldet, sagt die Seite Bescheid. Einzelne Kalender blendest du über die farbigen Punkte aus. (CalDAV-Adressen gehen nur, wenn eure Schule das ohne extra Anmeldung erlaubt.)
 - **Filter:** Schulkalender werden gefiltert (bei „Kalender hinzufügen“ je Kalender „Filter an/aus“). Sichtbar bleibt, was keinen Jahrgang nennt (schulweit) oder deine Jahrgänge, Klassen und Fächer betrifft; dazu Stichworte für „immer“ und „nie“. Knopf „Filter“ im Kalender zum Anpassen und Ausprobieren; dauerhaft in `meine-einstellungen.js` unter `kalender_filter`. „Ausgeblendete zeigen“ blendet das Weggefilterte durchgestrichen ein.
 - **Namen:** Termintitel, die an Claude gehen (Woche planen, `planung/stundenplan.md`), werden geprüft. Namen aus deinen Kürzellisten und Muster wie „Elterngespräch Becker“ werden durch [Name] ersetzt.
 - **Woche planen:** gibt Claude deine Stunden (nur Lerngruppen-Kürzel und Räume) und offenen Punkte mit. Ist der Datenordner mit Schreibrecht verbunden, legt die Seite außerdem `planung/stundenplan.md` für den Wochenplaner ab.
+
+## Fehlzeiten-Ampel (WebUntis)
+
+Kachel „Fehlzeiten-Ampel“ (Verwaltung) oder rechts unter „Fehlzeiten“. Für Klassenleitungen und Tutorinnen und Tutoren.
+
+- **Export holen:** „Aus WebUntis holen“ (Schulassistenz-Helfer ab 0.6, in WebUntis angemeldet) oder den Export „Abwesenheiten pro Schüler“ als .xls, .xlsx oder .csv hineinziehen. Damit der Helfer selbst holen kann, lädst du den Bericht **einmal** in WebUntis selbst herunter. Der Helfer merkt sich nur die Adresse, keine Daten. Danach die heruntergeladene Datei im Download-Ordner löschen, sie enthält Klarnamen.
+- **Was passiert:** Die Datei wird nur in diesem Fenster gelesen. Namen werden über die Kürzellisten zu Kürzeln. Namen, die in keiner Kürzelliste stehen, zeigt die Seite nur dir und lässt ihre Zeilen weg.
+- **Ampel:** Rot = Eltern informieren (Schwelle aus dem Profil erreicht, gezählt ab der letzten Benachrichtigung). Gelb = Entschuldigungsfrist abgelaufen oder endet heute, oder die Schwelle wäre erreicht, wenn überfällige Stunden unentschuldigt bleiben. Grün = nichts zu tun. Regeln aus `profil/profil.md`, `regeln.fehlzeiten`.
+- **„Eltern informiert …“** trägt das Datum in die Akte ein (Bereich Termine). Ab dann zählt die Schwelle neu.
+- **„Stand speichern“** legt `ausgaben/fehlzeiten/fehlzeiten-<gruppe>.tsv` an, nur mit Kürzeln. Die liest auch Claude („Mit Claude abgleichen“). Abwesenheitsgründe, Texte und die Externe Id werden nie gespeichert.
+- **Ferien:** Damit Ferien nicht als Schultage zählen, in `meine-einstellungen.js` eintragen, z. B. `ferien: [["2026-12-23", "2027-01-08"]]`.
 
 ## Kürzel verknüpfen
 
@@ -95,7 +106,7 @@ Neue Skills des Plugins bringen ihren Knopf in `kacheln.js` mit. Er steht 14 Tag
 Oben auf der Startseite erscheint „Einrichtung auf diesem PC“, solange etwas fehlt. „Anzeigen“ klappt die Liste auf, mit Knöpfen zum Erledigen:
 
 - Pflicht: Edge oder Chrome, Werkzeug-Dateien gefunden, Datenordner verbunden, Schulprofil, Kürzellisten mit Namen.
-- Optional: IServ-Helfer (mit „Zugriff auf Datei-URLs zulassen“), Stundenplan aus WebUntis, IServ-Kalender.
+- Optional: Schulassistenz-Helfer (mit „Zugriff auf Datei-URLs zulassen“), Stundenplan aus WebUntis, IServ-Kalender.
 
 Was in Dateien steht, kommt über deinen Cloud-Speicher (z. B. OneDrive) auf andere PCs mit. Nur im Browser gespeichert und daher auf jedem PC neu nötig: Datenordner-Freigabe, iCal-Link, IServ-Verbindung, Filter-Änderungen, Sitzpläne, Favoriten, „Vor-/Nachname tauschen“. Ist alles erledigt, verschwindet der Hinweis. Unten auf der Seite holt „Einrichtung prüfen“ ihn jederzeit zurück.
 
@@ -137,10 +148,10 @@ Rechts bei den Lerngruppen „Sichern“ (oder Kachel „Schülerdaten sichern�
 
 Akten, Kürzellisten und Ausgaben mit Schülerbezug können getrennt vom Datenordner auf dem Schulserver liegen. Profil, Planung, Werkzeuge und Material bleiben im Datenordner. Der Platzbedarf ist klein: Text-Akten und Kürzellisten brauchen je Lerngruppe etwa 20 bis 50 KB im Schuljahr. Scans von Schülerarbeiten werden nicht gespeichert.
 
-Chrome und Edge öffnen keine Netzlaufwerke. Die Startseite greift deshalb über den **IServ-Helfer (ab 0.4)** auf IServ zu, Claude dagegen über ein **Netzlaufwerk**.
+Chrome und Edge öffnen keine Netzlaufwerke. Die Startseite greift deshalb über den **Schulassistenz-Helfer (ab 0.4)** auf IServ zu, Claude dagegen über ein **Netzlaufwerk**.
 
 1. **Ordner anlegen:** In IServ unter Dateien › Eigene einen Ordner `schulassistenz-daten` anlegen.
-2. **Startseite:** In `meine-einstellungen.js` eintragen: `schuelerdaten: "https://<eure-iserv-adresse>/webdav/Files/schulassistenz-daten"`. IServ-Helfer in `chrome://extensions` aktualisieren, Startseite neu laden, rechts „Bei IServ anmelden“ (einmal je Browser-Sitzung), dann „Erneut versuchen“.
+2. **Startseite:** In `meine-einstellungen.js` eintragen: `schuelerdaten: "https://<eure-iserv-adresse>/webdav/Files/schulassistenz-daten"`. Schulassistenz-Helfer in `chrome://extensions` aktualisieren, Startseite neu laden, rechts „Bei IServ anmelden“ (einmal je Browser-Sitzung), dann „Erneut versuchen“.
 3. **Claude:** Explorer › „Dieser PC“ rechtsklicken › „Netzlaufwerk verbinden“, Laufwerk z. B. I:, Ordner `https://<eure-iserv-adresse>/webdav/Files`, „Verbindung bei Anmeldung wiederherstellen“ anhaken, mit IServ-Daten anmelden. In der Claude-App den Ordner `I:\schulassistenz-daten` freigeben. Im Profil steht er unter `ablage.schuelerdaten`.
 4. **Umziehen:** Liegen noch Akten im Datenordner, erscheint rechts „Schülerdaten umziehen“. Schritt 1 kopiert alles und vergleicht jede Datei. Vorhandenes wird nie überschrieben. Schritt 2 löscht die alte Fassung erst auf deinen Klick. Liegt der Datenordner in einem Cloud-Speicher, danach dort den Papierkorb leeren.
 
@@ -152,7 +163,7 @@ Schuleigene Arbeitspläne, Vorlagen und Material der Fachgruppen liegen oft in d
 
 1. **Startseite:** In `meine-einstellungen.js` eintragen:
    `schulordner: { web: "https://<eure-iserv-adresse>/webdav/Groups", laufwerk: "S:\\" },`
-   IServ-Helfer ab 0.5 nötig (in `chrome://extensions` aktualisieren), Startseite neu laden. Unter „Material suchen“ dann „Gruppenordner wählen“ (Klassen- und Kursgruppen sind abgewählt, weil dort Abgaben von Schülerinnen und Schülern liegen) und „Schulserver einlesen“. Treffer tragen das Zeichen „Schulserver“; der Filter „Quelle“ trennt dein Material vom Schulserver. „Für Claude speichern“ legt zusätzlich `materiallager/bestand-schulserver.csv` an.
+   Schulassistenz-Helfer ab 0.5 nötig (in `chrome://extensions` aktualisieren), Startseite neu laden. Unter „Material suchen“ dann „Gruppenordner wählen“ (Klassen- und Kursgruppen sind abgewählt, weil dort Abgaben von Schülerinnen und Schülern liegen) und „Schulserver einlesen“. Treffer tragen das Zeichen „Schulserver“; der Filter „Quelle“ trennt dein Material vom Schulserver. „Für Claude speichern“ legt zusätzlich `materiallager/bestand-schulserver.csv` an.
 2. **Claude:** Explorer › „Dieser PC“ rechtsklicken › „Netzlaufwerk verbinden“, Laufwerk **S:**, Ordner `https://<eure-iserv-adresse>/webdav/Groups`, „Verbindung bei Anmeldung wiederherstellen“ anhaken, mit IServ-Daten anmelden (wie beim Laufwerk für die Schülerdaten). In der Claude-App nur die Gruppenordner freigeben, die Claude lesen soll, z. B. `S:\Fachgruppe-NaWi` und `S:\Lehrer`. Klassen- und Kursgruppen nicht freigeben. Im Profil steht das unter `ablage.schulserver`.
 3. **Auf jedem PC** einmal: Netzlaufwerk verbinden und in der Claude-App freigeben; auf der Startseite „Gruppenordner wählen“ und „Schulserver einlesen“.
 

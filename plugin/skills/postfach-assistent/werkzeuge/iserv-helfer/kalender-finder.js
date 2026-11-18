@@ -1,4 +1,4 @@
-/* IServ-Helfer · Kalender-Finder für die Schulassistenz-Startseite.
+/* Schulassistenz-Helfer · Kalender-Finder für die Schulassistenz-Startseite.
    Läuft nur auf der IServ-Kalenderseite. Merkt sich, über welche internen Adressen IServ die Termine lädt
    (nur die Adressen, keine Termine), damit die Startseite dieselben Adressen abrufen kann. */
 (() => {

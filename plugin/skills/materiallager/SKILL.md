@@ -118,7 +118,7 @@ Auf Wunsch („Verschlagworte meinen Ordner 10\Nawi E“):
 
 ## 8. Startseite
 
-Kachel **Material suchen** (lokal): Die Startseite liest den Materialordner im Browser und, wenn in `meine-einstellungen.js` `schulordner` eingetragen ist, über den IServ-Helfer (ab 0.5, nur lesen) die gewählten Gruppenordner des Schulservers, leitet Jahrgang, Fach, Kurs, Thema und Art aus den Ordnernamen ab, mischt `register.csv` ein und sucht ohne Claude. „Für Claude speichern“ schreibt `materiallager/bestand.csv` und `bestand-schulserver.csv`. „Weiterverwenden“ öffnet Claude mit Titel und Pfad. Neue Kacheln zu diesem Skill in `kacheln.js`.
+Kachel **Material suchen** (lokal): Die Startseite liest den Materialordner im Browser und, wenn in `meine-einstellungen.js` `schulordner` eingetragen ist, über den Schulassistenz-Helfer (ab 0.5, nur lesen) die gewählten Gruppenordner des Schulservers, leitet Jahrgang, Fach, Kurs, Thema und Art aus den Ordnernamen ab, mischt `register.csv` ein und sucht ohne Claude. „Für Claude speichern“ schreibt `materiallager/bestand.csv` und `bestand-schulserver.csv`. „Weiterverwenden“ öffnet Claude mit Titel und Pfad. Neue Kacheln zu diesem Skill in `kacheln.js`.
 
 ## 9. Grundsätze
 

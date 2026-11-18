@@ -15,11 +15,11 @@ Ausführliche Einrichtung: [plugin/README.md](plugin/README.md)
 ## Aufbau
 
 - `.claude-plugin/marketplace.json` – Marketplace-Eintrag
-- `plugin/` – das Plugin (Skills und Werkzeuge: Startseite, Pseudonymisierer, IServ-Helfer, Abschluss-Check)
+- `plugin/` – das Plugin (Skills und Werkzeuge: Startseite, Pseudonymisierer, Schulassistenz-Helfer, Abschluss-Check)
 - `updater/` – Windows-Skript, das die Werkzeuge im Datenordner automatisch aktuell hält ([LIESMICH](updater/LIESMICH.md))
 
 ## Neue Fassung veröffentlichen
 
 1. Änderungen in `plugin/` vornehmen.
-2. Version in `plugin/.claude-plugin/plugin.json` und `.claude-plugin/marketplace.json` erhöhen (beim IServ-Helfer zusätzlich in dessen `manifest.json`).
+2. Version in `plugin/.claude-plugin/plugin.json` und `.claude-plugin/marketplace.json` erhöhen (beim Schulassistenz-Helfer zusätzlich in dessen `manifest.json`).
 3. Auf `main` hochladen. Claude-App und Updater holen die neue Fassung von selbst.

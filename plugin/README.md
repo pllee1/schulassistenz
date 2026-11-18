@@ -23,8 +23,8 @@ Schreibe in Claude: **„Richte schulassistenz ein.“**
 Claude fragt in vier kurzen Runden nach Schule und Rahmen (Bundesland, Schulform, Fächer, Jahrgänge), Bewertung (Notenskala, Notenschlüssel, Gewichtung), Vorlagen und Layout, Ablage und Werkzeuge. Was du nicht weißt, bleibt leer, dann gilt ein neutraler Standard.
 
 - **Datenordner wählen:** ein Ordner nur für schulassistenz, z. B. `Dokumente\Schule\schulassistenz` oder ein Ordner in der Dienst-Cloud, wenn die Schulleitung das so festlegt.
-- **Schülerdaten getrennt ablegen (optional):** Akten, Kürzellisten und Ausgaben mit Schülerbezug können auf dem Schulserver liegen (z. B. IServ „Eigene“: die Startseite greift über den IServ-Helfer zu, Claude über ein Netzlaufwerk), der Rest im Datenordner. Sie brauchen nur wenige KB je Lerngruppe. Anleitung: Startseite, Abschnitt „Schülerdaten auf dem Schulserver“.
-- **Gruppenordner der Schule lesen (optional):** Schuleigene Arbeitspläne, Vorlagen und Fachgruppenmaterial aus den Gruppenordnern des Schulservers (z. B. IServ „Gruppen“) nur lesend nutzen: „Material suchen“ durchsucht sie über den IServ-Helfer ab 0.5, Claude liest sie über ein Netzlaufwerk und fasst z. B. den Arbeitsplan fürs Planen zusammen. Dort wird nie etwas geändert. Anleitung: Startseite, Abschnitt „Gruppenordner der Schule“.
+- **Schülerdaten getrennt ablegen (optional):** Akten, Kürzellisten und Ausgaben mit Schülerbezug können auf dem Schulserver liegen (z. B. IServ „Eigene“: die Startseite greift über den Schulassistenz-Helfer zu, Claude über ein Netzlaufwerk), der Rest im Datenordner. Sie brauchen nur wenige KB je Lerngruppe. Anleitung: Startseite, Abschnitt „Schülerdaten auf dem Schulserver“.
+- **Gruppenordner der Schule lesen (optional):** Schuleigene Arbeitspläne, Vorlagen und Fachgruppenmaterial aus den Gruppenordnern des Schulservers (z. B. IServ „Gruppen“) nur lesend nutzen: „Material suchen“ durchsucht sie über den Schulassistenz-Helfer ab 0.5, Claude liest sie über ein Netzlaufwerk und fasst z. B. den Arbeitsplan fürs Planen zusammen. Dort wird nie etwas geändert. Anleitung: Startseite, Abschnitt „Gruppenordner der Schule“.
 - **Vorlagen deiner Schule** (Briefkopf, ILE-Bogen, Zeugnisformular, Notenschlüssel, Logo) kannst du hochladen. Claude übernimmt Aufbau und Formulierungen ins Profil.
 
 Claude legt dabei in deinem Datenordner an:
@@ -49,7 +49,7 @@ Pflicht:
 5. **Lerngruppen und Kürzellisten** (erst nach Freigabe der Schulleitung, im Profil `regeln.ki_freigabe_schulleitung: erteilt`): Mit „Neue Lerngruppe“ legst du je Kurs einen Ordner mit Akten an (z. B. `7b-deutsch`, Kürzel D01 … D28). Dann trägst du in `kuerzellisten/Kuerzelliste-<lerngruppe>.xlsx` **selbst** die Namen neben die Kürzel ein. Diese Liste lädst du nie hoch. Die Startseite liest sie nur lokal.
 
 Optional:
-6. **IServ-Helfer** (nur wenn deine Schule IServ nutzt): Browser-Erweiterung, die Mails und Messenger-Nachrichten pseudonymisiert an Claude gibt und die Namen in der Antwort wieder einsetzt. Bitte Claude: „Stell mir den IServ-Helfer bereit“. Dann in `chrome://extensions` den Entwicklermodus einschalten, „Entpackte Erweiterung laden“, den Ordner `iserv-helfer` wählen, Kürzelliste hineinziehen. Für Stundenplan und Kalender auf der Startseite zusätzlich unter „Details“ **„Zugriff auf Datei-URLs zulassen“**.
+6. **Schulassistenz-Helfer** (für IServ und WebUntis): Browser-Erweiterung, die Mails und Messenger-Nachrichten pseudonymisiert an Claude gibt, die Namen in der Antwort wieder einsetzt und für die Fehlzeiten-Ampel der Startseite den Abwesenheiten-Export aus WebUntis holt. Bitte Claude: „Stell mir den Schulassistenz-Helfer bereit“. Dann in `chrome://extensions` den Entwicklermodus einschalten, „Entpackte Erweiterung laden“, den Ordner `iserv-helfer` wählen, Kürzelliste hineinziehen. Für Stundenplan und Kalender auf der Startseite zusätzlich unter „Details“ **„Zugriff auf Datei-URLs zulassen“**.
 7. **Stundenplan:** auf der Startseite unter „Stundenplan“ deinen persönlichen iCal-Link aus WebUntis (o. Ä.) eintragen oder eine `.ics`-Datei hineinziehen. Der Link enthält einen persönlichen Schlüssel: Er bleibt nur in deinem Browser, gib ihn nie an Claude oder andere weiter.
 8. **Schulkalender:** „IServ verbinden“ oder einen Kalender-Link (`.ics`) ergänzen. Ein Filter zeigt nur Termine, die deine Jahrgänge, Klassen und Fächer betreffen.
 
@@ -74,7 +74,7 @@ Was in Dateien steht, wandert mit dem Datenordner auf andere PCs. Datenordner-Fr
 | Bewerten | beobachtung-dokumentieren | Live-Raster auf der Startseite oder „Notiz zu D04: …“ |
 | Berichten | zeugnis-vorbereiten | „Notenvorschläge und Tischvorlage für die Zeugniskonferenz“ |
 | Berichten | elterngespraech-vorbereiten | „Bereite das Elterngespräch zu D12 vor“ |
-| Kommunikation | postfach-assistent | Mails per IServ-Helfer: „Sortiere und entwirf Antworten“ |
+| Kommunikation | postfach-assistent | Mails per Schulassistenz-Helfer: „Sortiere und entwirf Antworten“ |
 | Verwaltung | verwaltungsassistent | Fehlzeiten-Export: „Wer braucht eine Erinnerung?“ |
 | Selbstmanagement | wochenplaner | Startseite „Woche planen“ |
 
@@ -91,7 +91,7 @@ Die Knöpfe der Startseite schicken diese Aufträge mit Platzhaltern an Claude. 
 
 **Skills:** kommen über den Marketplace von selbst (siehe Abschnitt 2). Falls Claude eine neue Fassung nicht sofort zeigt: beim Marketplace schulassistenz auf „Aktualisieren“ (Update) klicken.
 
-**Startseite, IServ-Helfer, Pseudonymisierer (Windows):** Im Datenordner liegt `werkzeuge\updater\`. Einmal je PC `einrichten.cmd` doppelklicken. Danach holt der PC bei jeder Anmeldung und alle zwei Stunden die neueste Fassung aus GitHub und ersetzt nur geänderte Dateien. Der IServ-Helfer lädt sich danach selbst neu (offene IServ-Tabs einmal mit F5 neu laden). Dein Profil, deine Akten, Kürzellisten und `meine-einstellungen.js` werden nie ersetzt. Eigene Ausnahmen trägst du in `werkzeuge\updater\nicht-ersetzen.txt` ein (eine Datei je Zeile, z. B. `werkzeuge/abschluss-check/Abschluss-Check.html`). Den Ordner `updater` gibt es auf GitHub unter `updater/`, falls er dir noch fehlt: dann alle Dateien daraus nach `<Datenordner>\werkzeuge\updater\` legen.
+**Startseite, Schulassistenz-Helfer, Pseudonymisierer (Windows):** Im Datenordner liegt `werkzeuge\updater\`. Einmal je PC `einrichten.cmd` doppelklicken. Danach holt der PC bei jeder Anmeldung und alle zwei Stunden die neueste Fassung aus GitHub und ersetzt nur geänderte Dateien. Der Schulassistenz-Helfer lädt sich danach selbst neu (offene IServ-Tabs einmal mit F5 neu laden). Dein Profil, deine Akten, Kürzellisten und `meine-einstellungen.js` werden nie ersetzt. Eigene Ausnahmen trägst du in `werkzeuge\updater\nicht-ersetzen.txt` ein (eine Datei je Zeile, z. B. `werkzeuge/abschluss-check/Abschluss-Check.html`). Den Ordner `updater` gibt es auf GitHub unter `updater/`, falls er dir noch fehlt: dann alle Dateien daraus nach `<Datenordner>\werkzeuge\updater\` legen.
 
 Ohne den Updater: Schreibe nach einem Update „Aktualisiere die Werkzeuge im Datenordner“.
 

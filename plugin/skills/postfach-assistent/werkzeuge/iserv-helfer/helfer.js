@@ -1,4 +1,4 @@
-/* IServ-Helfer · Panel auf der Seite (IServ automatisch, andere Seiten über das Symbol) */
+/* Schulassistenz-Helfer · Panel auf der Seite (IServ automatisch, andere Seiten über das Symbol) */
 (function () {
   if (window.__saHelfer) return; window.__saHelfer = true;
   const P = window.SAPseudo;
@@ -188,7 +188,7 @@
       for (const c of el.children) if (!/^(SCRIPT|STYLE|SVG|PATH|NOSCRIPT)$/i.test(c.tagName)) geh(c, tiefe + 1);
     };
     geh(document.body, 0);
-    return "IServ-Helfer Seitenaufbau (ohne Inhalte) · " + location.pathname.replace(/[^/]*@[^/]*/g, "ADRESSE").replace(/\d+/g, "N") + "\n" + zeilen.join("\n");
+    return "Schulassistenz-Helfer Seitenaufbau (ohne Inhalte) · " + location.pathname.replace(/[^/]*@[^/]*/g, "ADRESSE").replace(/\d+/g, "N") + "\n" + zeilen.join("\n");
   }
 
   // ---- zuletzt angeklicktes Textfeld merken (für den Rückweg)
@@ -246,9 +246,9 @@
     .hilfe{background:#f3f6f5;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;line-height:1.45}
     .hilfe div{margin:2px 0} .hilfe b{color:#2f5d50;display:inline-block;min-width:92px}
   </style>
-  <button class="fab" title="IServ-Helfer">✉ An Claude</button>
-  <div class="panel" role="dialog" aria-label="IServ-Helfer">
-    <h2>IServ-Helfer <button class="x" title="Schließen">×</button></h2>
+  <button class="fab" title="Schulassistenz-Helfer">✉ An Claude</button>
+  <div class="panel" role="dialog" aria-label="Schulassistenz-Helfer">
+    <h2>Schulassistenz-Helfer <button class="x" title="Schließen">×</button></h2>
     <div class="tabs"><button data-t="hin" class="an">An Claude</button><button data-t="rueck">Antwort einsetzen</button></div>
     <div data-s="hin">
       <div class="keineListe warn" style="display:none">Noch keine Kürzelliste geladen. Ohne Liste werden nur Mailadressen und Verdachtsstellen ersetzt. <a href="#" class="zuEinst">Kürzelliste laden</a></div>
@@ -312,7 +312,7 @@
     if (!basis) return;
     const text = P.verdachtAnwenden(basis.text, basis.verdacht);
     const m = $(".modus").value;
-    $(".aus").value = AUFTRAG[m] + (m === "frei" ? "\n\n" : "\n\n---\n") + text + (m === "frei" ? "" : "\n---\n[pseudonymisiert mit dem IServ-Helfer]");
+    $(".aus").value = AUFTRAG[m] + (m === "frei" ? "\n\n" : "\n\n---\n") + text + (m === "frei" ? "" : "\n---\n[pseudonymisiert mit dem Schulassistenz-Helfer]");
   }
   function verdachtZeigen() {
     const v = $(".verdacht"); v.innerHTML = "";

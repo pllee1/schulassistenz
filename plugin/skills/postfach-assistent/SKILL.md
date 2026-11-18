@@ -7,17 +7,17 @@ description: "Arbeitet das Postfach einer Lehrkraft ab (schulassistenz): Mails u
 
 Damit das Postfach nicht den Nachmittag frisst: Nachrichten sortieren, sagen, was wirklich erwartet wird, Antworten entwerfen und alles Weitere an die richtigen Stellen geben. Die Lehrkraft liest, ändert und schickt selbst ab.
 
-Erkennbar an Aufträgen, die mit „Postfach-Assistent:“ beginnen (so schickt sie der **IServ-Helfer**), oder an Bitten wie „Hilf mir mit meinen Mails“, „Antwort auf diese Elternmail“, „Was steht in meinem Postfach?“.
+Erkennbar an Aufträgen, die mit „Postfach-Assistent:“ beginnen (so schickt sie der **Schulassistenz-Helfer**), oder an Bitten wie „Hilf mir mit meinen Mails“, „Antwort auf diese Elternmail“, „Was steht in meinem Postfach?“.
 
 ## 0. Vorher
 
 - Profil über **schulprofil** lesen: Kommunikationssystem (z. B. IServ, Outlook, Schul-Messenger), Anrede und Gruß der Lehrkraft, Briefkopf, Erreichbarkeitszeiten (`selbstmanagement` aus dem **wochenplaner**), Lerngruppen, Fächer, Funktionen (für das Filtern von Rundmails), Freigabe der Schulleitung.
 - Ist die Freigabe für Schülerdaten „offen“ oder „nicht erteilt“: Mails ohne Schülerbezug normal bearbeiten; bei Schülerbezug nur zusammenfassen und entwerfen, nichts in die **lernstandsakte** schreiben.
-- Beim ersten Mal: Fehlt der IServ-Helfer, kurz anbieten, ihn einzurichten (Abschnitt 1). Anrede/Gruß erfragen und im Profil unter `kommunikation` merken (nach Bestätigung).
+- Beim ersten Mal: Fehlt der Schulassistenz-Helfer, kurz anbieten, ihn einzurichten (Abschnitt 1). Anrede/Gruß erfragen und im Profil unter `kommunikation` merken (nach Bestätigung).
 
 ## 1. Wie Nachrichten ankommen
 
-1. **IServ-Helfer (empfohlen):** Browser-Erweiterung für Chrome/Edge im Ordner `werkzeuge/iserv-helfer/` dieses Skills (funktioniert per Rechtsklick auch außerhalb von IServ). Sie liest die offene Mail, die Postfach-Liste oder den Messenger-Verlauf (in IServ automatisch, sonst über Rechtsklick oder das Symbol), ersetzt Namen anhand der Kürzelliste, zeigt Verdachtsstellen und gibt nur das Ergebnis an Claude. Einrichtung: siehe `Anleitung.md` im Ordner. Beim Einrichten über **schulprofil** nach `<Datenordner>/werkzeuge/iserv-helfer/` kopieren.
+1. **Schulassistenz-Helfer (empfohlen):** Browser-Erweiterung für Chrome/Edge im Ordner `werkzeuge/iserv-helfer/` dieses Skills (funktioniert per Rechtsklick auch außerhalb von IServ). Sie liest die offene Mail, die Postfach-Liste oder den Messenger-Verlauf (in IServ automatisch, sonst über Rechtsklick oder das Symbol), ersetzt Namen anhand der Kürzelliste, zeigt Verdachtsstellen und gibt nur das Ergebnis an Claude. Einrichtung: siehe `Anleitung.md` im Ordner. Beim Einrichten über **schulprofil** nach `<Datenordner>/werkzeuge/iserv-helfer/` kopieren.
 2. **Einfügen von Hand:** Text über den **Pseudonymisierer** (Reiter 2, Textfeld) laufen lassen und einfügen.
 3. **Mail-Connector** (z. B. Outlook, Gmail) nur, wenn die Schule diesen Dienst nutzt und die Schulleitung die Verarbeitung erlaubt hat (Profil). Für IServ gibt es keinen.
 
@@ -59,7 +59,7 @@ Nach der Übersicht oder Antwort anbieten, nichts ungefragt anlegen:
 
 ## 4a. Mails analysieren und in den Wochenplaner eintragen
 
-Auftrag z. B. „Postfach-Assistent: Aufgaben und Termine für den Wochenplaner“ (Modus im IServ-Helfer) oder „Trag das in meinen Wochenplan ein“. Geht mit einer Mail, mehreren markierten Mails oder der Postfach-Übersicht.
+Auftrag z. B. „Postfach-Assistent: Aufgaben und Termine für den Wochenplaner“ (Modus im Schulassistenz-Helfer) oder „Trag das in meinen Wochenplan ein“. Geht mit einer Mail, mehreren markierten Mails oder der Postfach-Übersicht.
 
 1. **Analysieren:** Je Mail alles herausziehen, was Zeit kostet oder an ein Datum gebunden ist:
    - **Termine** (fester Zeitpunkt: Konferenz, Elternabend, Gespräch, Ausflug) mit Datum, Uhrzeit, Ort, Dauer.

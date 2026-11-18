@@ -436,12 +436,12 @@ const sdExtern=()=>!!(E.schuelerdaten&&String(E.schuelerdaten).trim());
 const sdRoot=()=>sdExtern()?sdHandle:ordnerHandle;
 const SD_ORDNER=["lerngruppen","kuerzellisten","ausgaben"];
 const sdPfad=rel=>sdDav()?"IServ › Eigene › "+decodeURIComponent(String(E.schuelerdaten).replace(/^https:\/\/[^/]+\/webdav\/Files\/?/i,"")).replace(/\/+$/,"").split("/").concat(rel.replace(/\/$/,"").split("/")).filter(Boolean).join(" › "):sdExtern()?String(E.schuelerdaten).replace(/[\\/]+$/,"")+"\\"+rel.replace(/\//g,"\\").replace(/\\$/,""):pfad(rel);
-/* IServ „Eigene“ über den IServ-Helfer (WebDAV), wenn schuelerdaten eine Adresse https://…/webdav/Files/… ist.
+/* IServ „Eigene“ über den Schulassistenz-Helfer (WebDAV), wenn schuelerdaten eine Adresse https://…/webdav/Files/… ist.
    Chrome öffnet Netzlaufwerke nicht; die Ordner-Objekte unten verhalten sich wie Ordner des Browsers. */
 const sdDav=()=>/^https:\/\/[^/]+\/webdav\/Files(\/|$)/i.test(String(E.schuelerdaten||"").trim());
 let davFehler=null;
 function davRuf(op,url,daten){return new Promise((ok,nein)=>{const id=Math.random().toString(36).slice(2);
-  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der IServ-Helfer antwortet nicht. Ist Version 0.4 geladen? Seite neu laden (F5)."))},30000);
+  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.4 geladen? Seite neu laden (F5)."))},30000);
   function h(e){if(e.source!==window||!e.data||e.data.sa!=="dav-antwort"||e.data.id!==id)return;clearTimeout(t);window.removeEventListener("message",h);
     if(e.data.ok)ok(e.data);else{const f=new Error(e.data.fehler||"IServ-Fehler");f.anmelden=!!e.data.anmelden;f.fehlt=!!e.data.fehlt;f.name=e.data.fehlt?"NotFoundError":"DavError";nein(f)}}
   window.addEventListener("message",h);window.postMessage({sa:"dav",op,url,daten,id},"*")})}
@@ -610,6 +610,7 @@ function zeigeLokal(k){
   if(k.ziel==="aktion:neue-lerngruppe"){merke(k);setTimeout(render,50);return zeigeNeueGruppe()}
   if(k.ziel==="aktion:notenuebersicht"){merke(k);setTimeout(render,50);if(ordner.zustand!=="an"||!ordner.gruppen.length){const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Notenübersicht</h4><p>Dafür braucht die Seite deine Akten. Bitte rechts unter „Lerngruppen und Akten“ den Ordner verbinden bzw. „Akten anzeigen“ klicken.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}return zeigeNoten()}
   if(k.ziel==="aktion:materiallager"){merke(k);setTimeout(render,50);return zeigeMaterial()}
+  if(k.ziel==="aktion:fehlzeiten"){merke(k);setTimeout(render,50);if(window.saFehlzeiten)return window.saFehlzeiten.zeigen();const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Fehlzeiten-Ampel</h4><p>Es fehlt die Datei werkzeuge/startseite/fehlzeiten.js. Nach dem nächsten Update ist sie da.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
   if(k.ziel==="aktion:sicherung"){merke(k);setTimeout(render,50);if(window.saSicherung)return window.saSicherung.zeigen();const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Schülerdaten sichern</h4><p>Es fehlt die Datei werkzeuge/startseite/sicherung.js. Nach dem nächsten Update ist sie da (oder „jetzt-aktualisieren“ im Ordner werkzeuge/updater starten).</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
   const slot=$("#panel-slot");merke(k);setTimeout(render,50);
   let body;
@@ -740,7 +741,7 @@ async function ordnerVerbinden(){
   renderOrdner();renderStatus();
 }
 function renderOrdner(){
-  setTimeout(renderEinrichtung,0);if(window.saSicherung)setTimeout(window.saSicherung.erinnern,0);
+  setTimeout(renderEinrichtung,0);if(window.saSicherung)setTimeout(window.saSicherung.erinnern,0);if(window.saFehlzeiten)setTimeout(window.saFehlzeiten.aktualisieren,0);
   const namen=[...new Set([...(E.lerngruppen||[]),...ordner.gruppen.map(g=>g.id)])];
   $("#gruppen-liste").innerHTML=namen.map(n=>`<option value="${esc(n)}">`).join("");
   liveLink();
@@ -749,7 +750,7 @@ function renderOrdner(){
   if(ordner.zustand==="an"&&sdExtern()&&sdZustand!=="an"){
     namen.forEach(n=>{const d=document.createElement("div");d.className="group";d.style.cursor="default";d.innerHTML=`<b>${esc(n)}</b>`;box.appendChild(d)});
     if(sdDav()){
-      if(sdZustand==="helfer")note.textContent="Akten und Kürzellisten liegen auf IServ. Dafür braucht die Seite den IServ-Helfer ab Version 0.4 (Einrichtung oben).";
+      if(sdZustand==="helfer")note.textContent="Akten und Kürzellisten liegen auf IServ. Dafür braucht die Seite den Schulassistenz-Helfer ab Version 0.4 (Einrichtung oben).";
       else if(sdZustand==="anmelden"){note.textContent="Akten und Kürzellisten liegen auf IServ. Der Browser braucht einmal je Sitzung deine IServ-Anmeldung für den Dateizugriff.";knopf("Bei IServ anmelden",sdVerbinden,"primary")}
       else note.textContent="IServ-Ordner nicht erreichbar"+(davFehler?": "+davFehler:".");
       knopf("Erneut versuchen",sdOeffnen,sdZustand==="anmelden"?"ghost":"primary");return}
@@ -1017,7 +1018,7 @@ function planUebernehmen(text,quelle){
   renderWoche();stundenplanSpeichern(false);return ev.length;
 }
 (function planAusCache(){const c=store.get("plan-cache",null);if(c&&Array.isArray(c.events))plan={events:c.events.map(e=>({...e,start:new Date(e.start),ende:e.ende?new Date(e.ende):null})),stand:c.stand,quelle:c.quelle}})();
-/* Abruf: zuerst über den IServ-Helfer (Browser-Erweiterung, darf WebUntis abrufen), sonst direkt */
+/* Abruf: zuerst über den Schulassistenz-Helfer (Browser-Erweiterung, darf WebUntis abrufen), sonst direkt */
 const helferDa=()=>document.documentElement.hasAttribute("data-sa-helfer");
 function ueberHelfer(url){
   return new Promise((ok,nein)=>{
@@ -1034,7 +1035,7 @@ async function planAbrufen(still){
     let text;
     if(helferDa())text=await ueberHelfer(url);
     else{const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw new Error("Antwort "+r.status);text=await r.text()}
-    planUebernehmen(text,helferDa()?"WebUntis über den IServ-Helfer":"WebUntis-Abo");store.set("ical-ok",true);return true;
+    planUebernehmen(text,helferDa()?"WebUntis über den Schulassistenz-Helfer":"WebUntis-Abo");store.set("ical-ok",true);return true;
   }catch(e){store.set("ical-ok",false);if(!still)throw e;return false}
 }
 window.addEventListener("message",e=>{if(e.source===window&&e.data&&e.data.sa==="helfer-da"&&store.get("ical","")&&!plan.__frisch){plan.__frisch=true;planAbrufen(true)}if(e.source===window&&e.data&&e.data.sa==="helfer-da"&&!kalNetz.__frisch){kalNetz.__frisch=true;if(kalQuellen().some(q=>q.url))kalAlleAbrufen()}});
@@ -1123,8 +1124,8 @@ function zeigePlanEinrichten(){
     <p>Füge den Kalender-Link (iCal) aus WebUntis ein: in WebUntis oben rechts auf dein Profil, dann „Freigaben“ bzw. „Abonnement“. Der Link bleibt nur in diesem Browser auf diesem Rechner gespeichert.</p>
     <div class="fields"><label style="flex:1 1 100%">iCal-Link<input id="ical" type="url" class="mono" placeholder="https://…webuntis.com/WebUntis/ical_export?…" value="${esc(url)}"></label></div>
     <div class="actions"><button class="btn primary" id="ical-go">Speichern und laden</button>${url?`<a class="btn ghost" id="ical-dl" href="${esc(url)}" target="_blank" rel="noopener">Datei herunterladen</a><button class="btn ghost" id="ical-weg">Link entfernen</button>`:""}<span class="toast" id="ical-toast" role="status"></span></div>
-    <p class="note">${helferDa()?"IServ-Helfer erkannt: Er holt den Plan bei jedem Öffnen der Seite frisch.":`IServ-Helfer auf dieser Seite nicht erkannt. So holt er den Plan: 1. In der Adresszeile ${/Edg\//.test(navigator.userAgent)?"edge://extensions":"chrome://extensions"} öffnen. 2. Beim IServ-Helfer auf „Neu laden“ (Kreispfeil) klicken, Version 0.3.1 oder neuer. 3. „Details“ öffnen und „Zugriff auf Datei-URLs zulassen“ einschalten. 4. Diese Seite mit F5 neu laden.`}</p>
-    <div class="guard" id="ical-guard" ${ok===false?"":"hidden"}>Der Plan ließ sich nicht abrufen. ${helferDa()?"Prüfe den Link (in WebUntis neu kopieren).":"Ohne IServ-Helfer darf der Browser WebUntis nicht direkt abfragen. Entweder den Helfer einrichten (siehe oben) oder „Datei herunterladen“ klicken und die .ics-Datei hier unten hineinziehen."}</div>
+    <p class="note">${helferDa()?"Schulassistenz-Helfer erkannt: Er holt den Plan bei jedem Öffnen der Seite frisch.":`Schulassistenz-Helfer auf dieser Seite nicht erkannt. So holt er den Plan: 1. In der Adresszeile ${/Edg\//.test(navigator.userAgent)?"edge://extensions":"chrome://extensions"} öffnen. 2. Beim Schulassistenz-Helfer auf „Neu laden“ (Kreispfeil) klicken, Version 0.3.1 oder neuer. 3. „Details“ öffnen und „Zugriff auf Datei-URLs zulassen“ einschalten. 4. Diese Seite mit F5 neu laden.`}</p>
+    <div class="guard" id="ical-guard" ${ok===false?"":"hidden"}>Der Plan ließ sich nicht abrufen. ${helferDa()?"Prüfe den Link (in WebUntis neu kopieren).":"Ohne Schulassistenz-Helfer darf der Browser WebUntis nicht direkt abfragen. Entweder den Helfer einrichten (siehe oben) oder „Datei herunterladen“ klicken und die .ics-Datei hier unten hineinziehen."}</div>
     <div class="drop" id="ical-drop">.ics-Datei hier ablegen oder <label style="color:var(--accent);cursor:pointer;text-decoration:underline">auswählen<input type="file" id="ical-file" accept=".ics,text/calendar" hidden></label></div>
     <div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;
   const toast=$("#ical-toast"),guard=$("#ical-guard");
@@ -1533,7 +1534,7 @@ function zeitraumSetzen(u,von,bis){const dec=v=>{try{return decodeURIComponent(v
   return u.replace(/([?&](?:start|from|begin)=)([^&]*)/i,(m,p,v)=>p+fmtWie(dec(v),von)).replace(/([?&](?:end|to|until)=)([^&]*)/i,(m,p,v)=>p+fmtWie(dec(v),bis)).replace(/([?&])_=\d+(&|$)/,"$1")}
 const ohneZeitraum=u=>u.replace(/([?&](?:start|from|begin|end|to|until|_)=)[^&]*/gi,"$1");
 async function iservWebHolen(q){
-  if(!helferDa())throw new Error("Dafür braucht es den IServ-Helfer (Version 0.3.1 oder neuer), siehe „Stundenplan“.");
+  if(!helferDa())throw new Error("Dafür braucht es den Schulassistenz-Helfer (Version 0.3.1 oder neuer), siehe „Stundenplan“.");
   const b=iservBasis(q.url);const tag=d=>isoTag(d);
   const von=new Date();von.setDate(von.getDate()-60);von.setHours(0,0,0,0);const bis=new Date();bis.setDate(bis.getDate()+240);bis.setHours(0,0,0,0);
   const ad=await helferAdressen();const gelernt=ad&&iservBasis(ad.host)===b;
@@ -1552,7 +1553,7 @@ async function iservWebHolen(q){
     for(const p of plugins)await holen(`${b}/iserv/calendar/feed/plugin?plugin=${encodeURIComponent(p.id)}&start=${tag(von)}T00:00:00&end=${tag(bis)}T00:00:00`,p.name);
   }
   if(!ev.length&&fehler.length){
-    if(!gelernt&&fehler.some(e=>/404|405|unbekannten|lesbares/.test(e.message)))throw new Error("Euer IServ lädt den Kalender über eine andere Adresse. So lernt der Helfer sie: 1. In edge://extensions den IServ-Helfer neu laden (Version 0.3.1). 2. In IServ den Kalender öffnen und warten, bis Termine zu sehen sind. 3. Hier noch einmal auf „IServ verbinden“ klicken.");
+    if(!gelernt&&fehler.some(e=>/404|405|unbekannten|lesbares/.test(e.message)))throw new Error("Euer IServ lädt den Kalender über eine andere Adresse. So lernt der Helfer sie: 1. In edge://extensions den Schulassistenz-Helfer neu laden (Version 0.3.1). 2. In IServ den Kalender öffnen und warten, bis Termine zu sehen sind. 3. Hier noch einmal auf „IServ verbinden“ klicken.");
     throw fehler[0];
   }
   const s=new Set();return ev.filter(e=>{const k=e.kal+"|"+e.titel+"|"+(+e.start);if(s.has(k))return false;s.add(k);return true}).sort((a,b)=>a.start-b.start);
@@ -1660,19 +1661,19 @@ function einrPunkte(){
       hilfe:ordner.zustand==="an"?"Akten, Aufgaben und Kürzellisten werden gelesen.":ordner.zustand==="erlauben"?"Der Browser fragt nach dem Zugriff, bitte erlauben.":"Wähle den Ordner, in dem diese Seite liegt (z. B. …\\schulassistenz). Das ist auf jedem PC und in jedem Browser einmal nötig.",
       knopf:ordner.zustand==="an"||!kannOrdner?null:["Datenordner verbinden",()=>ordner.zustand==="erlauben"?ordnerStart(true):ordnerVerbinden()]},
     ...(sdExtern()?[{id:"schuelerdaten",pflicht:true,ok:sdZustand==="an",titel:"Schülerdaten-Ordner verbunden",
-      hilfe:sdZustand==="an"?`Akten und Kürzellisten werden aus ${sdPfad("")} gelesen.`:sdDav()?(sdZustand==="helfer"?"Braucht den IServ-Helfer ab Version 0.4 (unten).":sdZustand==="anmelden"?"Einmal je Browser-Sitzung bei IServ anmelden, dann „Erneut versuchen“.":"IServ nicht erreichbar"+(davFehler?": "+davFehler:"")+"."):`Akten und Kürzellisten liegen in ${E.schuelerdaten}. Zu Hause muss dafür das IServ-Laufwerk im Explorer verbunden sein (Anleitung der Startseite, Abschnitt „Schülerdaten auf IServ“).`,
+      hilfe:sdZustand==="an"?`Akten und Kürzellisten werden aus ${sdPfad("")} gelesen.`:sdDav()?(sdZustand==="helfer"?"Braucht den Schulassistenz-Helfer ab Version 0.4 (unten).":sdZustand==="anmelden"?"Einmal je Browser-Sitzung bei IServ anmelden, dann „Erneut versuchen“.":"IServ nicht erreichbar"+(davFehler?": "+davFehler:"")+"."):`Akten und Kürzellisten liegen in ${E.schuelerdaten}. Zu Hause muss dafür das IServ-Laufwerk im Explorer verbunden sein (Anleitung der Startseite, Abschnitt „Schülerdaten auf IServ“).`,
       knopf:sdZustand==="an"||ordner.zustand!=="an"?null:sdDav()?[sdZustand==="anmelden"?"Bei IServ anmelden":"Erneut versuchen",()=>sdZustand==="anmelden"?sdVerbinden():sdOeffnen()]:[sdZustand==="erlauben"?"Schülerdaten öffnen":"Schülerdaten-Ordner verbinden",()=>sdZustand==="erlauben"?sdOeffnen():sdVerbinden()]}]:[]),
     {id:"profil",pflicht:true,ok:!!(ordner.profil&&ordner.profil.schule),titel:"Schulprofil",
       hilfe:ordner.profil&&ordner.profil.schule?`${ordner.profil.schule}`:ordner.zustand==="an"?"In profil/profil.md fehlt die Schule. Sag Claude „Schulprofil einrichten“.":"Wird geprüft, sobald der Datenordner verbunden ist."},
     {id:"listen",pflicht:true,ok:ordner.zustand==="an"&&gr.length>0&&!ohne.length,titel:"Kürzellisten mit Namen",
       hilfe:ordner.zustand!=="an"?"Wird geprüft, sobald der Datenordner verbunden ist.":!gr.length?"Noch keine Lerngruppen. Rechts „Neue Lerngruppe“ anlegen.":ohne.length?`Ohne Namen: ${ohne.join(", ")}. Trag sie in kuerzellisten/ ein. Die Listen bleiben auf deinen Rechnern und gehen nie an Claude.`:`Alle ${gr.length} Lerngruppen haben Namen. Stehen Vor- und Nachname falsch herum, im Live-Raster „Vor-/Nachname tauschen“ klicken (gilt nur für diesen Browser).`},
-    {id:"helfer",pflicht:false,ok:helferDa(),titel:"IServ-Helfer (Browser-Erweiterung)",
-      hilfe:helferDa()?"Erkannt. Er holt Stundenplan und IServ-Kalender und hilft im Postfach.":`Nicht erkannt. 1. ${ext} öffnen, „Entwicklermodus“ einschalten. 2. „Entpackte Erweiterung laden“ und den Ordner werkzeuge\\iserv-helfer im Datenordner wählen. 3. Beim Helfer „Details“ öffnen und „Zugriff auf Datei-URLs zulassen“ einschalten. 4. Diese Seite mit F5 neu laden.`},
+    {id:"helfer",pflicht:false,ok:helferDa(),titel:"Schulassistenz-Helfer (Browser-Erweiterung)",
+      hilfe:helferDa()?"Erkannt. Er holt Stundenplan, IServ-Kalender und Fehlzeiten aus WebUntis und hilft im Postfach.":`Nicht erkannt. 1. ${ext} öffnen, „Entwicklermodus“ einschalten. 2. „Entpackte Erweiterung laden“ und den Ordner werkzeuge\\iserv-helfer im Datenordner wählen. 3. Beim Helfer „Details“ öffnen und „Zugriff auf Datei-URLs zulassen“ einschalten. 4. Diese Seite mit F5 neu laden.`},
     {id:"plan",pflicht:false,ok:plan.events.length>0,titel:"Stundenplan aus WebUntis",
       hilfe:plan.events.length?`${plan.quelle}.`:"Den persönlichen iCal-Link aus WebUntis einfügen. Er wird nur in diesem Browser gespeichert und muss auf jedem PC neu eingetragen werden.",
       knopf:plan.events.length?null:["Stundenplan",()=>{zeigePlanEinrichten();$("#panel-slot").scrollIntoView({block:"start",behavior:"smooth"})}]},
     {id:"iserv",pflicht:false,ok:iservOk,titel:"IServ-Kalender verbunden",
-      hilfe:iservOk?"Termine aus IServ werden geladen und gefiltert.":!helferDa()?"Braucht zuerst den IServ-Helfer.":iserv.length?"Verbindung eingetragen, aber noch keine Termine geladen. In IServ angemeldet? Einmal den IServ-Kalender öffnen, dann hier „Kalender“ → „Kalender hinzufügen“.":"Im Kalender auf „Kalender hinzufügen“ → „IServ verbinden“. Die Verbindung gilt nur für diesen Browser.",
+      hilfe:iservOk?"Termine aus IServ werden geladen und gefiltert.":!helferDa()?"Braucht zuerst den Schulassistenz-Helfer.":iserv.length?"Verbindung eingetragen, aber noch keine Termine geladen. In IServ angemeldet? Einmal den IServ-Kalender öffnen, dann hier „Kalender“ → „Kalender hinzufügen“.":"Im Kalender auf „Kalender hinzufügen“ → „IServ verbinden“. Die Verbindung gilt nur für diesen Browser.",
       knopf:iservOk?null:["Kalender öffnen",()=>{kalVerwalten=true;zeigeKalender(true)}]},
   ];
 }
@@ -1842,9 +1843,9 @@ function renderKalFilter(){
 function renderKalQuellen(){
   const box=$("#k-verwalten");const liste=kalListe(),fehler=store.get("kal-fehler",{}),cache=store.get("kal-cache",{});
   box.innerHTML=`<div class="panel"><h4>Weitere Kalender</h4>
-    <p class="note">Zum Beispiel den IServ-Kalender, den Schulkalender oder Prüfungstermine. Im Kalender-Programm den Abo- oder Export-Link (iCal) kopieren und hier einfügen. Bei IServ geht auch die CalDAV-Adresse (IServ → Kalender → Einstellungen → Kalender verwalten), etwa für „Öffentlich“, „Lehrer“ oder den Klausurplan; der IServ-Helfer holt sie über deine Anmeldung in diesem Browser. Solche Schulkalender werden automatisch gefiltert (Knopf „Filter“). Ein Link mit Schlüssel bleibt nur in diesem Browser. Klappt der Abruf nicht, die .ics-Datei herunterladen und unten hineinziehen; sie wird dann in planung/kalender/ im Datenordner abgelegt.</p>
+    <p class="note">Zum Beispiel den IServ-Kalender, den Schulkalender oder Prüfungstermine. Im Kalender-Programm den Abo- oder Export-Link (iCal) kopieren und hier einfügen. Bei IServ geht auch die CalDAV-Adresse (IServ → Kalender → Einstellungen → Kalender verwalten), etwa für „Öffentlich“, „Lehrer“ oder den Klausurplan; der Schulassistenz-Helfer holt sie über deine Anmeldung in diesem Browser. Solche Schulkalender werden automatisch gefiltert (Knopf „Filter“). Ein Link mit Schlüssel bleibt nur in diesem Browser. Klappt der Abruf nicht, die .ics-Datei herunterladen und unten hineinziehen; sie wird dann in planung/kalender/ im Datenordner abgelegt.</p>
     ${liste.length?`<div class="k-quellen">${liste.map(k=>`<div class="k-quelle" style="--k:${k.farbe}"><b>${esc(k.name)}</b><small>${k.iserv?"IServ über deine Anmeldung":k.datei?`Datei planung/kalender/${esc(k.datei)}`:k.url?"Link":"Datei (nur dieser Browser)"} · ${k.events.length} Termine${cache[k.quelleId||k.id]&&cache[k.quelleId||k.id].stand?" · Stand "+new Date(cache[k.quelleId||k.id].stand).toLocaleString("de-DE",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):""}${fehler[k.quelleId||k.id]?` · <span class="warn">Abruf fehlgeschlagen: ${esc(fehler[k.quelleId||k.id])}</span>`:""}</small><span><button class="btn ghost small" data-filt="${esc(k.id)}" aria-pressed="${kalWirdGefiltert(k)}">${kalWirdGefiltert(k)?"Filter an":"Filter aus"}</button>${k.url?`<button class="btn ghost small" data-neu="${esc(k.quelleId||k.id)}">Neu laden</button>`:""}<button class="btn ghost small" data-weg="${esc(k.quelleId||k.id)}">${k.iserv?"IServ trennen":"Entfernen"}</button></span></div>`).join("")}</div>`:""}
-    ${kalQuellen().some(q=>q.typ==="iserv-web")?"":`<div class="k-iserv"><b>IServ-Kalender über deine Anmeldung</b><p class="note">Holt alle Kalender, die du in IServ eingeblendet hast (z. B. Öffentlich, Lehrer, Klausurplan, Teams), so wie du sie in IServ siehst. Du musst dafür in diesem Browser bei IServ angemeldet sein; der IServ-Helfer ruft die Termine bei jedem Öffnen der Startseite neu ab. Danach kannst du einzelne Kalender oben ein- und ausblenden.</p>
+    ${kalQuellen().some(q=>q.typ==="iserv-web")?"":`<div class="k-iserv"><b>IServ-Kalender über deine Anmeldung</b><p class="note">Holt alle Kalender, die du in IServ eingeblendet hast (z. B. Öffentlich, Lehrer, Klausurplan, Teams), so wie du sie in IServ siehst. Du musst dafür in diesem Browser bei IServ angemeldet sein; der Schulassistenz-Helfer ruft die Termine bei jedem Öffnen der Startseite neu ab. Danach kannst du einzelne Kalender oben ein- und ausblenden.</p>
       <div class="fields"><label style="flex:2 1 260px">IServ-Adresse deiner Schule<input id="kq-iserv" placeholder="https://meine-schule.de" value="${esc(iservBasis((kalQuellen().find(q=>/\/(caldav|iserv)\//.test(q.url||""))||{}).url||""))}"></label></div>
       <div class="actions"><button class="btn primary small" id="kq-iserv-go">IServ verbinden</button><span class="toast" id="kq-iserv-toast" role="status"></span></div></div>`}
     <div class="fields"><label style="flex:1 1 140px">Name<input id="kq-name" placeholder="IServ-Kalender" autocomplete="off"></label><label style="flex:3 1 280px">iCal-Link<input id="kq-url" type="url" class="mono" placeholder="https://…" autocomplete="off"></label></div>
@@ -1867,7 +1868,7 @@ function renderKalQuellen(){
     try{const n=await kalAbrufen(q);const f=store.get("kal-fehler",{});delete f[q.id];store.set("kal-fehler",f);toast.textContent=`${n} Termine geladen.`}
     catch(e){const f=store.get("kal-fehler",{});f[q.id]=(e&&e.message)||"Abruf fehlgeschlagen";store.set("kal-fehler",f)}
     renderKalender();renderWoche();
-    const f=store.get("kal-fehler",{});if(f[q.id]){const g=$("#kq-guard");g.hidden=false;g.textContent=`Gespeichert, aber der Abruf klappte nicht (${f[q.id]}). ${/\/caldav\//.test(q.url)?"Bei IServ klappt es meist besser mit „IServ verbinden“ oben; die CalDAV-Adresse kannst du dann entfernen.":helferDa()?"Ist der Link richtig kopiert? Kalender außer WebUntis und IServ darf der Helfer nicht abrufen. Sonst die .ics-Datei herunterladen und hier hineinziehen.":"Ohne IServ-Helfer darf der Browser den Kalender meist nicht direkt abfragen. Dann die .ics-Datei herunterladen und hier hineinziehen."}`}
+    const f=store.get("kal-fehler",{});if(f[q.id]){const g=$("#kq-guard");g.hidden=false;g.textContent=`Gespeichert, aber der Abruf klappte nicht (${f[q.id]}). ${/\/caldav\//.test(q.url)?"Bei IServ klappt es meist besser mit „IServ verbinden“ oben; die CalDAV-Adresse kannst du dann entfernen.":helferDa()?"Ist der Link richtig kopiert? Kalender außer WebUntis und IServ darf der Helfer nicht abrufen. Sonst die .ics-Datei herunterladen und hier hineinziehen.":"Ohne Schulassistenz-Helfer darf der Browser den Kalender meist nicht direkt abfragen. Dann die .ics-Datei herunterladen und hier hineinziehen."}`}
   });
   box.querySelectorAll("[data-filt]").forEach(b=>b.addEventListener("click",()=>{const k=liste.find(x=>x.id===b.dataset.filt);const m=kalFiltern();m[k.id]=!kalWirdGefiltert(k);store.set("kal-filtern",m);renderKalender();renderWoche()}));
   box.querySelectorAll("[data-neu]").forEach(b=>b.addEventListener("click",async()=>{const q=kalQuellen().find(x=>x.id===b.dataset.neu);if(!q)return;b.disabled=true;
@@ -2472,7 +2473,7 @@ const MAT_AUS_GENAU=["schulassistenz","schulassistenz-plugin","noten","protokoll
 const MAT_AUS_TEIL=["antrag","anträge","antraege","elternbrief","notenliste","notenspiegel","kürzelliste","kuerzelliste","klassenliste","schülerliste","schuelerliste","zeugnis","gutachten","attest","entschuldigung","korrigiert"];
 const MAT_SKIP_DATEI=/^(~\$|\.|desktop\.ini$|thumbs\.db$)|\.(lnk|tmp|ini|db|ds_store)$/i;
 let mat={handle:null,zustand:"aus",index:null,schul:null,register:[],laeuft:false};
-/* Gruppenordner der Schule (IServ „Groups“) über den IServ-Helfer ab 0.5, nur lesen.
+/* Gruppenordner der Schule (IServ „Groups“) über den Schulassistenz-Helfer ab 0.5, nur lesen.
    meine-einstellungen.js: schulordner: { web: "https://<server>/webdav/Groups", laufwerk: "S:\\", gruppen: ["Fachgruppe-…"] } */
 const SCH=Object.assign({web:"",laufwerk:"",gruppen:[]},E.schulordner||{});
 SCH.web=String(SCH.web||"").trim().replace(/\/+$/,"");
@@ -2676,7 +2677,7 @@ async function zeigeMaterial(){
   ["#m-q","#m-fach","#m-jg","#m-art","#m-wissen","#m-quelle"].forEach(s=>{if($(s))$(s).addEventListener(s==="#m-q"?"input":"change",zeig)});
   if($("#m-schul"))$("#m-schul").addEventListener("click",async()=>{
     if(mat.laeuft)return;
-    if(!helferDa()||!schulHelferOk()){alertLeise("Für den Schulserver braucht die Startseite den IServ-Helfer ab Version 0.5. In chrome://extensions beim IServ-Helfer auf „Aktualisieren“ (↻) klicken, dann diese Seite neu laden (F5).");return}
+    if(!helferDa()||!schulHelferOk()){alertLeise("Für den Schulserver braucht die Startseite den Schulassistenz-Helfer ab Version 0.5. In chrome://extensions beim Schulassistenz-Helfer auf „Aktualisieren“ (↻) klicken, dann diese Seite neu laden (F5).");return}
     mat.laeuft=true;$("#m-schul").disabled=true;$("#m-toast").textContent="Frage Gruppenordner ab …";
     try{const alle=await schulGruppenListe();const gr=schulAuswahl(alle).filter(g=>alle.includes(g));
       if(!gr.length){alertLeise("Kein Gruppenordner ausgewählt. „Gruppenordner wählen“.");return}
@@ -2690,7 +2691,7 @@ async function zeigeMaterial(){
   });
   if($("#m-gwahl"))$("#m-gwahl").addEventListener("click",async()=>{
     const box=$("#m-gruppen");box.hidden=false;
-    if(!helferDa()||!schulHelferOk()){box.textContent="Dafür braucht die Startseite den IServ-Helfer ab Version 0.5.";return}
+    if(!helferDa()||!schulHelferOk()){box.textContent="Dafür braucht die Startseite den Schulassistenz-Helfer ab Version 0.5.";return}
     if((SCH.gruppen||[]).filter(Boolean).length){box.innerHTML=`Die Gruppenordner stehen fest in meine-einstellungen.js (schulordner.gruppen): ${esc(SCH.gruppen.join(", "))}.`;return}
     box.textContent="Frage Gruppenordner ab …";
     let alle;try{alle=await schulGruppenListe()}catch(err){if(err&&err.anmelden){box.textContent="Bitte zuerst bei IServ anmelden (neuer Tab), dann noch einmal.";try{await davRuf("anmelden",SCH.web+"/")}catch{}}else box.textContent="Schulserver nicht lesbar: "+(err&&err.message||err);return}
@@ -2737,5 +2738,6 @@ setInterval(()=>{if(document.visibilityState==="visible")allesAktualisieren()},3
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-zuletztAktualisiert>10*60*1000)allesAktualisieren()});
 </script>
 <script src="werkzeuge/startseite/sicherung.js"></script>
+<script src="werkzeuge/startseite/fehlzeiten.js"></script>
 </body>
 </html>

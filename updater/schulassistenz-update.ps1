@@ -1,6 +1,6 @@
 ﻿<#
   schulassistenz-Update
-  Holt die neueste Fassung von Startseite, IServ-Helfer und Werkzeugen aus GitHub
+  Holt die neueste Fassung von Startseite, Schulassistenz-Helfer und Werkzeugen aus GitHub
   und ersetzt im Datenordner nur Dateien, die sich geändert haben.
   Nie angefasst: meine-einstellungen.js, Profil, Planung, Lerngruppen, Kürzellisten, Ausgaben.
   Es wird nichts hochgeladen, nur heruntergeladen.
@@ -141,7 +141,7 @@ try {
     }
   }
 
-  # manifest.json zuletzt, damit der IServ-Helfer erst neu lädt, wenn alle Dateien da sind
+  # manifest.json zuletzt, damit der Schulassistenz-Helfer erst neu lädt, wenn alle Dateien da sind
   $paare = @($paare | Sort-Object { if ((Split-Path $_[1] -Leaf) -eq 'manifest.json') { 1 } else { 0 } })
   $neu = @(); $fehler = 0
   foreach ($p in $paare) {

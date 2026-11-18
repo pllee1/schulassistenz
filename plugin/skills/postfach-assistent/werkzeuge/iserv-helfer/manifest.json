@@ -1,20 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "IServ-Helfer",
-  "version": "0.5.0",
-  "description": "Holt Mails und Messenger-Nachrichten aus IServ (oder markierten Text von jeder Seite), ersetzt Namen durch Kürzel und gibt sie an Claude. Rückweg: Kürzel wieder zu Namen. Die Kürzelliste bleibt auf diesem Rechner.",
+  "name": "Schulassistenz-Helfer",
+  "version": "0.6.0",
+  "description": "Gibt Mails und Messenger-Nachrichten aus IServ (oder markierten Text von jeder Seite) mit Kürzeln statt Namen an Claude, setzt die Namen in der Antwort wieder ein und holt für die Startseite Stundenplan, Kalender und den Fehlzeiten-Export aus WebUntis. Die Kürzelliste bleibt auf diesem Rechner.",
   "permissions": [
     "storage",
     "contextMenus",
     "activeTab",
     "scripting",
-    "alarms"
+    "alarms",
+    "downloads"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "IServ-Helfer öffnen"
+    "default_title": "Schulassistenz-Helfer öffnen"
   },
   "options_page": "einstellungen.html",
   "icons": {

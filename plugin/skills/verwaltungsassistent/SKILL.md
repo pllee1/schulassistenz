@@ -17,6 +17,10 @@ Bewusst schmal begonnen. Weitere Aufgaben (Bestellungen, Abrechnungen, Aufsichts
 
 ## 1. Exporte ohne Namen hochladen
 
+**Fehlzeiten aus WebUntis (und ähnlichen Exporten) zuerst über die Startseite:** Kachel „Fehlzeiten-Ampel“. Die Startseite liest den Export lokal, ersetzt Namen über die Kürzellisten und speichert nur Kürzel, Datum, Fehlstunden, Fehlminuten, Status (entschuldigt/unentschuldigt/offen, „zählt als entschuldigt“ schon angewandt) und Verspätung ja/nein in `<Schülerdaten>/ausgaben/fehlzeiten/fehlzeiten-<gruppe>.tsv` (Tab-getrennt, erste Zeile Kommentar mit Stand und Quelle). Abwesenheitsgründe, Texte und Schüler-IDs sind dort schon entfernt. Diese Datei direkt einlesen (Abschnitt 2), ohne weitere Pseudonymisierung. Den Schulassistenz-Helfer kann die Startseite den Export auf Knopfdruck aus WebUntis holen lassen. Die Ampel dort rechnet nach denselben Regeln wie Abschnitt 2. Weicht Claudes Ergebnis ab, den Unterschied nennen.
+
+Andere Exporte:
+
 Exporte aus der Schulsoftware enthalten fast immer Namen. Bevor sie hochgeladen werden, ersetzt die Lehrkraft die Namen auf ihrem Gerät durch Kürzel. Der Skill liefert dafür einmalig eine kurze Anleitung:
 
 1. Export als CSV oder Excel öffnen.

@@ -1,4 +1,4 @@
-/* IServ-Helfer · Ersetzungslogik (gleiche Regeln wie der Pseudonymisierer) */
+/* Schulassistenz-Helfer · Ersetzungslogik (gleiche Regeln wie der Pseudonymisierer) */
 (function (g) {
   if (g.SAPseudo) return;
   const B = "(?<![\\p{L}\\p{N}])", E = "(?![\\p{L}\\p{N}])";

@@ -1,6 +1,6 @@
 # schulassistenz-Update (Windows)
 
-Hält Startseite, IServ-Helfer, Pseudonymisierer und Abschluss-Check im Datenordner aktuell. Es lädt nur herunter, es lädt nichts hoch.
+Hält Startseite, Schulassistenz-Helfer, Pseudonymisierer und Abschluss-Check im Datenordner aktuell. Es lädt nur herunter, es lädt nichts hoch.
 
 **Einrichten (einmal je PC):** `einrichten.cmd` doppelklicken. Das legt an:
 - eine Autostart-Verknüpfung „schulassistenz-Update“ (läuft bei jeder Anmeldung unsichtbar),
@@ -21,7 +21,7 @@ werkzeuge/abschluss-check/Abschluss-Check.html
 
 **Protokoll:** `%LOCALAPPDATA%\schulassistenz-update\update.log`
 
-**IServ-Helfer:** prüft alle 30 Minuten und beim Browserstart, ob neue Dateien da sind, und lädt sich dann selbst neu. Offene IServ-Tabs danach einmal mit F5 neu laden.
+**Schulassistenz-Helfer:** prüft alle 30 Minuten und beim Browserstart, ob neue Dateien da sind, und lädt sich dann selbst neu. Offene IServ-Tabs danach einmal mit F5 neu laden.
 
 **Andere Quelle:** Wer eine eigene Kopie des Repositorys nutzt, schreibt `besitzer/repo` in `quelle.txt` in diesem Ordner.
 

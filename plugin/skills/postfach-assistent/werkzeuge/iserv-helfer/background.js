@@ -1,4 +1,4 @@
-/* IServ-Helfer · Hintergrund: Menüeinträge, Symbol, Tabs */
+/* Schulassistenz-Helfer · Hintergrund: Menüeinträge, Symbol, Tabs */
 const DATEIEN = ["pseudo.js", "helfer.js"];
 chrome.runtime.onInstalled.addListener(async d => {
   chrome.contextMenus.removeAll(() => {
@@ -15,8 +15,8 @@ chrome.runtime.onInstalled.addListener(async d => {
 });
 function hinweis(text) {
   chrome.action.setBadgeText({ text: "!" }); chrome.action.setBadgeBackgroundColor({ color: "#b5562a" });
-  chrome.action.setTitle({ title: "IServ-Helfer: " + text });
-  setTimeout(() => { chrome.action.setBadgeText({ text: "" }); chrome.action.setTitle({ title: "IServ-Helfer öffnen" }); }, 6000);
+  chrome.action.setTitle({ title: "Schulassistenz-Helfer: " + text });
+  setTimeout(() => { chrome.action.setBadgeText({ text: "" }); chrome.action.setTitle({ title: "Schulassistenz-Helfer öffnen" }); }, 6000);
 }
 async function senden(tab, msg) {
   if (!tab || !tab.id) return;
@@ -139,3 +139,59 @@ chrome.alarms.create("sa-neue-fassung", { periodInMinutes: 30 });
 chrome.alarms.onAlarm.addListener(a => { if (a.name === "sa-neue-fassung") aufNeueFassungPruefen(); });
 chrome.runtime.onStartup.addListener(aufNeueFassungPruefen);
 aufNeueFassungPruefen();
+
+/* WebUntis-Fehlzeiten für die Fehlzeiten-Ampel der Startseite.
+   Lernen: Exportiert die Lehrkraft einmal selbst in WebUntis den Bericht „Abwesenheiten“ (z. B. AbsencePerStudent),
+   merkt sich der Helfer nur die Adresse dieses Downloads (keine Daten, kein Passwort).
+   Holen: Auf Knopfdruck der Startseite ruft er dieselbe Adresse mit dem gewünschten Zeitraum über die WebUntis-Anmeldung
+   im Browser ab (nur lesend) und gibt die Datei an die Startseite. Namen ersetzt die Startseite lokal durch Kürzel. */
+const WU_RE = /^https:\/\/[a-z0-9.-]+\.webuntis\.com\//i;
+const wuPasst = (url, datei) => WU_RE.test(url || "") && /absen|abwesen|fehlzeit/i.test((url || "") + " " + (datei || ""));
+if (chrome.downloads && chrome.downloads.onCreated) {
+  chrome.downloads.onCreated.addListener(d => {
+    const url = d.finalUrl || d.url || "";
+    if (wuPasst(url, d.filename)) chrome.storage.local.set({ saWuExport: { url, gelernt: Date.now() } });
+    else if (/^blob:https:\/\/[a-z0-9.-]+\.webuntis\.com\//i.test(url) && /absen|abwesen/i.test(d.filename || "")) chrome.storage.local.set({ saWuExportBlob: Date.now() });
+  });
+  chrome.downloads.onChanged.addListener(c => {
+    if (!c.filename || !c.filename.current) return;
+    chrome.downloads.search({ id: c.id }, l => { const d = l && l[0]; if (d && wuPasst(d.finalUrl || d.url, c.filename.current)) chrome.storage.local.set({ saWuExport: { url: d.finalUrl || d.url, gelernt: Date.now() } }); });
+  });
+}
+const wuIso = d => d.replace(/-/g, "");
+function wuZeitraum(url, von, bis) {
+  const u = new URL(url); const keys = [...u.searchParams.keys()];
+  const datumsKeys = keys.filter(k => /^\d{8}$|^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get(k)));
+  const setze = (k, iso) => { const alt = u.searchParams.get(k); u.searchParams.set(k, alt.includes("-") ? iso : wuIso(iso)); };
+  const istVon = k => /(^|_)(sd|start|von|from|begin)|startdate|^rpt_sd$/i.test(k), istBis = k => /(^|_)(ed|end|bis|to)|enddate|^rpt_ed$/i.test(k);
+  let kv = datumsKeys.find(istVon), kb = datumsKeys.find(istBis);
+  if (!kv && !kb && datumsKeys.length === 2) [kv, kb] = datumsKeys;
+  if (kv && von) setze(kv, von); if (kb && bis) setze(kb, bis);
+  return { url: u.toString(), zeitraum: !!(kv || kb) };
+}
+async function wuExport(m) {
+  const d = await chrome.storage.local.get(["saWuExport", "saWuExportBlob"]);
+  if (m.op === "status") return { ok: true, gelernt: d.saWuExport ? d.saWuExport.gelernt : 0, host: d.saWuExport ? new URL(d.saWuExport.url).host : "", blob: d.saWuExportBlob || 0 };
+  if (m.op === "vergessen") { await chrome.storage.local.remove(["saWuExport", "saWuExportBlob"]); return { ok: true }; }
+  if (m.op === "anmelden") { if (d.saWuExport) chrome.tabs.create({ url: new URL(d.saWuExport.url).origin + "/WebUntis/" }); return { ok: true }; }
+  if (m.op !== "holen") return { ok: false, fehler: "Unbekannter Befehl" };
+  if (!d.saWuExport) return { ok: false, lernen: true, fehler: "Der Helfer kennt den Export deiner Schule noch nicht." };
+  const z = wuZeitraum(d.saWuExport.url, m.von, m.bis);
+  const r = await fetch(z.url, { credentials: "include", cache: "no-store" });
+  if (r.status === 401 || r.status === 403) return { ok: false, anmelden: true, fehler: "Bitte in WebUntis anmelden und noch einmal versuchen." };
+  if (!r.ok) return { ok: false, fehler: "WebUntis antwortet mit " + r.status };
+  const typ = r.headers.get("content-type") || "";
+  const buf = await r.arrayBuffer();
+  if (/text\/html/i.test(typ)) {
+    const t = new TextDecoder().decode(buf.slice(0, 20000));
+    if (/<form[^>]*login|j_username|name="?password|anmelden/i.test(t) && !/<table/i.test(t)) return { ok: false, anmelden: true, fehler: "WebUntis zeigt die Anmeldeseite. Bitte in WebUntis anmelden und noch einmal versuchen." };
+  }
+  const cd = r.headers.get("content-disposition") || "";
+  const name = decodeURIComponent(((cd.match(/filename\*=UTF-8''([^;]+)/i) || cd.match(/filename="?([^";]+)"?/i) || [])[1] || "WebUntis-Export").trim());
+  return { ok: true, daten: b64aus(buf), typ, name, zeitraum: z.zeitraum };
+}
+chrome.runtime.onMessage.addListener((m, sender, antwort) => {
+  if (m.cmd !== "wu-export") return;
+  wuExport(m).then(antwort).catch(e => antwort({ ok: false, fehler: "WebUntis nicht erreichbar (" + String((e && e.message) || e) + ")." }));
+  return true;
+});

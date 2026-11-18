@@ -1,5 +1,5 @@
-/* IServ-Helfer · Brücke zur Schulassistenz-Startseite (lokale Datei).
-   Holt auf Wunsch der Startseite den Stundenplan (iCal) von WebUntis und liest/schreibt den Schülerdaten-Ordner auf IServ (WebDAV).
+/* Schulassistenz-Helfer · Brücke zur Schulassistenz-Startseite (lokale Datei).
+   Holt auf Wunsch der Startseite den Stundenplan (iCal) und den Fehlzeiten-Export von WebUntis und liest/schreibt den Schülerdaten-Ordner auf IServ (WebDAV).
    Läuft nur auf Schulassistenz-Start.html und nur, wenn „Zugriff auf Datei-URLs“ erlaubt ist. */
 (() => {
   if (window.__saBruecke) return; window.__saBruecke = true;
@@ -25,6 +25,14 @@
     try { antwort = await chrome.runtime.sendMessage({ cmd: "dav", op: e.data.op, url: String(e.data.url || ""), daten: e.data.daten }); }
     catch (err) { antwort = { ok: false, fehler: "Helfer nicht erreichbar. Bitte die Seite neu laden (F5)." }; }
     window.postMessage({ sa: "dav-antwort", id: e.data.id, ...(antwort || { ok: false, fehler: "Keine Antwort" }) }, "*");
+  });
+  // WebUntis-Fehlzeiten-Export für die Fehlzeiten-Ampel
+  window.addEventListener("message", async e => {
+    if (e.source !== window || !e.data || e.data.sa !== "wu-export") return;
+    let antwort;
+    try { antwort = await chrome.runtime.sendMessage({ cmd: "wu-export", op: e.data.op, von: e.data.von, bis: e.data.bis }); }
+    catch (err) { antwort = { ok: false, fehler: "Helfer nicht erreichbar. Bitte die Seite neu laden (F5)." }; }
+    window.postMessage({ sa: "wu-export-antwort", id: e.data.id, ...(antwort || { ok: false, fehler: "Keine Antwort" }) }, "*");
   });
   const melden = () => window.postMessage({ sa: "helfer-da", version: chrome.runtime.getManifest().version }, "*");
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", melden); else melden();
