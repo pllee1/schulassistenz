@@ -2126,7 +2126,7 @@ function reglerKnopfAktualisieren(){const b=$("#r-rg-alle");if(!b)return;const n
 // Regler bleiben stehen, wo sie hingeschoben wurden. Erst „Regler eintragen“ übernimmt alle verschobenen Werte auf einmal.
 function reglerVerdrahten(box,kFn){
   box.querySelectorAll(".r-rg").forEach(inp=>inp.addEventListener("input",()=>{const k=kFn(inp);if(!k||abwesend(k))return;R.regler[k]=+inp.value;R.bewegt[k]=true;
-    const sp=inp.parentElement;sp.querySelector(".r-rg-z").value=reglerZahl(R.skala,+inp.value);sp.querySelector(".r-rg-z").classList.remove("falsch");sp.querySelector(".r-rg-t").textContent=reglerHinweis(R.skala,+inp.value);sp.classList.add("bewegt");reglerKnopfAktualisieren()}));
+    const sp=inp.closest(".r-regler");sp.querySelector(".r-rg-z").value=reglerZahl(R.skala,+inp.value);sp.querySelector(".r-rg-z").classList.remove("falsch");sp.querySelector(".r-rg-t").textContent=reglerHinweis(R.skala,+inp.value);sp.classList.add("bewegt");reglerKnopfAktualisieren()}));
   box.querySelectorAll(".r-rg-z").forEach(f=>{const sp=f.parentElement,rg=sp.querySelector(".r-rg");
     f.addEventListener("focus",()=>f.select());
     f.addEventListener("input",()=>{const k=kFn(f);if(!k||abwesend(k))return;const v=reglerParse(R.skala,f.value);f.classList.toggle("falsch",v==null&&f.value.trim()!=="");if(v==null)return;
