@@ -151,7 +151,9 @@ const istFrei=iso=>{const d=new Date(iso+"T12:00:00");const w=d.getDay();return 
 const plusTage=(iso,n)=>{const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
 function fristEnde(iso,r){if(r.einheit==="kalendertage")return plusTage(iso,r.frist);let d=iso,n=0;while(n<r.frist){d=plusTage(d,1);if(!istFrei(d))n++}return d}
 function naechsterSchultag(iso){let d=plusTage(iso,1);let n=0;while(istFrei(d)&&n++<30)d=plusTage(d,1);return d}
-const schuljahrBeginn=()=>{const d=new Date();const j=d.getMonth()>=7?d.getFullYear():d.getFullYear()-1;return `${j}-08-01`};
+// Schuljahresbeginn: erster Tag nach den Sommerferien (aus E.ferien), sonst 1. August. WebUntis lehnt Zeiträume vor dem Schuljahr ab.
+const schuljahrBeginn=()=>{const d=new Date();const j=d.getMonth()>=7?d.getFullYear():d.getFullYear()-1;
+  const sommer=ferien().filter(([a,b])=>b>=`${j}-07-01`&&b<=`${j}-09-30`).map(x=>x[1]).sort().pop();return sommer?plusTage(sommer,1):`${j}-08-01`};
 
 /* ---------- Datei → pseudonymisierte Zeilen ---------- */
 async function verarbeiten(buf){
@@ -340,7 +342,7 @@ async function einlesen(bufP,quelle,zeitraum){
     const tage=erg.daten.map(d=>d.iso).sort();const daten=`${datumDE(tage[0])}–${datumDE(tage[tage.length-1])}`;
     F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,fehlend:erg.fehlend,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()],aufbau:F.aufbauNeu||"",kurz:!!F.kurzNeu};
     zeichnen(`${erg.daten.length} Zeilen gelesen. Noch nicht gespeichert.`)}
-  catch(e){$("#fz-toast").textContent="";g.hidden=false;g.textContent=e.message||String(e)}
+  catch(e){$("#fz-toast").textContent="";g.hidden=false;g.textContent=(e.message||String(e))+(F.antwortNeu?" ("+F.antwortNeu+")":"");F.antwortNeu=""}
 }
 async function holen(){
   const g=$("#fz-guard");g.hidden=true;const t=$("#fz-toast");t.textContent="Frage WebUntis …";
@@ -351,6 +353,7 @@ async function holen(){
       if(a.anmelden){const b=document.createElement("button");b.className="btn small ghost";b.textContent="WebUntis öffnen";b.style.marginLeft="8px";b.addEventListener("click",()=>wuRuf("anmelden"));g.appendChild(b)}
       return}
     const buf=davBuf(a.daten);F.aufbauNeu=a.aufbau||"";F.kurzNeu=!a.zeitraum;
+    F.antwortNeu=`Antwort von WebUntis: ${a.typ||"ohne Typ"}, ${buf.byteLength} Bytes. Adresse: ${a.aufbau||"?"}`;
     await einlesen(Promise.resolve(buf),"WebUntis über den Helfer",a.zeitraum?`${datumDE(von)}–${datumDE(bis)}`:"")}
   catch(e){t.textContent="";g.hidden=false;g.textContent=e.message||String(e)}
 }
