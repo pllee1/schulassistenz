@@ -93,6 +93,11 @@ input.mono{font-family:var(--f-mono)}
 textarea.prompt-edit{display:block;width:100%;box-sizing:border-box;max-height:420px;min-height:90px;resize:vertical;color:var(--ink);border:1px solid var(--line);line-height:1.45}
 textarea.prompt-edit:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .p-hinweis{margin:-4px 0 0}
+.p-anh{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.p-anh-knopf{cursor:pointer}
+.p-anh-zone{font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:5px 10px}
+.p-chips{display:flex;flex-wrap:wrap;gap:6px}
+.panel.drop{outline:2px dashed var(--accent);outline-offset:3px}
 .guard{font-size:13px;color:var(--warn);background:var(--warn-soft);border-radius:8px;padding:6px 10px}
 .kn-datei{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center;font-size:13px;margin:6px 0}.kn-datei .path{overflow-wrap:anywhere}
 .kn-dateien summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top:8px}
@@ -544,7 +549,9 @@ function oeffne(k,vor){
   const kopierModus=E.claude==="kopieren";
   slot.innerHTML=`<div class="panel" role="region" aria-label="${esc(k.titel)}"><h4>${esc(k.titel)}</h4>${f?`<div class="fields">${f}</div>`:""}
     <textarea class="prompt prompt-edit" id="p-text" spellcheck="true" aria-label="Auftrag an Claude, frei bearbeitbar"></textarea>
-    <p class="note p-hinweis" id="p-hinweis">Du kannst den Auftrag hier direkt ergänzen oder umformulieren.</p><div class="guard" id="p-guard" hidden></div>
+    <p class="note p-hinweis" id="p-hinweis">Du kannst den Auftrag hier direkt ergänzen oder umformulieren.</p>
+    <div class="p-anh" id="p-anh"><label class="btn ghost small p-anh-knopf">Dateien anhängen<input type="file" id="p-datei" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.docx,.doc,.xlsx,.xls,.csv,.pptx,.txt,.md,.odt,.ods"></label><span class="p-anh-zone" id="p-zone">oder Dateien hierher ziehen</span><span id="p-chips" class="p-chips"></span></div>
+    <div class="guard frage" id="p-anh-hinweis" hidden></div><div class="guard" id="p-guard" hidden></div>
     <div class="actions">${kopierModus?`<button class="btn primary" id="p-copy">Auftrag kopieren</button>`:`<a class="btn primary" id="p-open" target="_blank" rel="noopener" href="#">In Claude öffnen</a><button class="btn ghost" id="p-copy">Nur kopieren</button>`}
     <button class="btn ghost" id="p-close">Schließen</button><span class="toast" id="p-toast" role="status"></span></div></div>`;
   const werte=()=>Object.fromEntries(felder.map(n=>[n,$("#f-"+n).value.trim()]));
@@ -552,10 +559,10 @@ function oeffne(k,vor){
   const erzeugt=()=>{const w=werte();return k.auftrag.replace(/\{(\w+)\}/g,(_,n)=>w[n]||"…")};
   const hoehe=()=>{ta.style.height="auto";ta.style.height=Math.min(420,Math.max(90,ta.scrollHeight+4))+"px"};
   const hinweis=()=>{const h=$("#p-hinweis");h.innerHTML=bearbeitet?`Eigene Änderungen bleiben erhalten. Änderst du oben ein Feld, wird nur dieser Wert im Text ausgetauscht. <button class="linkbtn" id="p-reset">Auftrag neu aus den Feldern erzeugen</button>`:"Du kannst den Auftrag hier direkt ergänzen oder umformulieren.";
-    const r=$("#p-reset");if(r)r.addEventListener("click",()=>{bearbeitet=false;ta.value=erzeugt();alt=werte();hinweis();pruefen()})};
+    const r=$("#p-reset");if(r)r.addEventListener("click",()=>{bearbeitet=false;ta.value=erzeugt()+anhZeile();alt=werte();hinweis();pruefen()})};
   // Feldänderung nach eigener Bearbeitung: alten Wert im Text durch den neuen ersetzen, Rest unverändert lassen
   const feldGeaendert=()=>{const w=werte();
-    if(!bearbeitet){ta.value=erzeugt()}
+    if(!bearbeitet){ta.value=erzeugt()+anhZeile()}
     else for(const n of felder){const a=alt[n]||"…",b=w[n]||"…";if(a===b)continue;
       const anz=ta.value.split(a).length-1;if(anz>=1&&(a!=="…"||anz===1))ta.value=ta.value.split(a).join(b);
       else{$("#p-hinweis").textContent=`„${LABEL[n]||n}“ steht so nicht mehr im Text. Bitte im Auftrag selbst anpassen.`}}
@@ -571,9 +578,27 @@ function oeffne(k,vor){
   };
   slot.querySelectorAll(".fields input").forEach(i=>i.addEventListener("input",feldGeaendert));
   ta.addEventListener("input",()=>{if(!bearbeitet){bearbeitet=true;hinweis()}pruefen()});
+  // Anhänge: claude.ai nimmt über den Link keine Dateien mit. Die Seite merkt sich die Auswahl, schreibt sie in den Auftrag
+  // und erinnert nach dem Öffnen daran, sie in Claude mit der Büroklammer oder per Ziehen dazuzulegen.
+  let anh=[];const ANH_RE=/\n*Angehängte Dateien: .*$/;
+  function anhZeile(){return anh.length?`\n\nAngehängte Dateien: ${anh.map(f=>f.name).join(", ")} (lies sie bitte mit)`:""}
+  const anhZeichnen=()=>{
+    $("#p-chips").innerHTML=anh.map((f,i)=>`<span class="r-chip"><button class="r-chip-w" tabindex="-1">${esc(f.name)} <small>${f.size>1048576?komma(f.size/1048576)+" MB":Math.max(1,Math.round(f.size/1024))+" KB"}</small></button><button class="r-chip-x" data-x="${i}" aria-label="${esc(f.name)} entfernen">✕</button></span>`).join("");
+    $("#p-chips").querySelectorAll(".r-chip-x").forEach(b=>b.addEventListener("click",()=>{anh.splice(+b.dataset.x,1);anhZeichnen()}));
+    ta.value=ta.value.replace(ANH_RE,"")+anhZeile();
+    const h=$("#p-anh-hinweis");h.hidden=!anh.length;
+    h.innerHTML=anh.length?`<span><b>Wichtig:</b> Der Link nimmt die Dateien nicht automatisch mit. Nach „${kopierModus?"Auftrag kopieren":"In Claude öffnen"}“ bitte in Claude über die Büroklammer (+) anhängen oder hineinziehen. Stehen Schülernamen darin, vorher mit dem <button class="linkbtn" id="p-pseudo">Pseudonymisierer</button> durch Kürzel ersetzen.</span>`:"";
+    const ps=$("#p-pseudo");if(ps)ps.addEventListener("click",()=>{const kk=ALLE.find(x=>x.id==="pseudonymisierer");if(kk)oeffne(kk)});
+    $("#p-zone").textContent=anh.length?"weitere hierher ziehen":"oder Dateien hierher ziehen";pruefen()};
+  const anhDazu=liste=>{for(const f of liste)if(!anh.some(a=>a.name===f.name&&a.size===f.size))anh.push(f);anhZeichnen()};
+  $("#p-datei").addEventListener("change",e=>{anhDazu([...e.target.files]);e.target.value=""});
+  const panel=slot.querySelector(".panel");
+  ["dragenter","dragover"].forEach(ev=>panel.addEventListener(ev,e=>{if([...(e.dataTransfer?.types||[])].includes("Files")){e.preventDefault();panel.classList.add("drop")}}));
+  ["dragleave","drop"].forEach(ev=>panel.addEventListener(ev,e=>{if(ev==="dragleave"&&panel.contains(e.relatedTarget))return;panel.classList.remove("drop")}));
+  panel.addEventListener("drop",e=>{if(e.dataTransfer&&e.dataTransfer.files.length){e.preventDefault();anhDazu([...e.dataTransfer.files])}});
   ta.value=erzeugt();pruefen();
   const fertig=()=>{merke(k);const g=$("#f-gruppe");if(g&&g.value.trim())store.set("letzte-gruppe",g.value.trim());setTimeout(render,50)};
-  if($("#p-open"))$("#p-open").addEventListener("click",fertig);
+  if($("#p-open"))$("#p-open").addEventListener("click",()=>{fertig();if(anh.length)$("#p-toast").textContent=`Claude ist offen. Jetzt ${anh.length===1?"die Datei":"die "+anh.length+" Dateien"} dort anhängen.`});
   $("#p-copy").addEventListener("click",()=>{if(gesperrt)return;fertig();kopiere(ta.value,$("#p-toast"),ta)});
   $("#p-close").addEventListener("click",()=>{slot.innerHTML=""});
   const erstes=slot.querySelector("input");(erstes||slot.querySelector(".btn")).focus({preventScroll:true});
