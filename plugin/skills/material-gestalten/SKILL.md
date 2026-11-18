@@ -1,6 +1,6 @@
 ---
 name: "material-gestalten"
-description: "Setzt Unterrichtsmaterial und Prüfungen jedes Fachs (schulassistenz) als druckfertiges PDF im Layout der Schule aus dem Profil: Arbeitsblätter, Hilfekarten, Exit-Tickets, Tafelbild, Klassenarbeiten."
+description: "Setzt Unterrichtsmaterial und Prüfungen jedes Fachs (schulassistenz) als druckfertiges PDF im Layout „Klar · Band“ bzw. dem Layout der Schule: Arbeitsblätter, Hilfekarten, Exit-Tickets, Tafelbild, Klassenarbeiten. Auch wenn vorhandenes Material (Word, PDF, Foto) ins neue Layout gebracht, umgestaltet oder neu gesetzt werden soll."
 ---
 
 # Material gestalten
@@ -91,6 +91,18 @@ Alle Arbeitsblätter, Lehrerblätter, Tafelbilder, Klassenarbeiten, Klausuren un
 - **Druck:** `K.speichern(cfg, seiten, "Datei.pdf")` schreibt HTML, PDF, PNG je Seite und Graustufen-Probe (`*_grau.png`) und meldet Seiten, deren Inhalt überläuft. Jede `seite` ist genau ein A4-Blatt: Läuft etwas über, kürzen, Kästchenfelder verkleinern oder auf eine zweite Seite verteilen, nie verkleinert drucken.
 - **Keine CSS-Verläufe oder Hintergrundmuster** für Linien, Karo oder Flächen: Manche PDF-Betrachter zeigen sie als pinke Flächen. Schreiblinien (`linien`) und Kästchen (`karo`) sind echte Linien; Verläufe nur innerhalb von SVG-Abbildungen.
 - **Primarstufe (Kl. 1–4)** und Rechner ohne Chromium/Playwright: ReportLab-Gerüst aus Abschnitt 6 mit denselben Inhalten.
+- **Chromium fehlt:** Bricht `K.speichern` mit „Playwright/Chromium nötig“ ab, zuerst `pip install playwright` und `python -m playwright install chromium` versuchen. Erst wenn das nicht geht (kein Netz), ReportLab-Gerüst nehmen und im Lieferhinweis sagen, dass das Blatt deshalb nicht im Layout „Klar · Band“ ist. Nie still ein anderes Layout liefern.
+
+## 2c. Vorhandenes Material ins Layout bringen
+
+Sagt die Lehrkraft „neues Layout anwenden“, „ins neue Layout bringen“, „im Klar-Band-Layout setzen“ oder hängt ein eigenes Arbeitsblatt, eine Klassenarbeit oder ein Tafelbild an (Word, PDF, Foto, Text im Chat), gilt:
+
+1. **Inhalt übernehmen, nicht neu erfinden:** Text, Aufgaben, Punkte, Tabellen und Abbildungen auslesen (Word/PDF als Text, Fotos und Scans ansehen). Wortlaut und Reihenfolge der Aufgaben bleiben; nur offensichtliche Tippfehler korrigieren und in der Rückmeldung nennen.
+2. **Zuordnen:** Fach, Jahrgang und Thema aus dem Dokument oder der Lerngruppe; Bausteine aus Abschnitt 2b wählen (Situation, Aufgaben mit Sozialform/Zeit, Merke, Tabellen, Linien/Kästchen für Antworten). Abbildungen aus dem Original ausschneiden und mit `bild` einsetzen; geht das nicht, `platzhalter`.
+3. **Setzen** mit `skripte/klar.py` wie in `beispiele/beispiel_nawi10.py`, Überlauf und Graustufen-Probe prüfen.
+4. **Liefern:** PDF neben dem Original ablegen (gleicher Name + „_klar“) bzw. nach `ablage.material`; kurz nennen, was geändert wurde. Mehrere Dateien: eine nach der anderen, gleiche Fachfarbe.
+
+Fehlt in der Anfrage ein Dokument, nachfragen, welches Material umgesetzt werden soll (Datei anhängen oder Pfad nennen), statt nichts zu tun.
 
 ## 3. Arbeitsblätter (Material zu einer Stunde)
 
