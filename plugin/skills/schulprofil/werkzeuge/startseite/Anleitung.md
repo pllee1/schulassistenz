@@ -121,6 +121,17 @@ Im Kalender (Knopf „Kalender“) erzeugt „Für Outlook“ die Datei „Schul
 
 Automatisch aktuell geht nur ungefiltert: Die ICS-Links einzelner IServ-Kalender (in IServ beim Kalender „Link-Freigabe“) in Outlook unter „Kalender hinzufügen“ → „Aus dem Internet abonnieren“ eintragen. Outlook aktualisiert sie dann selbst, alle paar Stunden.
 
+## Schülerdaten sichern
+
+Rechts bei den Lerngruppen „Sichern“ (oder Kachel „Schülerdaten sichern“ unter Verwaltung). Gesichert werden `lerngruppen/`, `kuerzellisten/`, `ausgaben/` und `archiv/` aus dem Schülerdaten-Ordner. Akten mit abgelaufener Löschfrist kommen nicht in die Sicherung.
+
+1. **Kopie auf dem Server:** „Jetzt sichern“ legt eine ZIP-Datei in `sicherungen/` im Schülerdaten-Ordner ab (bei IServ also auf IServ) und prüft sie. Schützt vor versehentlichem Löschen oder Überschreiben. Es bleiben die neuesten 4; ältere schlägt die Seite zum Löschen vor.
+2. **Datei zum Mitnehmen:** Mit Passwort (mind. 10 Zeichen) verschlüsselt (AES-256). Für einen USB-Stick oder einen Ort, den die Schulleitung erlaubt, nicht für einen privaten Cloud-Speicher. Öffnen lässt sie sich nur auf der Startseite („Sicherungsdatei öffnen“). Ohne Passwort ist sie verloren. Ältere Dateien auf dem Stick löschen, eine aktuelle reicht.
+
+**Zurückholen:** Bei einer Sicherung „Ansehen / zurückholen“. Die Seite zeigt, welche Dateien heute fehlen oder anders sind. „Fehlende zurückholen“ ergänzt nur, „Auch geänderte ersetzen“ überschreibt nach Rückfrage. Vorher sichert sie den heutigen Stand automatisch (`vor-wiederherstellung-….zip`). Dateien mit abgelaufener Löschfrist werden nie zurückgeholt.
+
+**Erinnerung:** Ist die letzte Sicherung 7 Tage alt, erscheint oben ein Hinweis mit „Jetzt sichern“ und „Morgen erinnern“. Das Protokoll steht in `sicherungen/protokoll.md` (nur Datum, Ziel, Dateiname). Ändern in `meine-einstellungen.js`: `sicherung_tage: 7` (0 = aus), `sicherung_behalten: 4`.
+
 ## Schülerdaten auf dem Schulserver (z. B. IServ)
 
 Akten, Kürzellisten und Ausgaben mit Schülerbezug können getrennt vom Datenordner auf dem Schulserver liegen. Profil, Planung, Werkzeuge und Material bleiben im Datenordner. Der Platzbedarf ist klein: Text-Akten und Kürzellisten brauchen je Lerngruppe etwa 20 bis 50 KB im Schuljahr. Scans von Schülerarbeiten werden nicht gespeichert.

@@ -128,6 +128,8 @@ Zum Schuljahresende (oder auf Wunsch) eine Liste zeigen:
 
 Nichts ohne Bestätigung verschieben oder löschen. Nach dem Löschen bestätigen, was entfernt wurde.
 
+Sicherungen: Die Startseite legt Sicherungen in `sicherungen/` im Schülerdaten-Ordner ab und nimmt Abgelaufenes nicht mehr auf. Nach dem Löschen abgelaufener Akten daran erinnern, auf der Startseite eine neue Sicherung anzulegen und ältere Sicherungen (dort „Ältere löschen“, auf dem USB-Stick von Hand) zu löschen, damit keine Kopie über die Löschfrist hinaus bleibt.
+
 ## 9. Grundsätze
 
 - Der Mensch entscheidet: Nur Freigegebenes wird gültig; Vorschläge bleiben offen.

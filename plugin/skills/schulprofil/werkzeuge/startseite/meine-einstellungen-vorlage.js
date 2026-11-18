@@ -11,6 +11,8 @@ window.SA_EINSTELLUNGEN = {
   // Optional: eigener Ort für Schülerdaten (lerngruppen/, kuerzellisten/, ausgaben/), z. B. Schulserver als Netzlaufwerk.
   // Leer = alles im Datenordner. Beispiel IServ (über den IServ-Helfer ab 0.4): "https://<eure-iserv-adresse>/webdav/Files/schulassistenz-daten"
   schuelerdaten: "",
+  // Sicherung der Schülerdaten (Startseite „Sichern“): Erinnerung alle sicherung_tage Tage (0 = aus), auf dem Server bleiben die neuesten sicherung_behalten.
+  // sicherung_tage: 7, sicherung_behalten: 4,
   kuerzelliste: "",                // wo deine Kürzelliste liegt (nur Anzeige), z. B. "D:\\Schule\\Kuerzelliste.xlsx"
   claude: "web",                   // "web": Knopf öffnet claude.ai im Browser. "kopieren": Auftrag nur kopieren (für die Claude-App)
   favoriten: ["pruefung", "eltern", "woche", "pseudonymisierer"], // Startauswahl, danach per ★ auf der Seite

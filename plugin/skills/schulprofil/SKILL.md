@@ -39,6 +39,7 @@ Den Datenordner legt die Lehrkraft beim Einrichten fest (lokal, Dienst-Cloud ode
 - Nur Text und Tabellen speichern (Markdown, CSV, XLSX). Ausgaben als DOCX oder PDF nur, wenn die Lehrkraft sie behalten will; sonst in den Download.
 - Scans, Fotos und Original-PDFs von Schülerarbeiten nie ablegen. Ergebnis als Text in die Akte, die Datei bleibt beim Upload bzw. wird nach der Auswertung gelöscht.
 - Abgelaufene Akten (Löschfrist) zum Löschen vorschlagen statt archivieren.
+- Im Schülerdaten-Ordner liegt `sicherungen/` (ZIP-Sicherungen der Startseite, enthalten auch Kürzellisten mit Namen). Claude öffnet oder entpackt sie nie und schreibt nichts hinein. Sichern und Zurückholen macht die Lehrkraft auf der Startseite („Sichern“); auf Nachfrage dorthin verweisen.
 - Ist der Ort nicht erreichbar (Laufwerk nicht verbunden, offline, Ordner in der Claude-App nicht freigegeben), nichts ersatzweise in den Datenordner schreiben, sondern Bescheid sagen und auf die Anleitung der Startseite verweisen.
 
 Unterrichtet die Lehrkraft an mehreren Schulen, gibt es je Schule einen Unterordner (`profil/<schulkuerzel>/`). Vor jeder Aufgabe klären, welches Profil gilt, wenn es nicht eindeutig ist.
@@ -157,6 +158,7 @@ werkzeuge:
 regeln:
   loeschfrist_monate: 24
   ki_freigabe_schulleitung: offen | erteilt am <Datum> | nicht erteilt
+  exkursionen: {erlass: <Landeserlass Schulfahrten>, antrag_frist_wochen: 4, begleitung: <Schlüssel>, kostengrenze: <…>, zahlweg: <…>, startort: <Adresse/Haltestelle>}   # Felder siehe exkursion-planen
 ---
 Freie Hinweise der Lehrkraft (z. B. Fachgruppenabsprachen).
 ```
