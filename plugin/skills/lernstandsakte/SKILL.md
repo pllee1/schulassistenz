@@ -58,6 +58,7 @@ loeschen_ab: 2028-07-31
 ## Vereinbarungen
 ## Termine
 - 2027-01-15 | Beleg | Überprüfung der Vereinbarungen | Quelle: Elterngespräch 2026-11-10 | bestätigt
+- 2026-11-18 | Beleg | Eltern über Fehlzeiten informiert (unentschuldigt bis dahin: 12 Std.) | Quelle: Lehrkraft | bestätigt
 ```
 
 Jeder Eintrag ist eine Zeile: `Datum | Art | Inhalt | Quelle | Status`.

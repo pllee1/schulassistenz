@@ -26,7 +26,12 @@ Exporte aus der Schulsoftware enthalten fast immer Namen. Bevor sie hochgeladen 
 
 Kommt trotzdem ein Export mit Namen an: nicht verarbeiten, auf die Anleitung hinweisen. Ausnahme: Die Lehrkraft bestätigt, dass die Schulleitung das erlaubt hat (Profil). Dann über **dokument-analyse** pseudonymisieren.
 
-Beim ersten Export einer Schulsoftware die Spaltenstruktur beschreiben und im Profil unter `werkzeuge.schulsoftware_export` merken, damit spätere Exporte ohne Rückfragen gelesen werden.
+Beim ersten Export einer Schulsoftware die Spaltenstruktur beschreiben und im Profil unter `werkzeuge.schulsoftware_export` merken, damit spätere Exporte ohne Rückfragen gelesen werden (Format siehe **schulprofil**: Dateiart, Trennzeichen, Kodierung, welche Spalte was bedeutet, welche Spalten ignoriert werden).
+
+**Prüfen, bevor gerechnet wird:**
+
+- Nur die Spalten einlesen, die die Aufgabe braucht. Bei Fehlzeiten sind das Kürzel, Datum, Fehlstunden (und -minuten), Abwesenheitsgrund und Status. **Nicht einlesen:** Schüler-IDs der Schulsoftware (z. B. „Externe Id“ in WebUntis), Freitextspalten („Text“, „Entschuldigungstext“), Adressen, Geburtsdaten. Eine Schüler-ID ist ein Identifikator wie ein Name.
+- Jede Kürzelzelle muss genau ein Kürzel enthalten. Stehen dort zwei Kürzel („I01 I02“) oder ein Kürzel mit weiterem Text, war die Pseudonymisierung unvollständig, etwa wegen eines gleichen Vor- oder Nachnamens. Dann **anhalten**, den Resttext nicht wiedergeben und nicht speichern. Die betroffenen Zeilen nennen, nur mit ihren Kürzeln. Bitten, die Stellen im Pseudonymisierer zu klären („Welches Kind?“) und neu hochzuladen. Weiterrechnen nur, wenn die Lehrkraft die Zuordnung ausdrücklich nennt.
 
 ## 2. Fehlzeiten abgleichen
 
@@ -34,16 +39,27 @@ Eingaben: Fehlzeiten-Export (Kürzel, Datum, Stunden, Status entschuldigt/unents
 
 Schritte:
 
-1. Je Kürzel zusammenfassen: Fehltage, Fehlstunden, davon entschuldigt, unentschuldigt, offen.
-2. **Offene Entschuldigungen** mit Fristablauf nach Profilregel markieren.
-3. **Auffälligkeiten** nach den Schwellenwerten des Profils (z. B. „ab x unentschuldigten Stunden Eltern informieren“). Ohne Regel im Profil nur sortieren, nicht bewerten.
-4. Ergebnis als Tabelle: Kürzel · Fehlstunden · unentschuldigt · offen seit · nächster Schritt laut Schulregel.
-5. **Erinnerungen** an Eltern bzw. volljährige Schülerinnen und Schüler als Entwurf: kurz, freundlich, sachlich, mit Datum und Frist, im Briefkopf des Profils. Namen nur als Serienbrief-Feld (`«Vorname»`, `«Anrede»`). Dazu die Serienbrief-Tabelle nach lernstandsakte, Abschnitt 6.
-6. Fehlzeiten für das Zeugnis als Spalte bereitstellen (für den späteren Skill zeugnis-vorbereiten).
+Die Regeln stehen im Profil unter `regeln.fehlzeiten` (siehe **schulprofil**). Fehlt dort eine der folgenden Angaben, einmal nachfragen und anbieten, sie zu übernehmen. Diese Angaben unterscheiden sich von Schule zu Schule:
+
+- **Frist:** Zahl und Einheit (`schultage` oder `kalendertage`) und ab wann die Frist zählt (meist ab Gesundung, d. h. ab dem letzten Fehltag).
+- **Was als entschuldigt gilt:** Status der Schulsoftware und zusätzlich Abwesenheitsgründe, die die Schule als Entschuldigung wertet, z. B. „Eltern telefonisch“, obwohl die Schulsoftware „offen“ zeigt.
+- **Elternschwelle:** ab wie vielen unentschuldigten Stunden die Eltern informiert werden und **ab wann gezählt wird**: seit der letzten Benachrichtigung, je Halbjahr oder je Schuljahr.
+- **Verspätungen:** ob sie zur Schwelle zählen.
+
+1. Zeilen vorbereiten: Gründe aus `zaehlt_als_entschuldigt` als entschuldigt werten. Verspätungen gesondert führen, falls `verspaetung_zaehlt: nein`: als Anzahl und Minuten, ohne sie in die Schwelle einzurechnen.
+2. Je Kürzel zusammenfassen: Fehltage, Fehlstunden, davon entschuldigt, unentschuldigt, offen.
+3. **Offene Entschuldigungen:** Aufeinanderfolgende Fehltage (Freitag–Montag zählt als aufeinanderfolgend) bilden eine Fehlzeit. Die Frist läuft ab deren letztem Tag, bei `schultage` ohne Wochenenden. Ferien und Feiertage nur abziehen, wenn sie im Profil oder Kalender stehen; sonst im Ergebnis sagen, dass sie nicht berücksichtigt sind. Markieren: Frist abgelaufen, läuft heute ab, läuft noch.
+4. **Elternschwelle:** Gilt `schwelle_zaehlt_ab: letzte_benachrichtigung`, dann das Datum der letzten Benachrichtigung je Kürzel aus der lernstandsakte lesen (Bereich Termine, Eintrag „Eltern über Fehlzeiten informiert“). Gezählt werden nur unentschuldigte Stunden nach diesem Datum. Fehlt der Eintrag, die Lehrkraft einmal nach den Daten fragen („Datum oder noch nie“). Bis dahin ab Schuljahresbeginn zählen und das im Ergebnis sagen. Getrennt zeigen, wer die Schwelle schon gerissen hat und wer sie reißt, wenn die überfälligen offenen Stunden unentschuldigt bleiben. Ohne Regel im Profil nur sortieren, nicht bewerten.
+5. Ergebnis als Tabelle: Kürzel · Fehlstunden · entschuldigt · unentschuldigt (seit letzter Benachrichtigung) · offen (davon Frist abgelaufen) · nächster Schritt laut Schulregel. Rechnen per Code. Im Ergebnis die angewandten Regeln in einem Satz nennen.
+6. **Fällt die Schulsoftware selbst etwas aus?** Setzt sie offene Fälle nach einer festen Zeit selbst auf „nicht entschuldigt“ (erkennbar daran, dass „Erledigt“ immer gleich lange nach dem Fehltag liegt), darauf hinweisen. Ein so gesetzter Status ist keine geprüfte Ablehnung.
+7. Erst nach Rückfrage: **Erinnerungen** an Eltern bzw. volljährige Schülerinnen und Schüler als Entwurf: kurz, freundlich, sachlich, mit Datum und Frist, im Briefkopf des Profils. Namen nur als Serienbrief-Feld (`«Vorname»`, `«Anrede»`). Dazu die Serienbrief-Tabelle nach lernstandsakte, Abschnitt 6.
+8. Fehlzeiten für das Zeugnis als Spalte bereitstellen (für den späteren Skill zeugnis-vorbereiten).
 
 Keine Gründe für Fehlzeiten erfassen oder vermuten (Gesundheit ist besondere Kategorie). Häufen sich Fehlzeiten so, dass Schulpflicht oder Kindeswohl berührt sein könnten: nur auf das Verfahren der Schule hinweisen, nichts selbst einordnen.
 
 Ist die lernstandsakte freigegeben: nach Bestätigung die Zahl der Fehltage je Halbjahr in die Kind-Akte schreiben (Bereich Leistungen oder Termine, nicht die einzelnen Tage).
+
+**Benachrichtigung festhalten:** Sagt die Lehrkraft, dass sie Eltern informiert hat (oder gibt Daten aus der Vergangenheit an), nach Bestätigung in die Kind-Akte schreiben, Bereich Termine: `2026-11-18 | Beleg | Eltern über Fehlzeiten informiert (unentschuldigt bis dahin: 12 Std.) | Quelle: Lehrkraft | bestätigt`. Ab diesem Datum zählt die Schwelle neu. Bei „noch nie“ nichts eintragen.
 
 ## 3. Listen
 

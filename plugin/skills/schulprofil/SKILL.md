@@ -177,9 +177,12 @@ ablage:
 werkzeuge:
   lernplattform: <z. B. Edumaps, Moodle>
   schul_ki: <z. B. Paddy>
+  schulsoftware_export:   # vom verwaltungsassistent beim ersten Export gemerkt
+    - {software: <z. B. WebUntis>, export: <z. B. AbsencePerStudent>, format: <z. B. CSV, Tab, UTF-8>, spalten: {kuerzel: <Spalte>, datum: <Spalte>, stunden: <Spalte>, minuten: <Spalte>, grund: <Spalte>, status: <Spalte>}, status_werte: {entschuldigt: <Wert>, unentschuldigt: <Wert>, offen: <Wert>}, ignorieren: [<z. B. Externe Id, Text, Entschuldigungstext>]}
 regeln:
   loeschfrist_monate: 24
   ki_freigabe_schulleitung: offen | erteilt am <Datum> | nicht erteilt
+  fehlzeiten: {frist: 3, frist_einheit: schultage, frist_ab: gesundung, zaehlt_als_entschuldigt: [<z. B. Eltern telefonisch>], eltern_ab_unentsch_std: 5, schwelle_zaehlt_ab: letzte_benachrichtigung, verspaetung_zaehlt: nein}   # Werte der Schule; schwelle_zaehlt_ab: letzte_benachrichtigung | halbjahr | schuljahr
   exkursionen: {erlass: <Landeserlass Schulfahrten>, antrag_frist_wochen: 4, begleitung: <Schlüssel>, kostengrenze: <…>, zahlweg: <…>, startort: <Adresse/Haltestelle>}   # Felder siehe exkursion-planen
 ---
 Freie Hinweise der Lehrkraft (z. B. Fachgruppenabsprachen).
