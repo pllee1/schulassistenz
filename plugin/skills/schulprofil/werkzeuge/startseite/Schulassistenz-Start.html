@@ -158,7 +158,8 @@ footer{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 1
 .r-regler input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;margin-top:-7px;background:var(--surface);border:2px solid var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.25)}
 .r-regler input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
 .r-regler input[type=range]:disabled{opacity:.4;cursor:default}
-.r-regler output{font-family:var(--f-mono);font-size:12.5px;min-width:70px;font-weight:600}
+.r-regler .r-rg-z{width:52px;font-family:var(--f-mono);font-size:13px;font-weight:600;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);text-align:right}
+.r-regler .r-rg-z.falsch{border-color:var(--err);background:var(--err-soft)}.r-regler .r-rg-t{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:30px}
 .sym.no{min-width:52px;font-weight:600}
 .r-noteform{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;border:1px solid var(--warn);border-radius:8px;background:var(--warn-soft)}
 .r-noteform select,.r-noteform input{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
@@ -2097,13 +2098,28 @@ function reglerText(sk,v){return sk==="note"?`${komma(-v)} (${notenTendenz(-v)})
 function reglerEintrag(k,v){const sk=R.skala;
   if(sk==="note")eintragMachen(k,"MM",komma(-v),"note");else if(sk==="np")eintragMachen(k,"MM",komma(v),"np");else eintragMachen(k,"MM",komma(v),"symw")}
 function reglerHTML(k){const r=REGLER[R.skala];const key=k||R.wahl||"";const v=R.regler[key]??r.start;
-  return `<span class="r-regler${R.bewegt[key]?" bewegt":""}"><input type="range" class="r-rg" data-k="${esc(k||"")}" min="${r.min}" max="${r.max}" step="any" value="${v}" aria-label="Mitarbeit stufenlos${k?" "+esc(k):""}"><output class="r-rg-w">${esc(reglerText(R.skala,v))}</output></span>`}
+  return `<span class="r-regler${R.bewegt[key]?" bewegt":""}"><input type="range" class="r-rg" data-k="${esc(k||"")}" min="${r.min}" max="${r.max}" step="any" value="${v}" aria-label="Mitarbeit stufenlos${k?" "+esc(k):""}"><input class="r-rg-z" data-k="${esc(k||"")}" value="${esc(reglerZahl(R.skala,v))}" inputmode="decimal" autocomplete="off" aria-label="Mitarbeit als Zahl${k?" "+esc(k):""}" title="Zahl eintippen, Enter trägt sie sofort ein"><small class="r-rg-t">${esc(reglerHinweis(R.skala,v))}</small></span>`}
+// Zahl neben dem Regler: anzeigen und eintippen (Noten 1–6 auch mit + / −, Punkte 0–15, Symbole −2…2 oder ++ … −−)
+function reglerZahl(sk,v){return sk==="note"?komma(-v):komma(v)}
+function reglerHinweis(sk,v){return sk==="note"?`(${notenTendenz(-v)})`:sk==="np"?"P":`(${SYMW[Math.round(v)]})`}
+function reglerParse(sk,t){t=String(t||"").trim().replace(".",",").replace("−","-");let m;
+  if(sk==="note"){if((m=t.match(/^([1-6])([+-])$/)))return -(+m[1]+(m[2]==="-"?0.3:-0.3));if(/^[1-6](,\d{1,2})?$/.test(t)&&zahl(t)<=6)return -zahl(t);return null}
+  if(sk==="np"){if(/^\d{1,2}(,\d)?$/.test(t)&&zahl(t)<=15)return zahl(t);return null}
+  const sy={"++":2,"+":1,"o":0,"0":0,"-":-1,"--":-2};if(t in sy)return sy[t];if(/^-?[0-2](,\d)?$/.test(t)&&Math.abs(zahl(t))<=2)return zahl(t);return null}
 const reglerOffen=()=>Object.keys(R.bewegt).filter(k=>R.bewegt[k]).length;
 function reglerKnopfAktualisieren(){const b=$("#r-rg-alle");if(!b)return;const n=reglerOffen();b.disabled=!n;b.textContent=n?`Regler eintragen (${n})`:"Regler eintragen"}
 // Regler bleiben stehen, wo sie hingeschoben wurden. Erst „Regler eintragen“ übernimmt alle verschobenen Werte auf einmal.
 function reglerVerdrahten(box,kFn){
   box.querySelectorAll(".r-rg").forEach(inp=>inp.addEventListener("input",()=>{const k=kFn(inp);if(!k||abwesend(k))return;R.regler[k]=+inp.value;R.bewegt[k]=true;
-    inp.nextElementSibling.textContent=reglerText(R.skala,+inp.value);inp.parentElement.classList.add("bewegt");reglerKnopfAktualisieren()}));
+    const sp=inp.parentElement;sp.querySelector(".r-rg-z").value=reglerZahl(R.skala,+inp.value);sp.querySelector(".r-rg-z").classList.remove("falsch");sp.querySelector(".r-rg-t").textContent=reglerHinweis(R.skala,+inp.value);sp.classList.add("bewegt");reglerKnopfAktualisieren()}));
+  box.querySelectorAll(".r-rg-z").forEach(f=>{const sp=f.parentElement,rg=sp.querySelector(".r-rg");
+    f.addEventListener("focus",()=>f.select());
+    f.addEventListener("input",()=>{const k=kFn(f);if(!k||abwesend(k))return;const v=reglerParse(R.skala,f.value);f.classList.toggle("falsch",v==null&&f.value.trim()!=="");if(v==null)return;
+      R.regler[k]=v;R.bewegt[k]=true;rg.value=v;sp.querySelector(".r-rg-t").textContent=reglerHinweis(R.skala,v);sp.classList.add("bewegt");reglerKnopfAktualisieren()});
+    // Enter trägt die Zahl für dieses Kind sofort ein
+    f.addEventListener("keydown",ev=>{if(ev.key!=="Enter")return;ev.preventDefault();const k=kFn(f);if(!k)return;if(abwesend(k))return abwesendHinweis(k);
+      const v=reglerParse(R.skala,f.value);if(v==null){$("#r-guard").hidden=false;$("#r-guard").textContent=R.skala==="note"?"Bitte eine Note von 1 bis 6 eintippen, z. B. 2,5 oder 2-.":R.skala==="np"?"Bitte Punkte von 0 bis 15 eintippen.":"Bitte eine Zahl von −2 bis 2 oder ++, +, o, -, -- eintippen.";return}
+      R.regler[k]=v;delete R.bewegt[k];$("#r-guard").hidden=true;reglerEintrag(k,v)})});
 }
 function reglerAlleEintragen(){
   const ks=Object.keys(R.bewegt).filter(k=>R.bewegt[k]&&!abwesend(k));Object.keys(R.bewegt).forEach(k=>{if(abwesend(k))delete R.bewegt[k]});if(!ks.length){reglerKnopfAktualisieren();return}const z=hhmm(new Date());
