@@ -540,6 +540,7 @@ function zeigeLokal(k){
   if(k.ziel==="aktion:neue-lerngruppe"){merke(k);setTimeout(render,50);return zeigeNeueGruppe()}
   if(k.ziel==="aktion:notenuebersicht"){merke(k);setTimeout(render,50);if(ordner.zustand!=="an"||!ordner.gruppen.length){const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Notenübersicht</h4><p>Dafür braucht die Seite deine Akten. Bitte rechts unter „Lerngruppen und Akten“ den Ordner verbinden bzw. „Akten anzeigen“ klicken.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}return zeigeNoten()}
   if(k.ziel==="aktion:materiallager"){merke(k);setTimeout(render,50);return zeigeMaterial()}
+  if(k.ziel==="aktion:sicherung"){merke(k);setTimeout(render,50);if(window.saSicherung)return window.saSicherung.zeigen();const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Schülerdaten sichern</h4><p>Es fehlt die Datei werkzeuge/startseite/sicherung.js. Nach dem nächsten Update ist sie da (oder „jetzt-aktualisieren“ im Ordner werkzeuge/updater starten).</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
   const slot=$("#panel-slot");merke(k);setTimeout(render,50);
   let body;
   if(k.ziel==="kuerzelliste"){
@@ -669,7 +670,7 @@ async function ordnerVerbinden(){
   renderOrdner();renderStatus();
 }
 function renderOrdner(){
-  setTimeout(renderEinrichtung,0);
+  setTimeout(renderEinrichtung,0);if(window.saSicherung)setTimeout(window.saSicherung.erinnern,0);
   const namen=[...new Set([...(E.lerngruppen||[]),...ordner.gruppen.map(g=>g.id)])];
   $("#gruppen-liste").innerHTML=namen.map(n=>`<option value="${esc(n)}">`).join("");
   liveLink();
@@ -694,7 +695,7 @@ function renderOrdner(){
       b.addEventListener("click",()=>zeigeGruppe(g));box.appendChild(b);
     });
     note.textContent=(sdExtern()?"Aus deinem Schülerdaten-Ordner gelesen.":"Aus deinem Datenordner gelesen.")+" Angezeigt werden nur Kürzel. Klick auf eine Lerngruppe zeigt die Akten.";
-    knopf("Neue Lerngruppe",zeigeNeueGruppe,"primary");knopf("Notenübersicht",()=>zeigeNoten());knopf("Kürzel nachschlagen",zeigeKuerzel);if(ordner.gruppen.length>1)knopf("Kürzel verknüpfen",zeigeVerknuepfen);knopf("Code-Zuordnung",zeigeCodeZuordnung);if(sdExtern())umzugPruefen().then(n=>{if(n)knopf("Schülerdaten umziehen ("+n+")",zeigeUmzug,"primary")});knopf("Neu einlesen",()=>ordnerStart(true));
+    knopf("Neue Lerngruppe",zeigeNeueGruppe,"primary");knopf("Notenübersicht",()=>zeigeNoten());knopf("Kürzel nachschlagen",zeigeKuerzel);if(ordner.gruppen.length>1)knopf("Kürzel verknüpfen",zeigeVerknuepfen);knopf("Code-Zuordnung",zeigeCodeZuordnung);if(window.saSicherung)knopf("Sichern",()=>window.saSicherung.zeigen());if(sdExtern())umzugPruefen().then(n=>{if(n)knopf("Schülerdaten umziehen ("+n+")",zeigeUmzug,"primary")});knopf("Neu einlesen",()=>ordnerStart(true));
   }else if(ordner.zustand==="an"){
     namen.forEach(n=>{const d=document.createElement("div");d.className="group";d.style.cursor="default";d.innerHTML=`<b>${esc(n)}</b><span class="pill">noch keine Akten</span>`;box.appendChild(d)});
     note.textContent=freigabe()==="erteilt"?"Datenordner verbunden. Noch keine Lerngruppen angelegt.":"Datenordner verbunden. Lernstandsakten gibt es erst, wenn die Schulleitung zugestimmt hat. Bis dahin bleibt dieser Bereich leer.";
@@ -2430,5 +2431,6 @@ async function allesAktualisieren(){zuletztAktualisiert=Date.now();await planAbr
 setInterval(()=>{if(document.visibilityState==="visible")allesAktualisieren()},30*60*1000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-zuletztAktualisiert>10*60*1000)allesAktualisieren()});
 </script>
+<script src="werkzeuge/startseite/sicherung.js"></script>
 </body>
 </html>

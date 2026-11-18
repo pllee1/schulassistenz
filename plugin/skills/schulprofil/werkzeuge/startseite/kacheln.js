@@ -57,6 +57,7 @@ window.SA_KACHELN = [
   { id: "fehlzeiten", titel: "Fehlzeiten abgleichen", kurz: "Export aus der Schulsoftware", bereich: "verwaltung", typ: "claude", felder: ["gruppe"], auftrag: "Gleiche die Fehlzeiten für {gruppe} ab. Der pseudonymisierte Export ist angehängt.", stichworte: "entschuldigung fehlen abwesenheit", skill: "verwaltungsassistent" },
   { id: "liste", titel: "Liste erstellen", kurz: "Rücklauf, Geld, Ausleihe", bereich: "verwaltung", typ: "claude", felder: ["gruppe", "thema"], auftrag: "Erstelle eine Rücklaufliste für {gruppe}: {thema}.", stichworte: "schülerliste klassenliste geld einsammeln", skill: "verwaltungsassistent" },
   { id: "formular", titel: "Formular vorbefüllen", kurz: "Schulformulare mit Kürzeln", bereich: "verwaltung", typ: "claude", felder: ["gruppe"], auftrag: "Befülle das angehängte Formular für {gruppe} vor.", stichworte: "antrag formular vordruck", skill: "verwaltungsassistent" },
+  { id: "sicherung", titel: "Schülerdaten sichern", kurz: "Sicherung anlegen oder zurückholen, Erinnerung jede Woche", bereich: "verwaltung", typ: "lokal", ziel: "aktion:sicherung", stichworte: "backup sicherung sichern datensicherung wiederherstellen zurückholen usb stick verloren gelöscht", skill: "lernstandsakte", neu_seit: "2026-11-18" },
 
   // Selbstmanagement
   { id: "woche", titel: "Woche planen", kurz: "Stundenplan, Fristen, Pausen", bereich: "selbst", typ: "claude", felder: [], auftrag: "Plane meine Schulwoche ab Montag.", stichworte: "termine zeit stress korrektur", skill: "wochenplaner" },
