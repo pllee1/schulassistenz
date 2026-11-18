@@ -30,7 +30,7 @@ Beim ersten Export einer Schulsoftware die Spaltenstruktur beschreiben und im Pr
 
 **Prüfen, bevor gerechnet wird:**
 
-- Nur die Spalten einlesen, die die Aufgabe braucht. Bei Fehlzeiten sind das Kürzel, Datum, Fehlstunden (und -minuten), Abwesenheitsgrund und Status. **Nicht einlesen:** Schüler-IDs der Schulsoftware (z. B. „Externe Id“ in WebUntis), Freitextspalten („Text“, „Entschuldigungstext“), Adressen, Geburtsdaten. Eine Schüler-ID ist ein Identifikator wie ein Name.
+- Nur die Spalten einlesen, die die Aufgabe braucht. Bei Fehlzeiten sind das Kürzel, Datum, Fehlstunden (und -minuten), Abwesenheitsgrund und Status. **Nicht einlesen:** Schüler-IDs der Schulsoftware (z. B. „Externe Id“ in WebUntis), Freitextspalten („Text“, „Entschuldigungstext“), Adressen, Geburtsdaten. Eine Schüler-ID ist ein Identifikator wie ein Name. Vom Abwesenheitsgrund nur die Werte auswerten, die die Regeln brauchen (`zaehlt_als_entschuldigt`, Verspätung). Andere Gründe (z. B. Krankheit, Arzttermin) weder auswerten noch wiedergeben.
 - Jede Kürzelzelle muss genau ein Kürzel enthalten. Stehen dort zwei Kürzel („I01 I02“) oder ein Kürzel mit weiterem Text, war die Pseudonymisierung unvollständig, etwa wegen eines gleichen Vor- oder Nachnamens. Dann **anhalten**, den Resttext nicht wiedergeben und nicht speichern. Die betroffenen Zeilen nennen, nur mit ihren Kürzeln. Bitten, die Stellen im Pseudonymisierer zu klären („Welches Kind?“) und neu hochzuladen. Weiterrechnen nur, wenn die Lehrkraft die Zuordnung ausdrücklich nennt.
 
 ## 2. Fehlzeiten abgleichen
