@@ -11,9 +11,9 @@ Bis zur Freigabe arbeitet das Plugin nur mit Aufgaben ohne Schülerdaten (Planun
 
 ## 2. Plugin installieren
 
-**Empfohlen, mit automatischen Updates:** In der Claude-Desktop-App unter „Anpassen“ → Plugins auf „Marketplace hinzufügen“ (Add marketplace) klicken und `pllee1/schulassistenz` eintragen. Dann das Plugin **schulassistenz** installieren. Neue Fassungen holt Claude von dort.
+**Empfohlen, mit automatischen Updates:** In der Claude-Desktop-App links in der Seitenleiste auf **Plugins** gehen, oben rechts auf **„Hinzufügen“** klicken und den Marketplace `pllee1/schulassistenz` eintragen. Dann das Plugin **schulassistenz** installieren und einen neuen Chat starten. Neue Fassungen holt Claude von dort. Eine früher direkt hochgeladene Fassung („Von dir“) vorher über „…“ entfernen.
 
-Ohne GitHub: die Datei `schulassistenz.plugin` speichern und unter „Anpassen“ → Plugins → „Plugin hochladen“ auswählen. Updates musst du dann selbst neu hochladen.
+Ohne GitHub: die Datei `schulassistenz.plugin` speichern und unter **Plugins** → „Hinzufügen“ hochladen. Updates musst du dann selbst neu hochladen.
 
 Am besten nutzt du Claude in der Desktop-App mit Zugriff auf einen Ordner deines Rechners. Dann kann Claude Dateien direkt in deinen Datenordner schreiben. Ohne Ordnerzugriff bekommst du die Dateien zum Herunterladen.
 

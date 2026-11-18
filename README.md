@@ -6,7 +6,9 @@ Schülerinnen und Schüler kommen nur als Kürzel vor. Dieses Verzeichnis enthä
 
 ## Installieren
 
-In der Claude-Desktop-App: „Anpassen“ → Plugins → „Marketplace hinzufügen“ (Add marketplace) → `pllee1/schulassistenz` → Plugin **schulassistenz** installieren. Danach „Richte schulassistenz ein.“ schreiben.
+In der Claude-Desktop-App links in der Seitenleiste auf **Plugins** → oben rechts **„Hinzufügen“** → Marketplace `pllee1/schulassistenz` eintragen → Plugin **schulassistenz** installieren. Danach in einem neuen Chat „Richte schulassistenz ein.“ schreiben.
+
+Wurde früher schon eine Fassung direkt hochgeladen (erscheint unter Plugins als „Von dir“ mit älterer Versionsnummer), diese zuerst über „…“ entfernen – sonst bleibt die alte Fassung stehen und die Marketplace-Fassung wird nicht aktiv.
 
 Ausführliche Einrichtung: [plugin/README.md](plugin/README.md)
 
