@@ -30,7 +30,7 @@
   window.addEventListener("message", async e => {
     if (e.source !== window || !e.data || e.data.sa !== "wu-export") return;
     let antwort;
-    try { antwort = await chrome.runtime.sendMessage({ cmd: "wu-export", op: e.data.op, von: e.data.von, bis: e.data.bis }); }
+    try { antwort = await chrome.runtime.sendMessage({ cmd: "wu-export", op: e.data.op, host: e.data.host }); }
     catch (err) { antwort = { ok: false, fehler: "Helfer nicht erreichbar. Bitte die Seite neu laden (F5)." }; }
     window.postMessage({ sa: "wu-export-antwort", id: e.data.id, ...(antwort || { ok: false, fehler: "Keine Antwort" }) }, "*");
   });

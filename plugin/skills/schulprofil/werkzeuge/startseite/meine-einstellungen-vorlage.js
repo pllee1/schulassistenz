@@ -21,6 +21,8 @@ window.SA_EINSTELLUNGEN = {
   // Optional: Gruppenordner der Schule (nur lesen), z. B. IServ „Gruppen“ über den Schulassistenz-Helfer ab 0.5.
   // web = WebDAV-Adresse der Gruppen, laufwerk = derselbe Ort als Netzlaufwerk für Claude (nur Anzeige), gruppen = feste Auswahl (leer = auf der Seite wählen)
   // schulordner: { web: "https://<eure-iserv-adresse>/webdav/Groups", laufwerk: "S:\\", gruppen: [] },
+  // Optional: Adresse eurer WebUntis-Seite für „Aus WebUntis holen“ (Fehlzeiten-Ampel), z. B. "https://<schule>.webuntis.com"
+  // webuntis: "",
   // Optional: Ferien und unterrichtsfreie Tage für die Fehlzeiten-Ampel (Entschuldigungsfrist in Schultagen), je [erster Tag, letzter Tag].
   // ferien: [["2026-12-23", "2027-01-08"], ["2027-02-01", "2027-02-02"]],
   // Optional: Filter für Schulkalender. Ohne Eintrag leitet die Seite Jahrgänge und Klassen aus „lerngruppen“ ab.

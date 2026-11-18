@@ -54,9 +54,9 @@ Liegen Akten und Kürzellisten auf IServ (Dateien › Eigene), liest und schreib
 
 Ab 0.5 liest der Helfer auch die Gruppenordner auf IServ (Dateien › Gruppen, Adressen `https://<server>/webdav/Groups/…`), damit „Material suchen“ auf der Startseite Arbeitspläne, Vorlagen und Fachgruppenmaterial mit durchsucht. Dort nur lesen: Schreiben, Ordner anlegen und Löschen lehnt der Helfer für Gruppenordner ab. Einrichtung: Anleitung der Startseite, Abschnitt „Gruppenordner der Schule“.
 
-## Fehlzeiten aus WebUntis (ab 0.6)
+## Fehlzeiten aus WebUntis (ab 0.7)
 
-Für die Fehlzeiten-Ampel der Startseite. Einmal einrichten: In WebUntis den Bericht „Abwesenheiten pro Schüler“ deiner Klasse als Excel oder CSV herunterladen. Der Helfer merkt sich dabei nur die Adresse des Downloads (dafür braucht er ab 0.6 die Berechtigung „Downloads verwalten“). Danach holt „Aus WebUntis holen“ auf der Startseite den Bericht selbst, vom Schuljahresbeginn bis heute, über deine Anmeldung in diesem Browser. Er liest nur, er schreibt nichts in WebUntis. Die Namen ersetzt die Startseite durch Kürzel. Erzeugt WebUntis die Datei erst im Browser, geht das nicht. Dann ziehst du die Datei jedes Mal auf die Startseite.
+Für die Fehlzeiten-Ampel der Startseite. WebUntis erzeugt jeden Bericht beim Klick neu, deshalb läuft es so: Auf der Startseite „Aus WebUntis holen“ klicken. Der Helfer öffnet WebUntis (beim ersten Mal die Startseite von WebUntis, danach direkt die Berichtsseite). Dort wie gewohnt Klasse bzw. Kurs und „Aktuelles Schuljahr“ wählen und bei „Fehlzeiten pro Schüler*in“ (pro Stunde) auf CSV oder Excel klicken. Der Helfer fängt genau diesen Download ab (nur WebUntis, nur innerhalb von 10 Minuten nach dem Klick auf der Startseite), holt die Datei über deine Anmeldung, löscht den Download und gibt die Datei an die Startseite. Sie landet nicht im Download-Ordner und liegt nur im Arbeitsspeicher, bis die Startseite sie abholt. Die Namen ersetzt die Startseite durch Kürzel. Der Helfer schreibt nichts in WebUntis. Dafür braucht er die Berechtigung „Downloads verwalten“.
 
 Der Ordner heißt weiter `iserv-helfer`, damit dein Browser die Erweiterung beim Update wiederfindet.
 

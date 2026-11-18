@@ -140,71 +140,64 @@ chrome.alarms.onAlarm.addListener(a => { if (a.name === "sa-neue-fassung") aufNe
 chrome.runtime.onStartup.addListener(aufNeueFassungPruefen);
 aufNeueFassungPruefen();
 
-/* WebUntis-Fehlzeiten für die Fehlzeiten-Ampel der Startseite.
-   Lernen: Exportiert die Lehrkraft einmal selbst in WebUntis den Bericht „Abwesenheiten“ (z. B. AbsencePerStudent),
-   merkt sich der Helfer nur die Adresse dieses Downloads (keine Daten, kein Passwort).
-   Holen: Auf Knopfdruck der Startseite ruft er dieselbe Adresse mit dem gewünschten Zeitraum über die WebUntis-Anmeldung
-   im Browser ab (nur lesend) und gibt die Datei an die Startseite. Namen ersetzt die Startseite lokal durch Kürzel. */
+/* WebUntis-Fehlzeiten für die Fehlzeiten-Ampel der Startseite (ab 0.7).
+   WebUntis erzeugt Berichte (reports.do) für jeden Klick neu und liefert sie unter einer Einmal-Adresse (msgId) aus.
+   Ablauf: Die Startseite meldet „warten“ und öffnet die Berichtsseite von WebUntis. Die Lehrkraft klickt dort wie gewohnt
+   auf CSV oder Excel. Der Helfer fängt genau diesen einen Download ab (nur WebUntis, nur CSV/Excel, nur innerhalb von 10 Minuten),
+   holt die Datei selbst über die Anmeldung im Browser, bricht den Download ab und löscht ihn, damit keine Datei mit Klarnamen
+   im Download-Ordner landet. Die Datei liegt nur im Arbeitsspeicher (storage.session), bis die Startseite sie abholt.
+   Die Startseite ersetzt die Namen lokal durch Kürzel. Der Helfer schreibt nichts in WebUntis.
+   Gemerkt wird nur die Adresse der Berichtsseite (ohne Daten). */
 const WU_RE = /^https:\/\/[a-z0-9.-]+\.webuntis\.com\//i;
-const wuPasst = (url, datei) => WU_RE.test(url || "") && /absen|abwesen|fehlzeit/i.test((url || "") + " " + (datei || ""));
-if (chrome.downloads && chrome.downloads.onCreated) {
-  chrome.downloads.onCreated.addListener(d => {
-    const url = d.finalUrl || d.url || "";
-    if (wuPasst(url, d.filename)) chrome.storage.local.set({ saWuExport: { url, gelernt: Date.now() } });
-    else if (/^blob:https:\/\/[a-z0-9.-]+\.webuntis\.com\//i.test(url) && /absen|abwesen/i.test(d.filename || "")) chrome.storage.local.set({ saWuExportBlob: Date.now() });
-  });
-  chrome.downloads.onChanged.addListener(c => {
-    if (!c.filename || !c.filename.current) return;
-    chrome.downloads.search({ id: c.id }, l => { const d = l && l[0]; if (d && wuPasst(d.finalUrl || d.url, c.filename.current)) chrome.storage.local.set({ saWuExport: { url: d.finalUrl || d.url, gelernt: Date.now() } }); });
-  });
-}
-const WU_DATUM = /^(\d{8}|\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?|\d{1,2}\.\d{1,2}\.\d{4}|1\d{12})$/;
-function wuFormat(alt, iso) {
-  if (/^\d{8}$/.test(alt)) return iso.replace(/-/g, "");
-  if (/^\d{4}-\d{2}-\d{2}T/.test(alt)) return iso + alt.slice(10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(alt)) return iso;
-  if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(alt)) { const [j, m, t] = iso.split("-"); return `${t}.${m}.${j}`; }
-  if (/^1\d{12}$/.test(alt)) return String(new Date(iso + "T00:00:00").getTime());
-  return alt;
-}
-// Aufbau der Adresse ohne Werte (für die Fehlersuche): Pfad, Namen der Parameter und welche wie ein Datum aussehen
-function wuAufbau(url) {
-  const u = new URL(url);
-  return u.host + u.pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, "<id>").replace(/\d{5,}/g, "<zahl>") + (u.search ? "?" + [...u.searchParams.entries()].map(([k, v]) => k + "=" + (WU_DATUM.test(v) ? "<datum>" : /^\d+$/.test(v) ? "<zahl>" : v.length > 24 ? "<text>" : v)).join("&") : "") + (u.hash ? " #" + u.hash.length : "");
-}
-function wuZeitraum(url, von, bis) {
-  const u = new URL(url); const keys = [...u.searchParams.keys()];
-  const datumsKeys = keys.filter(k => WU_DATUM.test(u.searchParams.get(k)));
-  const setze = (k, iso) => { u.searchParams.set(k, wuFormat(u.searchParams.get(k), iso)); };
-  const istVon = k => /(^|_)(sd|start|von|from|begin)|startdate|^rpt_sd$/i.test(k), istBis = k => /(^|_)(ed|end|bis|to)|enddate|^rpt_ed$/i.test(k);
-  let kv = datumsKeys.find(istVon), kb = datumsKeys.find(istBis);
-  if (!kv && !kb && datumsKeys.length === 2) [kv, kb] = datumsKeys;
-  if (kv && von) setze(kv, von); if (kb && bis) setze(kb, bis);
-  return { url: u.toString(), zeitraum: !!(kv || kb) };
-}
-async function wuExport(m) {
-  const d = await chrome.storage.local.get(["saWuExport", "saWuExportBlob"]);
-  if (m.op === "status") return { ok: true, aufbau: d.saWuExport ? wuAufbau(d.saWuExport.url) : "", gelernt: d.saWuExport ? d.saWuExport.gelernt : 0, host: d.saWuExport ? new URL(d.saWuExport.url).host : "", blob: d.saWuExportBlob || 0 };
-  if (m.op === "vergessen") { await chrome.storage.local.remove(["saWuExport", "saWuExportBlob"]); return { ok: true }; }
-  if (m.op === "anmelden") { if (d.saWuExport) chrome.tabs.create({ url: new URL(d.saWuExport.url).origin + "/WebUntis/" }); return { ok: true }; }
-  if (m.op !== "holen") return { ok: false, fehler: "Unbekannter Befehl" };
-  if (!d.saWuExport) return { ok: false, lernen: true, fehler: "Der Helfer kennt den Export deiner Schule noch nicht." };
-  const z = wuZeitraum(d.saWuExport.url, m.von, m.bis);
-  const r = await fetch(z.url, { credentials: "include", cache: "no-store" });
-  if (r.status === 401 || r.status === 403) return { ok: false, anmelden: true, fehler: "Bitte in WebUntis anmelden und noch einmal versuchen." };
-  if (!r.ok) return { ok: false, fehler: "WebUntis antwortet mit " + r.status };
-  const typ = r.headers.get("content-type") || "";
-  const buf = await r.arrayBuffer();
-  if (/text\/html/i.test(typ)) {
-    const t = new TextDecoder().decode(buf.slice(0, 20000));
-    if (/<form[^>]*login|j_username|name="?password|anmelden/i.test(t) && !/<table/i.test(t)) return { ok: false, anmelden: true, fehler: "WebUntis zeigt die Anmeldeseite. Bitte in WebUntis anmelden und noch einmal versuchen." };
+const WU_WARTEN_MS = 10 * 60 * 1000;
+const sess = chrome.storage.session || chrome.storage.local;
+const wuFormatVon = (url, datei) => { const f = ((url || "").match(/[?&]format=([a-z]+)/i) || [])[1] || ((datei || "").match(/\.([a-z]+)$/i) || [])[1] || ""; return f.toLowerCase(); };
+async function wuDownload(d) {
+  const url = d.finalUrl || d.url || "";
+  if (!WU_RE.test(url) && !WU_RE.test(d.referrer || "")) return;
+  const { saWuWarten } = await sess.get("saWuWarten");
+  if (!saWuWarten || Date.now() - saWuWarten > WU_WARTEN_MS) return;
+  const fmt = wuFormatVon(url, d.filename);
+  if (d.referrer && WU_RE.test(d.referrer)) chrome.storage.local.set({ saWuSeite: d.referrer });
+  if (fmt === "pdf") { await sess.set({ saWuHinweis: "pdf" }); return; }
+  if (!/^(csv|xls|xlsx|txt)$/.test(fmt) && !/\.(csv|xlsx?|txt)$/i.test(d.filename || "")) return;
+  await sess.remove("saWuWarten");
+  chrome.downloads.cancel(d.id, () => chrome.downloads.erase({ id: d.id }, () => void chrome.runtime.lastError));
+  try {
+    if (/^(blob|data):/i.test(url)) throw new Error("WebUntis hat die Datei im Browser erzeugt. Bitte die Datei herunterladen und auf die Ampel ziehen.");
+    const r = await fetch(url, { credentials: "include", cache: "no-store" });
+    if (!r.ok) throw new Error("WebUntis antwortet mit " + r.status);
+    const buf = await r.arrayBuffer();
+    await sess.set({ saWuDatei: { daten: b64aus(buf), typ: r.headers.get("content-type") || "", name: fmt.toUpperCase() + "-Export", zeit: Date.now() } });
+  } catch (e) {
+    await sess.set({ saWuFehler: String((e && e.message) || e) });
   }
-  const cd = r.headers.get("content-disposition") || "";
-  const name = decodeURIComponent(((cd.match(/filename\*=UTF-8''([^;]+)/i) || cd.match(/filename="?([^";]+)"?/i) || [])[1] || "WebUntis-Export").trim());
-  return { ok: true, daten: b64aus(buf), typ, name, zeitraum: z.zeitraum, aufbau: wuAufbau(d.saWuExport.url), gelernt: d.saWuExport.gelernt };
+}
+if (chrome.downloads && chrome.downloads.onCreated) chrome.downloads.onCreated.addListener(d => { wuDownload(d).catch(() => {}); });
+async function wuExport(m) {
+  if (m.op === "warten") {
+    await sess.remove(["saWuDatei", "saWuFehler", "saWuHinweis"]); await sess.set({ saWuWarten: Date.now() });
+    const { saWuSeite } = await chrome.storage.local.get("saWuSeite");
+    const ziel = saWuSeite || (/^https:\/\/[a-z0-9.-]+\.webuntis\.com$/i.test(m.host || "") ? m.host + "/WebUntis/" : "");
+    if (ziel) chrome.tabs.create({ url: ziel });
+    return { ok: true, seite: !!saWuSeite, geoeffnet: !!ziel };
+  }
+  if (m.op === "abholen") {
+    const d = await sess.get(["saWuDatei", "saWuFehler", "saWuHinweis", "saWuWarten"]);
+    if (d.saWuDatei) { await sess.remove("saWuDatei"); return { ok: true, fertig: true, ...d.saWuDatei }; }
+    if (d.saWuFehler) { await sess.remove("saWuFehler"); return { ok: false, fehler: d.saWuFehler }; }
+    if (d.saWuHinweis) { await sess.remove("saWuHinweis"); return { ok: true, fertig: false, hinweis: d.saWuHinweis }; }
+    return { ok: true, fertig: false, wartet: !!d.saWuWarten && Date.now() - d.saWuWarten < WU_WARTEN_MS };
+  }
+  if (m.op === "abbrechen") { await sess.remove(["saWuWarten", "saWuDatei", "saWuFehler", "saWuHinweis"]); return { ok: true }; }
+  if (m.op === "status") { const { saWuSeite } = await chrome.storage.local.get("saWuSeite"); return { ok: true, seite: !!saWuSeite }; }
+  if (m.op === "vergessen") { await chrome.storage.local.remove(["saWuSeite", "saWuExport", "saWuExportBlob"]); return { ok: true }; }
+  return { ok: false, fehler: "Unbekannter Befehl" };
 }
 chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   if (m.cmd !== "wu-export") return;
-  wuExport(m).then(antwort).catch(e => antwort({ ok: false, fehler: "WebUntis nicht erreichbar (" + String((e && e.message) || e) + ")." }));
+  wuExport(m).then(antwort).catch(e => antwort({ ok: false, fehler: "Helfer-Fehler (" + String((e && e.message) || e) + ")." }));
   return true;
 });
+// Alte, nicht mehr gültige Lern-Adressen (0.6) entfernen
+chrome.storage.local.remove(["saWuExport", "saWuExportBlob"]);

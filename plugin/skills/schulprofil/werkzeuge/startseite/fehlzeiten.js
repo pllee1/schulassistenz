@@ -246,11 +246,11 @@ async function standLesen(gid){
 
 /* ---------- Helfer: Export aus WebUntis holen ---------- */
 function wuRuf(op,extra){return new Promise((ok,nein)=>{const id=Math.random().toString(36).slice(2);
-  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.6 geladen? Seite neu laden (F5)."))},60000);
+  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.7 geladen? Seite neu laden (F5)."))},60000);
   function h(e){if(e.source!==window||!e.data||e.data.sa!=="wu-export-antwort"||e.data.id!==id)return;clearTimeout(t);window.removeEventListener("message",h);ok(e.data)}
   window.addEventListener("message",h);window.postMessage({sa:"wu-export",op,id,...(extra||{})},"*")})}
 const helferVersion=()=>document.documentElement.getAttribute("data-sa-helfer")||"";
-const helferKann=()=>{const v=helferVersion().split(".").map(Number);return v.length>1&&(v[0]>0||v[1]>=6)};
+const helferKann=()=>{const v=helferVersion().split(".").map(Number);return v.length>1&&(v[0]>0||v[1]>=7)};
 
 /* ---------- Oberfläche ---------- */
 const css=document.createElement("style");
@@ -305,7 +305,7 @@ function zeichnen(meldung){
       return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td><td class="z">${fmt(x.unent)}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td><td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
   }
   const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (rechts „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>`<li>${esc(n)} (${c} Zeilen)</li>`).join("")}</ul></div>`:"";
-  const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> ${F.kurz?"Der Helfer konnte den Zeitraum in der WebUntis-Adresse nicht umstellen und hat den Zeitraum deines ersten Downloads geholt.":"Ist der Zeitraum im Export ab Schuljahresbeginn eingestellt?"} Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung. ${F.kurz?`Lade den Bericht einmal neu mit Zeitraum ab Schuljahresbeginn herunter, dann lernt der Helfer die Adresse neu.${F.aufbau?` Wenn das nicht hilft, gib Claude diesen Aufbau der Adresse (ohne Daten): <code style="overflow-wrap:anywhere">${esc(F.aufbau)}</code>`:""}`:""}</div>`:"";
+  const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> Ist in WebUntis als Zeitraum „Aktuelles Schuljahr“ eingestellt? Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung.</div>`:"";
   const klasseHinweis=F.neu&&F.klassen&&F.klassen.length===1&&!F.gid.toLowerCase().startsWith(F.klassen[0].toLowerCase())?`<div class="fz-warn">Die Datei ist für die Klasse ${esc(F.klassen[0])}, angezeigt wird ${esc(F.gid)}. Oben unter „Lerngruppe“ kannst du wechseln.</div>`:"";
   const ohne=F.ohne?`<div class="fz-warn">${F.ohne} Zeilen gehören zu Kindern aus anderen Lerngruppen und sind hier nicht enthalten. Andere Lerngruppe wählen, um sie zu sehen.</div>`:"";
   const helfer=helferKann()?`<button class="btn primary" id="fz-holen">Aus WebUntis holen</button>`:"";
@@ -340,26 +340,29 @@ async function einlesen(bufP,quelle,zeitraum){
   try{const erg=await verarbeiten(await bufP);const gid=F.gid&&erg.daten.some(d=>d.treffer.some(t=>t.gruppe===F.gid))?F.gid:gruppeVorschlag(erg);
     const p=pseudoZeilen(erg,gid);
     const tage=erg.daten.map(d=>d.iso).sort();const daten=`${datumDE(tage[0])}–${datumDE(tage[tage.length-1])}`;
-    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,fehlend:erg.fehlend,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()],aufbau:F.aufbauNeu||"",kurz:!!F.kurzNeu};
+    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,fehlend:erg.fehlend,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()]};
     zeichnen(`${erg.daten.length} Zeilen gelesen. Noch nicht gespeichert.`)}
   catch(e){$("#fz-toast").textContent="";g.hidden=false;g.textContent=(e.message||String(e))+(F.antwortNeu?" ("+F.antwortNeu+")":"");F.antwortNeu=""}
 }
+let wartenTimer=null;
+function wartenEnde(){if(wartenTimer){clearInterval(wartenTimer);wartenTimer=null}const l=$("#fz-lernen");if(l)l.innerHTML=""}
 async function holen(){
-  const g=$("#fz-guard");g.hidden=true;const t=$("#fz-toast");t.textContent="Frage WebUntis …";
-  try{const von=schuljahrBeginn(),bis=heuteISO();const a=await wuRuf("holen",{von,bis});
-    if(!a.ok){t.textContent="";
-      if(a.lernen)return lernenZeigen();
-      g.hidden=false;g.textContent=a.fehler||"WebUntis hat nicht geantwortet.";
-      if(a.anmelden){const b=document.createElement("button");b.className="btn small ghost";b.textContent="WebUntis öffnen";b.style.marginLeft="8px";b.addEventListener("click",()=>wuRuf("anmelden"));g.appendChild(b)}
-      return}
-    const buf=davBuf(a.daten);F.aufbauNeu=a.aufbau||"";F.kurzNeu=!a.zeitraum;
-    F.antwortNeu=`Antwort von WebUntis: ${a.typ||"ohne Typ"}, ${buf.byteLength} Bytes. Adresse: ${a.aufbau||"?"}`;
-    await einlesen(Promise.resolve(buf),"WebUntis über den Helfer",a.zeitraum?`${datumDE(von)}–${datumDE(bis)}`:"")}
-  catch(e){t.textContent="";g.hidden=false;g.textContent=e.message||String(e)}
-}
-async function lernenZeigen(){
-  let blob=false;try{const s=await wuRuf("status");blob=!!s.blob}catch{}
-  $("#fz-lernen").innerHTML=`<div class="fz-warn"><b>Einmal einrichten:</b> Der Helfer lernt den Export deiner Schule, wenn du ihn einmal selbst herunterlädst.<ol style="margin:6px 0 0;padding-left:18px"><li>In WebUntis den Bericht <b>Abwesenheiten pro Schüler</b> deiner Klasse öffnen (Klassenbuch › Berichte bzw. Abwesenheiten › Berichte), Zeitraum ab Schuljahresbeginn.</li><li>Als Excel oder CSV herunterladen. Der Helfer merkt sich nur die Adresse, keine Daten.</li><li>Die heruntergeladene Datei hierher ziehen. Danach im Download-Ordner löschen, sie enthält Klarnamen.</li></ol>Ab dann reicht „Aus WebUntis holen“.${blob?"<br><b>Hinweis:</b> WebUntis hat die Datei bei dir im Browser erzeugt. Dann kann der Helfer sie nicht selbst holen, und du ziehst die Datei jedes Mal hierher.":""}</div>`;
+  const g=$("#fz-guard");g.hidden=true;const t=$("#fz-toast");t.textContent="";
+  try{const host=(String(E.webuntis||"").match(/^https:\/\/[a-z0-9.-]+\.webuntis\.com/i)||[])[0]||"";
+    const a=await wuRuf("warten",{host});if(!a.ok)throw new Error(a.fehler||"Der Helfer antwortet nicht.");
+    const box=$("#fz-lernen");
+    box.innerHTML=`<div class="fz-warn"><b>${a.geoeffnet?"WebUntis ist in einem neuen Tab geöffnet.":"Öffne jetzt WebUntis."}</b> ${a.seite?"":"Geh dort zu Klassenbuch › Berichte (Abwesenheiten). "}Wähle Klasse bzw. Kurs und als Zeitraum <b>Aktuelles Schuljahr</b>, dann bei <b>Fehlzeiten pro Schüler*in</b> („pro Stunde“) auf das <b>CSV</b>- oder <b>Excel</b>-Symbol klicken.<br>Der Helfer übernimmt die Datei direkt hierher. Sie landet nicht im Download-Ordner. Er wartet 10 Minuten. <span id="fz-wstat"></span> <button class="btn small ghost" id="fz-wab">Abbrechen</button></div>`;
+    $("#fz-wab").addEventListener("click",()=>{wuRuf("abbrechen").catch(()=>{});wartenEnde()});
+    const start=Date.now();if(wartenTimer)clearInterval(wartenTimer);
+    wartenTimer=setInterval(async()=>{
+      if(!document.body.contains(box)||Date.now()-start>10*6e4){wartenEnde();return}
+      let r;try{r=await wuRuf("abholen")}catch{return}
+      if(!r.ok){wartenEnde();g.hidden=false;g.textContent=r.fehler||"Abholen hat nicht geklappt.";return}
+      if(r.hinweis==="pdf"){const w=$("#fz-wstat");if(w)w.innerHTML="<b>Das war die PDF. Bitte das CSV- oder Excel-Symbol nehmen.</b>";return}
+      if(r.fertig){wartenEnde();const buf=davBuf(r.daten);F.antwortNeu=`Antwort von WebUntis: ${r.typ||"ohne Typ"}, ${buf.byteLength} Bytes`;await einlesen(Promise.resolve(buf),"WebUntis über den Helfer","");return}
+      if(!r.wartet)wartenEnde();
+    },1500);
+  }catch(e){g.hidden=false;g.textContent=e.message||String(e)}
 }
 async function speichern(){
   const g=$("#fz-guard");g.hidden=true;
