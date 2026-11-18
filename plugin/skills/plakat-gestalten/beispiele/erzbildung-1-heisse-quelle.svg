@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="560" viewBox="0 0 800 560">
+<style>
+.lab{font:600 17px 'Instrument Sans',sans-serif;fill:#1d2a33;paint-order:stroke;stroke:#fff;stroke-opacity:.85;stroke-width:3.5px;stroke-linejoin:round}
+.labw{font:600 17px 'Instrument Sans',sans-serif;fill:#fff}
+.num{font:700 20px 'Instrument Sans',sans-serif;fill:#fff}
+</style>
+<defs>
+  <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#8cc6ea"/><stop offset=".55" stop-color="#5a9fcf"/><stop offset="1" stop-color="#3a7fb3"/>
+  </linearGradient>
+  <linearGradient id="ray" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="sed" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#b59a76"/><stop offset="1" stop-color="#8c7154"/>
+  </linearGradient>
+  <linearGradient id="magma" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#c8441f"/><stop offset=".5" stop-color="#9e2c16"/><stop offset="1" stop-color="#6e1d0f"/>
+  </linearGradient>
+  <linearGradient id="chim" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#2a2522"/><stop offset=".45" stop-color="#4a413b"/><stop offset="1" stop-color="#1c1917"/>
+  </linearGradient>
+  <linearGradient id="flow" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#ffb35c" stop-opacity=".95"/><stop offset="1" stop-color="#ffd59a" stop-opacity=".25"/>
+  </linearGradient>
+  <radialGradient id="glow" cx=".5" cy="0" r=".9">
+    <stop offset="0" stop-color="#ffcf7a" stop-opacity=".55"/><stop offset="1" stop-color="#ffcf7a" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="smoke" x="-60%" y="-30%" width="220%" height="160%">
+    <feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="3" seed="4"/>
+    <feDisplacementMap in="SourceGraphic" scale="30"/>
+    <feGaussianBlur stdDeviation="4"/>
+  </filter>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="2"/>
+    <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .10 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+  <filter id="cloud1" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="14"/></filter><filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter>
+  <clipPath id="c1"><rect width="800" height="560"/></clipPath>
+</defs>
+<g clip-path="url(#c1)">
+  <rect width="800" height="560" fill="url(#sea)"/>
+  <!-- Lichtstrahlen -->
+  <polygon points="120,0 200,0 320,330 210,330" fill="url(#ray)"/>
+  <polygon points="430,0 480,0 560,300 490,300" fill="url(#ray)"/>
+  <polygon points="640,0 700,0 760,260 700,260" fill="url(#ray)" opacity=".7"/>
+  <!-- Wasseroberfläche -->
+  <path d="M0,14 Q40,6 80,14 T160,14 T240,14 T320,14 T400,14 T480,14 T560,14 T640,14 T720,14 T800,14 V0 H0Z" fill="#7fc0e6" opacity=".6"/>
+
+  <!-- Rauchfahnen -->
+  <g filter="url(#smoke)" fill="#35312e" opacity=".9"><circle cx="272" cy="300" r="10"/><circle cx="268" cy="293" r="12"/><circle cx="272" cy="285" r="13"/><circle cx="275" cy="276" r="15"/><circle cx="272" cy="265" r="16"/><circle cx="272" cy="254" r="18"/><circle cx="271" cy="241" r="20"/><circle cx="273" cy="227" r="21"/><circle cx="277" cy="213" r="23"/><circle cx="273" cy="197" r="24"/><circle cx="269" cy="180" r="26"/><circle cx="275" cy="161" r="28"/><circle cx="275" cy="142" r="29"/><circle cx="280" cy="122" r="31"/><circle cx="275" cy="100" r="32"/><circle cx="276" cy="77" r="34"/><circle cx="280" cy="54" r="36"/><circle cx="563" cy="300" r="10"/><circle cx="564" cy="293" r="12"/><circle cx="567" cy="285" r="13"/><circle cx="571" cy="276" r="15"/><circle cx="576" cy="265" r="16"/><circle cx="579" cy="254" r="18"/><circle cx="584" cy="241" r="20"/><circle cx="579" cy="227" r="21"/><circle cx="578" cy="213" r="23"/><circle cx="585" cy="197" r="24"/><circle cx="588" cy="180" r="26"/><circle cx="595" cy="161" r="28"/><circle cx="591" cy="142" r="29"/><circle cx="593" cy="122" r="31"/><circle cx="591" cy="100" r="32"/><circle cx="593" cy="77" r="34"/><circle cx="595" cy="54" r="36"/></g><g filter="url(#soft)" fill="#5d5650" opacity=".5"><circle cx="268" cy="300" r="10"/><circle cx="264" cy="293" r="12"/><circle cx="268" cy="285" r="13"/><circle cx="271" cy="276" r="15"/><circle cx="268" cy="265" r="16"/><circle cx="268" cy="254" r="18"/><circle cx="267" cy="241" r="20"/><circle cx="269" cy="227" r="21"/><circle cx="273" cy="213" r="23"/><circle cx="269" cy="197" r="24"/><circle cx="265" cy="180" r="26"/><circle cx="271" cy="161" r="28"/><circle cx="271" cy="142" r="29"/><circle cx="276" cy="122" r="31"/><circle cx="271" cy="100" r="32"/><circle cx="272" cy="77" r="34"/><circle cx="276" cy="54" r="36"/></g>
+  <!-- Metallpartikel in der Fahne -->
+  <g>
+    <circle cx="255" cy="150" r="3.2" fill="#f2c14e"/><circle cx="280" cy="120" r="2.6" fill="#d9dde2"/>
+    <circle cx="268" cy="200" r="3" fill="#c98b4a"/><circle cx="246" cy="235" r="2.4" fill="#f2c14e"/>
+    <circle cx="290" cy="175" r="2.4" fill="#d9dde2"/><circle cx="262" cy="90" r="2.4" fill="#c98b4a"/>
+    <circle cx="560" cy="160" r="3" fill="#f2c14e"/><circle cx="575" cy="200" r="2.6" fill="#d9dde2"/>
+    <circle cx="548" cy="230" r="3" fill="#c98b4a"/><circle cx="570" cy="115" r="2.4" fill="#f2c14e"/>
+    <circle cx="582" cy="250" r="2.4" fill="#d9dde2"/>
+  </g>
+
+  <!-- Meeresboden -->
+  <path d="M0,330 C120,322 200,338 330,330 C460,322 560,340 800,328 V470 H0Z" fill="url(#sed)"/>
+  <path d="M0,330 C120,322 200,338 330,330 C460,322 560,340 800,328" fill="none" stroke="#d2bb98" stroke-width="3" opacity=".7"/>
+  <path d="M0,380 C200,372 420,392 800,378" fill="none" stroke="#7d634a" stroke-width="2" opacity=".5"/>
+  <path d="M0,420 C220,428 500,410 800,424" fill="none" stroke="#7d634a" stroke-width="2" opacity=".4"/>
+  <rect y="320" width="800" height="160" filter="url(#grain)" fill="#000"/>
+
+  <!-- Gestein in der Tiefe -->
+  <path d="M0,470 C150,462 300,478 450,468 C600,458 700,474 800,466 V560 H0Z" fill="url(#magma)"/>
+  <ellipse cx="272" cy="472" rx="90" ry="26" fill="#ffb35c" opacity=".45" filter="url(#cloud1)"/>
+  <ellipse cx="565" cy="472" rx="90" ry="26" fill="#ffb35c" opacity=".45" filter="url(#cloud1)"/>
+
+  <!-- aufsteigendes heißes Wasser (Spalten) -->
+  <g fill="none" stroke="url(#flow)" stroke-width="6" stroke-linecap="round">
+    <path d="M250,468 C258,430 262,380 268,316"/><path d="M296,468 C290,430 282,380 278,316"/>
+    <path d="M548,468 C556,430 560,380 562,316"/><path d="M592,468 C584,430 576,380 570,316"/>
+  </g>
+  <g fill="#ffd59a">
+    <polygon points="262,340 270,322 276,340"/><polygon points="275,340 281,322 288,340"/>
+    <polygon points="556,340 563,322 570,340"/><polygon points="566,340 572,322 579,340"/>
+  </g>
+
+  <!-- Schlote -->
+  <path d="M248,332 L258,262 L263,250 L280,250 L286,262 L296,332Z" fill="url(#chim)"/>
+  <path d="M258,262 L263,250 L280,250 L286,262" fill="none" stroke="#6b5f55" stroke-width="2"/>
+  <path d="M538,332 L550,268 L555,256 L572,256 L577,268 L590,332Z" fill="url(#chim)"/>
+  <path d="M550,268 L555,256 L572,256 L577,268" fill="none" stroke="#6b5f55" stroke-width="2"/>
+  <path d="M262,300 l8,-6 M284,290 l-7,-5 M552,305 l8,-6 M580,292 l-7,-5" stroke="#5b504a" stroke-width="2"/>
+
+  <!-- Beschriftungen mit Führungslinien -->
+  <g stroke="#1d2a33" stroke-width="1.5" fill="none">
+    <path d="M300,128 H392"/><circle cx="300" cy="128" r="3" fill="#1d2a33"/>
+    <path d="M592,312 H640"/>
+  </g>
+  <text x="400" y="122" class="lab">heißes Wasser</text>
+  <text x="400" y="142" class="lab">mit gelösten Metallen</text>
+  <text x="40" y="78" class="lab">Meer</text>
+  <text x="648" y="318" class="lab">Schlot</text>
+  <text x="40" y="410" class="lab">Meeresboden</text>
+  <text x="40" y="530" class="labw">heißes Gestein in der Tiefe</text>
+
+  <!-- Nummer -->
+  <circle cx="34" cy="34" r="20" fill="#8a3b12"/><text x="34" y="41" text-anchor="middle" class="num">1</text>
+</g>
+</svg>

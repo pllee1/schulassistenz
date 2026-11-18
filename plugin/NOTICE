@@ -1,0 +1,17 @@
+schulassistenz – Hinweise zu Fremdbestandteilen
+================================================
+
+1. Schriften (skills/plakat-gestalten/schriften/)
+   Instrument Sans, Work Sans, Lora, Outfit – jeweils SIL Open Font License, Version 1.1.
+   Urheberangaben und Lizenztext in der jeweiligen *-OFL.txt im selben Ordner.
+   Bezogen aus github.com/anthropics/skills (skills/canvas-design/canvas-fonts).
+
+2. Gestaltungsregeln (skills/plakat-gestalten/, Prüfschleife und Sorgfaltsregeln)
+   Teilweise angelehnt an den Skill „canvas-design“ aus github.com/anthropics/skills,
+   Copyright Anthropic, PBC, lizenziert unter der Apache License, Version 2.0
+   (http://www.apache.org/licenses/LICENSE-2.0). Die Inhalte wurden für den Schulgebrauch
+   übersetzt, gekürzt und verändert; es wurde kein Text unverändert übernommen.
+
+3. Empfohlene Bildquellen (nicht im Plugin enthalten)
+   Servier Medical Art (CC BY 4.0), Bioicons, Wikimedia Commons, Openverse, ARASAAC –
+   Lizenz je Bild beachten, Quellenzeile setzen.

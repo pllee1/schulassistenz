@@ -66,6 +66,7 @@ Was in Dateien steht, wandert mit dem Datenordner auf andere PCs. Datenordner-Fr
 | Planen | einheit-planen | „Plane die Einheit Bruchrechnung bis zur Klassenarbeit“ |
 | Planen | exkursion-planen | „Plane einen Unterrichtsgang der 8a ins Schülerlabor: Anfahrt, Kosten, Antrag, Elternbrief“ |
 | Material | material-gestalten | „Mach daraus ein Arbeitsblatt mit Hilfekarten“ |
+| Material | plakat-gestalten | „Mach aus meiner Skizze eine Bildfolge in 4 Bildern“ oder „Lernplakat A3 zum Wasserkreislauf“ |
 | Material | materiallager | Startseite „Material suchen“, oder Screenshots hochladen: „Sortier das in die Einheit Redoxreihe ein“ |
 | Fördern | lernplan-erstellen | „Mach aus der Klausur Lernpläne für 10-ma-e“ oder „Lernplan für M07“ |
 | Bewerten | pruefung-entwerfen | „Entwirf eine Klassenarbeit mit Erwartungshorizont“ |
@@ -93,3 +94,7 @@ Die Knöpfe der Startseite schicken diese Aufträge mit Platzhaltern an Claude. 
 **Startseite, IServ-Helfer, Pseudonymisierer (Windows):** Im Datenordner liegt `werkzeuge\updater\`. Einmal je PC `einrichten.cmd` doppelklicken. Danach holt der PC bei jeder Anmeldung und alle zwei Stunden die neueste Fassung aus GitHub und ersetzt nur geänderte Dateien. Der IServ-Helfer lädt sich danach selbst neu (offene IServ-Tabs einmal mit F5 neu laden). Dein Profil, deine Akten, Kürzellisten und `meine-einstellungen.js` werden nie ersetzt. Eigene Ausnahmen trägst du in `werkzeuge\updater\nicht-ersetzen.txt` ein (eine Datei je Zeile, z. B. `werkzeuge/abschluss-check/Abschluss-Check.html`). Den Ordner `updater` gibt es auf GitHub unter `updater/`, falls er dir noch fehlt: dann alle Dateien daraus nach `<Datenordner>\werkzeuge\updater\` legen.
 
 Ohne den Updater: Schreibe nach einem Update „Aktualisiere die Werkzeuge im Datenordner“.
+
+## Lizenzen
+
+Schriften im Skill plakat-gestalten: SIL Open Font License 1.1. Einzelne Gestaltungsregeln angelehnt an anthropics/skills (Apache License 2.0). Einzelheiten in der Datei NOTICE.

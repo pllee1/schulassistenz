@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="560" viewBox="0 0 800 560">
+<style>
+.lab{font:600 17px 'Instrument Sans',sans-serif;fill:#1d2a33;paint-order:stroke;stroke:#fff;stroke-opacity:.85;stroke-width:3.5px;stroke-linejoin:round}
+.labw{font:600 17px 'Instrument Sans',sans-serif;fill:#fff}
+.num{font:700 20px 'Instrument Sans',sans-serif;fill:#fff}
+</style>
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#9fc3dd"/><stop offset="1" stop-color="#e3eef5"/>
+  </linearGradient>
+  <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#d8c39e"/><stop offset="1" stop-color="#b79c74"/>
+  </linearGradient>
+  <linearGradient id="ore" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#3b3a40"/><stop offset=".5" stop-color="#5a5866"/><stop offset="1" stop-color="#2a2930"/>
+  </linearGradient>
+  <linearGradient id="forest" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#6f9a5a"/><stop offset="1" stop-color="#4f7a40"/>
+  </linearGradient>
+  <filter id="grain2"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="7"/>
+    <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .09 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+  <filter id="cloud"><feGaussianBlur stdDeviation="6"/></filter>
+  <clipPath id="c4"><rect width="800" height="560"/></clipPath>
+  <clipPath id="hillclip"><path id="hp" d="M0,400 C90,380 150,330 230,300 C300,272 340,190 420,170 C500,150 560,200 620,250 C680,300 740,320 800,330 V560 H0Z"/></clipPath>
+</defs>
+<g clip-path="url(#c4)">
+  <rect width="800" height="560" fill="url(#sky)"/>
+  <!-- Wolke + Regen -->
+  <g filter="url(#cloud)" fill="#8a9aa8" opacity=".85" transform="translate(90,-8)">
+    <ellipse cx="610" cy="70" rx="110" ry="30"/><ellipse cx="560" cy="60" rx="60" ry="32"/><ellipse cx="660" cy="55" rx="55" ry="28"/>
+  </g>
+  <g stroke="#6f8fa8" stroke-width="2" stroke-linecap="round" opacity=".7" transform="translate(110,-8)">
+    <path d="M540,100 l-10,26"/><path d="M575,104 l-10,26"/><path d="M610,100 l-10,26"/><path d="M645,106 l-10,26"/><path d="M680,100 l-10,26"/>
+    <path d="M557,138 l-10,26"/><path d="M592,142 l-10,26"/><path d="M627,138 l-10,26"/><path d="M662,142 l-10,26"/>
+  </g>
+  <!-- ferne Hügel -->
+  <path d="M0,330 C120,300 220,320 300,300 C420,270 560,290 800,270 V560 H0Z" fill="#a9bfa0" opacity=".6"/>
+
+  <!-- Berg mit Schichten -->
+  <g clip-path="url(#hillclip)">
+    <rect width="800" height="560" fill="url(#hill)"/>
+    <g fill="none" stroke="#a88d66" stroke-width="2" opacity=".6">
+      <path d="M0,330 C200,300 500,260 800,250"/><path d="M0,380 C200,350 500,310 800,300"/>
+      <path d="M0,440 C200,410 500,370 800,360"/><path d="M0,500 C200,470 500,430 800,420"/>
+    </g>
+    <!-- Erzlager, gekippt -->
+    <path d="M330,190 C350,260 380,360 420,560 L500,560 C460,360 430,250 400,175Z" fill="url(#ore)"/>
+    <g fill="#d9b44a" opacity=".85">
+      <circle cx="380" cy="260" r="2.5"/><circle cx="395" cy="320" r="2"/><circle cx="420" cy="400" r="2.5"/><circle cx="440" cy="470" r="2"/><circle cx="405" cy="220" r="2"/><circle cx="455" cy="520" r="2.5"/>
+    </g>
+    <rect width="800" height="560" filter="url(#grain2)" fill="#000"/>
+    <!-- Stollen -->
+    <path d="M519,186 L519,300 L432,300" fill="none" stroke="#5b4630" stroke-width="7" stroke-linecap="round" opacity=".8"/>
+  </g>
+  <!-- Wald / Grasdecke -->
+  <path d="M0,400 C90,380 150,330 230,300 C300,272 340,190 420,170 C500,150 560,200 620,250 C680,300 740,320 800,330" fill="none" stroke="url(#forest)" stroke-width="12" stroke-linejoin="round"/>
+  <g fill="#4f7a40">
+    <path d="M150,346 l9,-26 l9,26z"/><path d="M168,336 l8,-22 l8,22z"/><path d="M640,266 l9,-26 l9,26z"/><path d="M660,278 l8,-22 l8,22z"/><path d="M700,296 l8,-22 l8,22z"/>
+  </g>
+
+  <!-- Förderturm (Schachtgerüst) -->
+  <g transform="translate(505,180)" stroke="#5a3e2b" stroke-width="3" fill="none" stroke-linejoin="round">
+    <path d="M0,0 L14,-60 L28,0"/><path d="M4,-18 H24 M8,-36 H20"/><circle cx="14" cy="-62" r="6" fill="#e3eef5"/>
+    <path d="M14,-62 L-22,0"/>
+  </g>
+  <rect x="466" y="152" width="34" height="18" rx="2" fill="#8a5a3c"/><path d="M462,152 L483,138 L504,152Z" fill="#6e4530"/>
+
+  <!-- Beschriftungen -->
+  <g stroke="#1d2a33" stroke-width="1.4" fill="none">
+    <path d="M420,166 V120 H366"/><circle cx="420" cy="168" r="3" fill="#1d2a33"/>
+    <path d="M440,430 H560"/><circle cx="440" cy="430" r="3" fill="#1d2a33"/>
+    <path d="M533,150 H560"/>
+  </g>
+  <text x="358" y="126" class="lab" text-anchor="end">Rammelsberg</text>
+  <text x="568" y="436" class="lab">Erzlager</text><text x="458" y="322" class="lab" style="font-weight:400;font-size:15px">Stollen</text>
+  <text x="568" y="156" class="lab">Bergwerk</text>
+  <text x="560" y="34" class="lab" text-anchor="end">Regen, Wind, Eis</text>
+  <text x="560" y="54" class="lab" text-anchor="end" style="font-weight:400;font-size:15px">tragen den Berg ab</text>
+
+  <circle cx="34" cy="34" r="20" fill="#8a3b12"/><text x="34" y="41" text-anchor="middle" class="num">4</text>
+</g>
+</svg>
