@@ -157,6 +157,7 @@ werkzeuge:
 regeln:
   loeschfrist_monate: 24
   ki_freigabe_schulleitung: offen | erteilt am <Datum> | nicht erteilt
+  exkursionen: {erlass: <Landeserlass Schulfahrten>, antrag_frist_wochen: 4, begleitung: <Schlüssel>, kostengrenze: <…>, zahlweg: <…>, startort: <Adresse/Haltestelle>}   # Felder siehe exkursion-planen
 ---
 Freie Hinweise der Lehrkraft (z. B. Fachgruppenabsprachen).
 ```

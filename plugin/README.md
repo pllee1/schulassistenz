@@ -63,6 +63,7 @@ Was in Dateien steht, wandert mit dem Datenordner auf andere PCs. Datenordner-Fr
 | Kern | lernstandsakte | „Was ist zu M07 gespeichert?“ |
 | Planen | unterricht-planen | „Plane eine Doppelstunde Fotosynthese, 7b“ |
 | Planen | einheit-planen | „Plane die Einheit Bruchrechnung bis zur Klassenarbeit“ |
+| Planen | exkursion-planen | „Plane einen Unterrichtsgang der 8a ins Schülerlabor: Anfahrt, Kosten, Antrag, Elternbrief“ |
 | Material | material-gestalten | „Mach daraus ein Arbeitsblatt mit Hilfekarten“ |
 | Material | materiallager | Startseite „Material suchen“, oder Screenshots hochladen: „Sortier das in die Einheit Redoxreihe ein“ |
 | Fördern | lernplan-erstellen | „Mach aus der Klausur Lernpläne für 10-ma-e“ oder „Lernplan für M07“ |

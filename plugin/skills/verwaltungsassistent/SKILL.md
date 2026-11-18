@@ -67,6 +67,8 @@ Für Formulare der Schule (Antrag Klassenfahrt oder Unterrichtsgang, Kostenaufst
 4. Unbekannte Pflichtfelder als `[ausfüllen]` markieren und am Ende auflisten.
 5. Wo möglich das Original (Word, PDF-Formular) direkt füllen statt nachzubauen.
 
+Für die ganze Planung einer Exkursion oder Schulfahrt (Lernort, Anfahrt, Kosten, Antrag, Elternbrief) gibt es **exkursion-planen**; es übergibt Rücklauf-, Geldlisten und Abrechnung hierher.
+
 Nicht für Unfallmeldungen, Meldungen an Jugendamt oder Gesundheitsamt, Ordnungsmaßnahmen oder Kinderschutz: Dort nur auf das zuständige Verfahren und die Zuständigen der Schule verweisen.
 
 ## 5. Ausgabe
