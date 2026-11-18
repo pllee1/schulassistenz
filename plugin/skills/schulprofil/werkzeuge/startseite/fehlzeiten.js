@@ -95,7 +95,8 @@ async function tabelleLesen(buf){
 }
 
 /* ---------- Spalten, Datum, Namen ---------- */
-const norm=s=>String(s??"").normalize("NFC").toLowerCase().replace(/[,.;]/g," ").replace(/\s+/g," ").trim();
+const norm=s=>String(s??"").normalize("NFKC").toLowerCase().replace(/[\u00ad\u200b-\u200d\ufeff]/g,"").replace(/[\u2010-\u2015\u2212]/g,"-").replace(/[,.;()]/g," ").replace(/\s*-\s*/g,"-").replace(/\s+/g," ").trim();
+const tokenKey=s=>norm(s).split(/[\s-]+/).filter(Boolean).sort().join(" ");
 const SPALTEN={
   name:[/^sch(ü|ue)ler/i,/^name$/i,/^langname$/i,/^schüler\*innen$/i],
   klasse:[/^klasse/i],
@@ -121,11 +122,15 @@ function datumISO(v){
 }
 const zahl=v=>{const n=parseFloat(String(v??"").replace(",","."));return isNaN(n)?0:n};
 async function alleNamen(){
-  const ziel=new Map();   // normierter Name → Set von {gruppe,kuerzel}
-  for(const g of ordner.gruppen){const m=await namenLesen(g.id);
-    for(const [k,n] of Object.entries(m)){const vor=norm(n.vor),nach=norm(n.nach);if(!vor&&!nach)continue;
-      const varianten=new Set([`${nach} ${vor}`,`${vor} ${nach}`]);const v1=vor.split(" ")[0];if(v1&&v1!==vor){varianten.add(`${nach} ${v1}`);varianten.add(`${v1} ${nach}`)}
-      for(const v of varianten){if(!ziel.has(v))ziel.set(v,[]);ziel.get(v).push({gruppe:g.id,kuerzel:k,anzeige:[n.vor,n.nach].filter(Boolean).join(" ")})}}}
+  const ziel=new Map();   // normierter Name (und Wortmenge) → [{gruppe,kuerzel}]
+  const add=(v,e)=>{if(!v)return;if(!ziel.has(v))ziel.set(v,[]);const l=ziel.get(v);if(!l.some(x=>x.gruppe===e.gruppe&&x.kuerzel===e.kuerzel))l.push(e)};
+  for(const g of ordner.gruppen){const m=await namenLesen(g.id);let letzterNach="";
+    for(const [k,n] of Object.entries(m)){let vor=norm(n.vor),nach=norm(n.nach);if(!vor&&!nach)continue;
+      // Leerer Nachname direkt unter einem Geschwisterkind (z. B. verbundene Zellen in Excel): Nachname der Zeile darüber
+      const nachnamen=nach?[nach]:letzterNach?[letzterNach,""]:[""];if(nach)letzterNach=nach;
+      const e={gruppe:g.id,kuerzel:k,anzeige:[n.vor,n.nach].filter(Boolean).join(" ")};
+      for(const nn of nachnamen){const varianten=new Set([`${nn} ${vor}`.trim(),`${vor} ${nn}`.trim()]);const v1=vor.split(" ")[0];if(v1&&v1!==vor){varianten.add(`${nn} ${v1}`.trim());varianten.add(`${v1} ${nn}`.trim())}
+        for(const v of varianten){add(v,e);add("§"+tokenKey(v),e)}}}}
   return ziel;
 }
 
@@ -160,7 +165,7 @@ async function verarbeiten(buf){
   const zeilen=await tabelleLesen(buf);const sp=spaltenFinden(zeilen);
   if(!sp)throw new Error("In der Datei fehlt die Kopfzeile mit Schülername und Datum. Ist es der Bericht „Abwesenheiten“ (pro Schüler) aus WebUntis?");
   const {kopf,s}=sp;const r=regeln();const namen=await alleNamen();
-  const daten=[],fehlend=new Map(),klassen=new Map(),doppelt=new Map();
+  const aehnlich=new Map(),daten=[],fehlend=new Map(),klassen=new Map(),doppelt=new Map();
   for(const z of zeilen.slice(kopf+1)){if(!z)continue;
     const name=String(z[s.name]??"").trim();const iso=datumISO(z[s.datum]);if(!name||!iso)continue;
     const kl=s.klasse>=0?String(z[s.klasse]??"").trim():"";if(kl)klassen.set(kl,(klassen.get(kl)||0)+1);
@@ -169,13 +174,14 @@ async function verarbeiten(buf){
     let status=/nicht|unent/.test(st)?"unentschuldigt":/entsch/.test(st)?"entschuldigt":"offen";
     if(status!=="entschuldigt"&&grund&&r.entschuldigt.includes(grund))status="entschuldigt";
     const verspaetung=(std===0&&min>0&&min<45)||/versp(ä|ae)t/.test(grund);
-    const treffer=namen.get(norm(name))||[];
+    const treffer=namen.get(norm(name))||namen.get("§"+tokenKey(name))||[];
     daten.push({name,treffer,iso,std,min,status,verspaetung,kl});
     if(!treffer.length)fehlend.set(name,(fehlend.get(name)||0)+1);
+    if(!treffer.length&&!aehnlich.has(name)){const t=new Set(tokenKey(name).split(" "));const kand=new Map();for(const [key,l] of namen)if(key.startsWith("§")&&key.slice(1).split(" ").some(x=>x.length>2&&t.has(x)))for(const e of l)kand.set(e.gruppe+"/"+e.kuerzel,e);aehnlich.set(name,[...kand.values()].slice(0,4))}
     else if(new Set(treffer.map(t=>t.gruppe)).size<treffer.length)doppelt.set(name,treffer);
   }
   if(!daten.length)throw new Error("In der Datei stehen keine Fehlzeilen (Name und Datum).");
-  return {daten,fehlend,klassen,doppelt,regeln:r};
+  return {daten,fehlend,klassen,doppelt,regeln:r,aehnlich};
 }
 function gruppeVorschlag(erg){
   const kl=[...erg.klassen.entries()].sort((a,b)=>b[1]-a[1])[0];
@@ -304,7 +310,7 @@ function zeichnen(meldung){
       const nm=zeigeNamen&&namen[x.k]?`<div class="nm">${esc([namen[x.k].vor,namen[x.k].nach].filter(Boolean).join(" "))}</div>`:"";
       return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td><td class="z">${fmt(x.unent)}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td><td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
   }
-  const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (rechts „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>`<li>${esc(n)} (${c} Zeilen)</li>`).join("")}</ul></div>`:"";
+  const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (rechts „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>{const a=(F.aehnlich&&F.aehnlich.get(n))||[];return `<li>${esc(n)} (${c} Zeilen)${a.length?` · ähnlich in der Kürzelliste: ${a.map(e=>`${esc(e.kuerzel)} ${esc(e.anzeige)} (${esc(e.gruppe)})`).join(", ")}. Steht dort der Name anders geschrieben oder fehlt der Nachname?`:""}</li>`}).join("")}</ul></div>`:"";
   const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> Ist in WebUntis als Zeitraum „Aktuelles Schuljahr“ eingestellt? Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung.</div>`:"";
   const klasseHinweis=F.neu&&F.klassen&&F.klassen.length===1&&!F.gid.toLowerCase().startsWith(F.klassen[0].toLowerCase())?`<div class="fz-warn">Die Datei ist für die Klasse ${esc(F.klassen[0])}, angezeigt wird ${esc(F.gid)}. Oben unter „Lerngruppe“ kannst du wechseln.</div>`:"";
   const ohne=F.ohne?`<div class="fz-warn">${F.ohne} Zeilen gehören zu Kindern aus anderen Lerngruppen und sind hier nicht enthalten. Andere Lerngruppe wählen, um sie zu sehen.</div>`:"";
@@ -340,7 +346,7 @@ async function einlesen(bufP,quelle,zeitraum){
   try{const erg=await verarbeiten(await bufP);const gid=F.gid&&erg.daten.some(d=>d.treffer.some(t=>t.gruppe===F.gid))?F.gid:gruppeVorschlag(erg);
     const p=pseudoZeilen(erg,gid);
     const tage=erg.daten.map(d=>d.iso).sort();const daten=`${datumDE(tage[0])}–${datumDE(tage[tage.length-1])}`;
-    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,fehlend:erg.fehlend,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()]};
+    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,fehlend:erg.fehlend,aehnlich:erg.aehnlich,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()]};
     zeichnen(`${erg.daten.length} Zeilen gelesen. Noch nicht gespeichert.`)}
   catch(e){$("#fz-toast").textContent="";g.hidden=false;g.textContent=(e.message||String(e))+(F.antwortNeu?" ("+F.antwortNeu+")":"");F.antwortNeu=""}
 }
