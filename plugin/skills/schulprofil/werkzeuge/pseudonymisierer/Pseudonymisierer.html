@@ -5,9 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pseudonymisierer</title>
 <style>
-:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1b;--muted:#5d5c57;--line:#dcd9d1;--acc:#1f5f8b;--acc2:#e8f0f6;--warn:#b25e00;--warnbg:#fff4e5;--ok:#2d7a3a;--okbg:#e9f5ea;--bad:#a12a2a}
+/* Dunkles Design, Farben wie die dunkle Startseite von schulassistenz */
+:root{--bg:#11161e;--card:#19212c;--card2:#141b24;--ink:#e6ebf2;--muted:#9aa5b5;--line:#2a3544;--acc:#7fb0f0;--onacc:#11161e;--acc2:#1d2c42;--warn:#f2b45a;--warnbg:#352a17;--ok:#6fcf97;--okbg:#173226;--bad:#ff8a80;--badbg:#3a1a18;
+  --f-display:"Bahnschrift","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;--f-body:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;--f-mono:"Cascadia Mono",Consolas,ui-monospace,monospace;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body)}
+h1,h2{font-family:var(--f-display);font-weight:600}
+a{color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 20px}
 header h1{margin:0;font-size:20px}
 header p{margin:2px 0 0;color:var(--muted);font-size:13px}
@@ -18,10 +23,10 @@ main{max-width:1100px;margin:0 auto;padding:20px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:16px}
 .card h2{margin:0 0 8px;font-size:17px}
 .muted{color:var(--muted);font-size:13px}
-.drop{border:2px dashed var(--line);border-radius:8px;padding:26px;text-align:center;color:var(--muted);cursor:pointer;background:#fbfaf8}
+.drop{border:2px dashed var(--line);border-radius:8px;padding:26px;text-align:center;color:var(--muted);cursor:pointer;background:var(--card2)}
 .drop.hover{border-color:var(--acc);background:var(--acc2)}
-button.b{background:var(--acc);color:#fff;border:0;border-radius:6px;padding:8px 14px;font:inherit;cursor:pointer}
-button.b2{background:#fff;color:var(--acc);border:1px solid var(--acc);border-radius:6px;padding:7px 13px;font:inherit;cursor:pointer}
+button.b{background:var(--acc);color:var(--onacc);font-weight:600;border:0;border-radius:6px;padding:8px 14px;font:inherit;cursor:pointer}
+button.b2{background:transparent;color:var(--acc);border:1px solid var(--acc);border-radius:6px;padding:7px 13px;font:inherit;cursor:pointer}
 button:disabled{opacity:.5;cursor:default}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 table{border-collapse:collapse;width:100%}
@@ -32,12 +37,18 @@ textarea{font:inherit;width:100%;min-height:90px;padding:6px;border:1px solid va
 .pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px}
 .pill.ok{background:var(--okbg);color:var(--ok)}.pill.warn{background:var(--warnbg);color:var(--warn)}
 .status{padding:8px 12px;border-radius:6px;margin:8px 0}
-.status.ok{background:var(--okbg);color:var(--ok)}.status.warn{background:var(--warnbg);color:var(--warn)}.status.err{background:#fbeaea;color:var(--bad)}
-.ctx{font-family:Consolas,monospace;font-size:13px;color:var(--muted)}
+.status.ok{background:var(--okbg);color:var(--ok)}.status.warn{background:var(--warnbg);color:var(--warn)}.status.err{background:var(--badbg);color:var(--bad)}
+.status{background:var(--acc2)}
+input[type=text],textarea,select{background:var(--card2);color:var(--ink)}
+select{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:4px}
+input[type=checkbox]{accent-color:var(--acc)}
+button.b2:hover{background:var(--acc2)}
+.page{border-color:var(--line);background:#fff}
+.ctx{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
 .ctx b{color:var(--ink);background:var(--warnbg)}
 .page{position:relative;margin:10px 0;border:1px solid var(--line);display:inline-block;max-width:100%}
 .page canvas{display:block;max-width:100%;height:auto;cursor:crosshair;touch-action:none}
-.legend span{display:inline-block;width:14px;height:14px;vertical-align:middle;margin:0 4px 0 10px;border-radius:2px}
+.legend span{display:inline-block;border:1px solid var(--muted);width:14px;height:14px;vertical-align:middle;margin:0 4px 0 10px;border-radius:2px}
 .hidden{display:none}
 details summary{cursor:pointer;font-weight:600}
 </style>
