@@ -250,14 +250,14 @@ const helferKann=()=>{const v=helferVersion().split(".").map(Number);return v.le
 /* ---------- Oberfläche ---------- */
 const css=document.createElement("style");
 css.textContent=`.fz-dot{display:inline-block;width:11px;height:11px;border-radius:50%;flex:none;vertical-align:-1px}
-.fz-dot.rot{background:var(--bad,#c0392b)}.fz-dot.gelb{background:var(--warn,#d99a1e)}.fz-dot.gruen{background:var(--ok,#3a8f5c)}
+.fz-dot.rot{background:var(--err)}.fz-dot.gelb{background:var(--warn)}.fz-dot.gruen{background:var(--ok)}
 .fz-tab{width:100%;border-collapse:collapse;font-size:13.5px}.fz-tab th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:4px 6px;border-bottom:1px solid var(--line)}
 .fz-tab td{padding:6px;border-bottom:1px solid var(--line);vertical-align:top}.fz-tab td.z{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .fz-tab .k{font-family:var(--f-mono);font-weight:600;white-space:nowrap}.fz-tab .nm{color:var(--muted);font-size:12.5px}
 .fz-tab tr.gruen td{color:var(--muted)}.fz-tab .sch{font-size:12.5px}.fz-tab .sch div+div{margin-top:2px}
 .fz-sum{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:6px 0}.fz-sum span{display:inline-flex;gap:6px;align-items:center}
 .fz-drop{border:1.5px dashed var(--line);border-radius:10px;padding:12px;text-align:center;font-size:13.5px;color:var(--muted)}.fz-drop.ueber{border-color:var(--accent);color:var(--ink)}
-.fz-warn{border-left:4px solid var(--warn,#d99a1e);background:var(--bg);border-radius:8px;padding:8px 12px;font-size:13px;margin:8px 0}
+.fz-warn{border-left:4px solid var(--warn);background:var(--warn-soft);border-radius:8px;padding:8px 12px;font-size:13px;margin:8px 0}
 .fz-warn ul{margin:4px 0 0;padding-left:18px;max-height:160px;overflow:auto}
 .fz-side{margin-top:14px;display:grid;gap:6px}.fz-side h3{margin:0}
 .fz-side button.group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}

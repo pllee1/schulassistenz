@@ -18,6 +18,10 @@ Ausführliche Einrichtung: [plugin/README.md](plugin/README.md)
 - `plugin/` – das Plugin (Skills und Werkzeuge: Startseite, Pseudonymisierer, Schulassistenz-Helfer, Abschluss-Check)
 - `updater/` – Windows-Skript, das die Werkzeuge im Datenordner automatisch aktuell hält ([LIESMICH](updater/LIESMICH.md))
 
+## Gestaltung der Werkzeuge
+
+Alle lokalen Werkzeuge (Startseite und ihre Module, Pseudonymisierer, Helfer-Fenster, neue Tools) haben ein **dunkles Design**, unabhängig von der Einstellung des Systems. Farben wie auf der Startseite: Hintergrund `#11161e`, Flächen `#19212c`, Text `#e6ebf2`, gedämpft `#9aa5b5`, Linien `#2a3544`, Akzent `#7fb0f0`, ok `#6fcf97`, Warnung `#f2b45a`, Fehler `#ff8a80`, dazu `color-scheme: dark`. Neue Module der Startseite nutzen die CSS-Variablen der Startseite (`--bg`, `--surface`, `--ink`, `--muted`, `--line`, `--accent`, `--ok`, `--warn`, `--err` …) statt eigener Farben. Ausdrucke (PDF, Briefe, Arbeitsblätter) bleiben hell.
+
 ## Neue Fassung veröffentlichen
 
 1. Änderungen in `plugin/` vornehmen.

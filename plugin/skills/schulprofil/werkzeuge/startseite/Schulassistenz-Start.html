@@ -10,18 +10,15 @@
 /* schulassistenz · Startseite. Läuft offline, lädt nichts aus dem Internet.
    Layout: Suchfeld als Haupteingang, darunter Live-Beobachtung und Favoriten; alle Werkzeuge in Reitern; rechts Lerngruppen und Akten. */
 :root{
-  --bg:#f3f5f8; --surface:#ffffff; --ink:#18253a; --muted:#5b6678; --line:#dbe1ea;
-  --accent:#1f4e8c; --accent-soft:#e3ecf8; --live:#d9480f; --live-soft:#fdebe2; --on-live:#ffffff;
-  --ok:#2b7a4b; --ok-soft:#e2f3e8; --warn:#a86200; --warn-soft:#fdf1dc; --err:#b42318; --err-soft:#fde7e5;
+  --bg:#11161e; --surface:#19212c; --ink:#e6ebf2; --muted:#9aa5b5; --line:#2a3544;
+  --accent:#7fb0f0; --accent-soft:#1d2c42; --live:#ff8a50; --live-soft:#3a2219; --on-live:#1b0f09;
+  --ok:#6fcf97; --ok-soft:#173226; --warn:#f2b45a; --warn-soft:#352a17; --err:#ff8a80; --err-soft:#3a1a18;
   --f-display:"Bahnschrift","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
   --f-body:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
   --f-mono:"Cascadia Mono",Consolas,ui-monospace,monospace;
-  color-scheme:light;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root{
-  --bg:#11161e; --surface:#19212c; --ink:#e6ebf2; --muted:#9aa5b5; --line:#2a3544;
-  --accent:#7fb0f0; --accent-soft:#1d2c42; --live:#ff8a50; --live-soft:#3a2219; --on-live:#1b0f09;
-  --ok:#6fcf97; --ok-soft:#173226; --warn:#f2b45a; --warn-soft:#352a17; --err:#ff8a80; --err-soft:#3a1a18; color-scheme:dark}}
+/* Immer dunkles Design (Paul, 18.11.2026), wie Pseudonymisierer und Helfer. */
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
