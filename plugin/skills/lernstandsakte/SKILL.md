@@ -64,6 +64,7 @@ Jeder Eintrag ist eine Zeile: `Datum | Art | Inhalt | Quelle | Status`.
 
 - **Art:** `Beleg` (aus einem Dokument), `Beobachtung` (von der Lehrkraft notiert), `Vorschlag` (von einem Skill abgeleitet).
 - **Status:** `bestätigt` oder `offen`. Ein Vorschlag bleibt `offen`, bis die Lehrkraft ihn annimmt. Skills behandeln offene Vorschläge nie wie Tatsachen und kennzeichnen sie, wenn sie sie zeigen.
+- **Korrigiert oder gestrichen:** Die Noteneinsicht der Startseite setzt den Status alter Einträge auf `ersetzt <Datum>` bzw. `gestrichen <Datum>[: Grund]`. Eine Korrektur steht als neue Zeile direkt darunter, mit dem Datum des alten Eintrags und `Quelle: Noteneinsicht, Korrektur <Datum>, ersetzt Eintrag vom <Datum> (<alter Wert>)`. Einträge mit `ersetzt` oder `gestrichen` zählen nicht mehr (keine Noten, keine Auswertung), bleiben aber als Nachweis stehen; nicht löschen.
 - Neueste Einträge unten im Bereich. Bestehende Einträge nicht umschreiben; Korrekturen als neuer Eintrag mit Verweis („ersetzt Eintrag vom 03.11.“), außer die Lehrkraft will einen Fehler direkt löschen.
 
 ## 3. Lerngruppen-Akte (gruppe.md)
@@ -126,6 +127,8 @@ Zum Schuljahresende (oder auf Wunsch) eine Liste zeigen:
 - Zeilen in `kuerzel-verknuepfung.md`, deren Akten gelöscht oder archiviert werden → mit entfernen bzw. mit archivieren?
 
 Nichts ohne Bestätigung verschieben oder löschen. Nach dem Löschen bestätigen, was entfernt wurde.
+
+Sicherungen: Die Startseite legt Sicherungen in `sicherungen/` im Schülerdaten-Ordner ab und nimmt Abgelaufenes nicht mehr auf. Nach dem Löschen abgelaufener Akten daran erinnern, auf der Startseite eine neue Sicherung anzulegen und ältere Sicherungen (dort „Ältere löschen“, auf dem USB-Stick von Hand) zu löschen, damit keine Kopie über die Löschfrist hinaus bleibt.
 
 ## 9. Grundsätze
 

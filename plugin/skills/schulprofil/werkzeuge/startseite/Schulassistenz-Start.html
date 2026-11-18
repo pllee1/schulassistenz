@@ -159,6 +159,11 @@ footer{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 1
 .r-regler input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
 .r-regler input[type=range]:disabled{opacity:.4;cursor:default}
 .r-regler output{font-family:var(--f-mono);font-size:12.5px;min-width:70px;font-weight:600}
+.sym.no{min-width:52px;font-weight:600}
+.r-noteform{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 6px;border:1px solid var(--warn);border-radius:8px;background:var(--warn-soft)}
+.r-noteform select,.r-noteform input{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.r-noteform .nf-wert{width:130px}.r-noteform .nf-thema{width:190px;min-width:0}
+.r-noteleiste{padding:6px 0}.r-zeile .r-noteform{flex:1 1 100%}
 .r-regler.bewegt{background:var(--warn-soft);border-color:var(--warn)}
 .r-zeile .r-anw{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .r-anw-b{font:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
@@ -182,7 +187,21 @@ footer{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 1
 .n-liste{display:flex;flex-wrap:wrap;gap:3px;white-space:normal;max-width:340px}
 .n-e{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:1px 5px;border:1px solid var(--line);border-radius:5px;background:var(--bg);margin:1px}
 .n-leer,.n-anz{color:var(--muted);font-size:12px}
-@media print{body.druck-noten *{visibility:hidden}body.druck-noten #panel-slot,body.druck-noten #panel-slot *{visibility:visible}body.druck-noten #panel-slot{position:absolute;left:0;top:0;width:100%}body.druck-noten .n-steuer,body.druck-noten #n-close{display:none}}
+button.n-e{cursor:pointer;color:var(--ink)}button.n-e:hover{border-color:var(--accent)}
+.n-e.alt{text-decoration:line-through;color:var(--muted);opacity:.75}
+.n-e.neu{background:var(--warn-soft);border-color:var(--warn)}
+.n-tab tr.n-akt td{background:var(--accent-soft)}
+.n-edit,.n-aend{margin:10px 0;padding:10px 12px;border:1px solid var(--warn);border-radius:10px;background:var(--warn-soft);font-size:13.5px;display:flex;flex-direction:column;gap:8px}
+.n-edit{border-color:var(--accent);background:var(--accent-soft)}
+.n-felder{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-end}.n-felder label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+.n-felder input,.n-felder select,.n-alle input{font:inherit;font-size:13.5px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.n-felder input[type=number]{width:70px}
+.n-alle{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px 12px}
+.n-alle label{display:flex;gap:6px;align-items:center;font-size:13px}.n-alle .m{font-family:var(--f-mono);min-width:34px}.n-alle .n-nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.n-alle input{width:64px;margin-left:auto}
+.n-alle input.falsch{border-color:var(--err);background:var(--err-soft)}
+.n-aend-l{display:flex;flex-wrap:wrap;gap:4px}.n-aend .r-chip-w{padding:4px 8px;font-size:12.5px;font-family:var(--f-mono)}.n-aend .r-chip.fehl .r-chip-w{color:var(--err)}
+.guard.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ink)}
+@media print{body.druck-noten *{visibility:hidden}body.druck-noten #panel-slot,body.druck-noten #panel-slot *{visibility:visible}body.druck-noten #panel-slot{position:absolute;left:0;top:0;width:100%}body.druck-noten .n-steuer,body.druck-noten #n-close,body.druck-noten .n-edit,body.druck-noten .n-aend,body.druck-noten .n-plus,body.druck-noten #n-guard{display:none}}
 /* Woche */
 .woche-kopf{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:8px}
 .woche-kopf h3{margin:0}
@@ -540,6 +559,7 @@ function zeigeLokal(k){
   if(k.ziel==="aktion:neue-lerngruppe"){merke(k);setTimeout(render,50);return zeigeNeueGruppe()}
   if(k.ziel==="aktion:notenuebersicht"){merke(k);setTimeout(render,50);if(ordner.zustand!=="an"||!ordner.gruppen.length){const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Notenübersicht</h4><p>Dafür braucht die Seite deine Akten. Bitte rechts unter „Lerngruppen und Akten“ den Ordner verbinden bzw. „Akten anzeigen“ klicken.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}return zeigeNoten()}
   if(k.ziel==="aktion:materiallager"){merke(k);setTimeout(render,50);return zeigeMaterial()}
+  if(k.ziel==="aktion:sicherung"){merke(k);setTimeout(render,50);if(window.saSicherung)return window.saSicherung.zeigen();const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Schülerdaten sichern</h4><p>Es fehlt die Datei werkzeuge/startseite/sicherung.js. Nach dem nächsten Update ist sie da (oder „jetzt-aktualisieren“ im Ordner werkzeuge/updater starten).</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
   const slot=$("#panel-slot");merke(k);setTimeout(render,50);
   let body;
   if(k.ziel==="kuerzelliste"){
@@ -669,7 +689,7 @@ async function ordnerVerbinden(){
   renderOrdner();renderStatus();
 }
 function renderOrdner(){
-  setTimeout(renderEinrichtung,0);
+  setTimeout(renderEinrichtung,0);if(window.saSicherung)setTimeout(window.saSicherung.erinnern,0);
   const namen=[...new Set([...(E.lerngruppen||[]),...ordner.gruppen.map(g=>g.id)])];
   $("#gruppen-liste").innerHTML=namen.map(n=>`<option value="${esc(n)}">`).join("");
   liveLink();
@@ -694,7 +714,7 @@ function renderOrdner(){
       b.addEventListener("click",()=>zeigeGruppe(g));box.appendChild(b);
     });
     note.textContent=(sdExtern()?"Aus deinem Schülerdaten-Ordner gelesen.":"Aus deinem Datenordner gelesen.")+" Angezeigt werden nur Kürzel. Klick auf eine Lerngruppe zeigt die Akten.";
-    knopf("Neue Lerngruppe",zeigeNeueGruppe,"primary");knopf("Notenübersicht",()=>zeigeNoten());knopf("Kürzel nachschlagen",zeigeKuerzel);if(ordner.gruppen.length>1)knopf("Kürzel verknüpfen",zeigeVerknuepfen);knopf("Code-Zuordnung",zeigeCodeZuordnung);if(sdExtern())umzugPruefen().then(n=>{if(n)knopf("Schülerdaten umziehen ("+n+")",zeigeUmzug,"primary")});knopf("Neu einlesen",()=>ordnerStart(true));
+    knopf("Neue Lerngruppe",zeigeNeueGruppe,"primary");knopf("Notenübersicht",()=>zeigeNoten());knopf("Kürzel nachschlagen",zeigeKuerzel);if(ordner.gruppen.length>1)knopf("Kürzel verknüpfen",zeigeVerknuepfen);knopf("Code-Zuordnung",zeigeCodeZuordnung);if(window.saSicherung)knopf("Sichern",()=>window.saSicherung.zeigen());if(sdExtern())umzugPruefen().then(n=>{if(n)knopf("Schülerdaten umziehen ("+n+")",zeigeUmzug,"primary")});knopf("Neu einlesen",()=>ordnerStart(true));
   }else if(ordner.zustand==="an"){
     namen.forEach(n=>{const d=document.createElement("div");d.className="group";d.style.cursor="default";d.innerHTML=`<b>${esc(n)}</b><span class="pill">noch keine Akten</span>`;box.appendChild(d)});
     note.textContent=freigabe()==="erteilt"?"Datenordner verbunden. Noch keine Lerngruppen angelegt.":"Datenordner verbunden. Lernstandsakten gibt es erst, wenn die Schulleitung zugestimmt hat. Bis dahin bleibt dieser Bereich leer.";
@@ -1882,8 +1902,9 @@ const SKALEN={sym:{name:"Symbole",werte:["++","+","o","-","--"]},note:{name:"Not
 function skalaStandard(gid,gruppeText){const j=+(((gruppeText||"").match(/^jahrgang:\s*(\d+)/m)||[])[1]||(String(gid).match(/^(\d{1,2})/)||[])[1]||0);
   const e=(E.live_skala||{})[gid];return e&&SKALEN[e]?e:j>=11?"np":j>=9?"note":"sym"}
 const mmText=(st,sk)=>sk==="symw"?`≈${SYMW[Math.round(parseFloat(String(st).replace(",",".")))]||"o"} (${st})`:sk==="note"?"N"+st:sk==="np"?st+"P":st;
-const symText=(kat,st,sk)=>kat==="A"?(st==="spät"?`zu spät ${sk} min`:st):kat==="N"?"Notiz":kat==="MM"?mmText(st,sk):kat==="!"||kat==="*"?kat:kat+st;
-const wasAkte=e=>e.kat==="MM"&&e.sk==="symw"?`MM ≈${SYMW[Math.round(parseFloat(String(e.st).replace(",",".")))]||"o"} (Regler ${e.st})`:e.kat==="A"?(e.st==="spät"?`Anwesenheit: zu spät (${e.sk} min)`:e.st==="krank"?"Anwesenheit: fehlt (krank)":"Anwesenheit: fehlt"):e.kat==="N"?"Notiz":e.kat==="!"?"Auffälligkeit":e.kat==="*"?"Stärke/Fortschritt":e.kat==="MM"&&e.sk==="note"?"MM Note "+e.st:e.kat==="MM"&&e.sk==="np"?`MM ${e.st} NP`:`${e.kat} ${e.st}`;
+const notenWertText=(st,sk)=>sk==="np"?st+" NP":"Note "+st;
+const symText=(kat,st,sk,art)=>kat==="NO"?`${art||"Note"} ${sk==="np"?st+" P":st}`:kat==="A"?(st==="spät"?`zu spät ${sk} min`:st):kat==="N"?"Notiz":kat==="MM"?mmText(st,sk):kat==="!"||kat==="*"?kat:kat+st;
+const wasAkte=e=>e.kat==="NO"?`${e.art||"Sonstige Leistung"}: ${notenWertText(e.st,e.sk)}`:e.kat==="MM"&&e.sk==="symw"?`MM ≈${SYMW[Math.round(parseFloat(String(e.st).replace(",",".")))]||"o"} (Regler ${e.st})`:e.kat==="A"?(e.st==="spät"?`Anwesenheit: zu spät (${e.sk} min)`:e.st==="krank"?"Anwesenheit: fehlt (krank)":"Anwesenheit: fehlt"):e.kat==="N"?"Notiz":e.kat==="!"?"Auffälligkeit":e.kat==="*"?"Stärke/Fortschritt":e.kat==="MM"&&e.sk==="note"?"MM Note "+e.st:e.kat==="MM"&&e.sk==="np"?`MM ${e.st} NP`:`${e.kat} ${e.st}`;
 let R=null;
 async function rasterStarten(gid,stunde){
   const sec=$("#raster");
@@ -1898,7 +1919,7 @@ async function rasterStarten(gid,stunde){
   const fokus=[...g.akten].sort((a,b)=>zaehl(a)-zaehl(b)||a.kuerzel.localeCompare(b.kuerzel,"de",{numeric:true})).slice(0,Math.min(5,Math.floor(g.akten.length/4))).map(a=>a.kuerzel);
   const zeit=stunde&&stunde.start?hhmm(stunde.start):hhmm(new Date());
   R={gid,fach,heute,schluessel,namen,fokus,zeit,eintraege:entwurf?entwurf.eintraege:[],wahl:null,anordnen:false,
-     reihenfolge:store.get(`sitzplan-${gid}`,null),skala:store.get(`skala-${gid}`,null)||skalaStandard(gid,g.gruppeText),namenZeigen:store.get("namen-zeigen",true),ansicht:store.get("live-ansicht","liste"),notizen:{},spaetOffen:null,regler:{},bewegt:{},eingabe:store.get("live-eingabe","beides"),sort:store.get("live-sort","sitzplan"),ende:false};
+     reihenfolge:store.get(`sitzplan-${gid}`,null),skala:store.get(`skala-${gid}`,null)||skalaStandard(gid,g.gruppeText),namenZeigen:store.get("namen-zeigen",true),ansicht:store.get("live-ansicht","liste"),notizen:{},spaetOffen:null,noteOffen:null,regler:{},bewegt:{},eingabe:store.get("live-eingabe","beides"),sort:store.get("live-sort","sitzplan"),ende:false};
   rasterZeichnen();sec.hidden=false;sec.scrollIntoView({block:"start",behavior:"smooth"});
 }
 function rasterSpeichernEntwurf(){store.set(R.schluessel,{eintraege:R.eintraege})}
@@ -1910,7 +1931,7 @@ function kinderListe(){
 }
 const anzeigeName=k=>{const n=R.namen[k];if(!n||!R.namenZeigen)return "";return [n.vor,n.nach?n.nach[0]+".":""].filter(Boolean).join(" ")};
 const symKnopf=([k,st,c],i,kind)=>`<button class="sym ${c}${k==="MM"&&R.skala==="np"?" eng":""}" data-i="${i}"${kind?` data-k="${esc(kind)}"`:""} title="${k==="!"?"Auffälligkeit, später ergänzen":k==="*"?"besondere Stärke oder Fortschritt":k==="MM"?"mündliche Mitarbeit ("+SKALEN[R.skala].name+")":k==="AV"?"Arbeitsverhalten":"Sozialverhalten"}">${esc(k==="MM"?st:symText(k,st))}</button>`;
-const chipHTML=i=>{const e=R.eintraege[i];return `<span class="r-chip${R.ersetze===i?" aktiv":""}"><button class="r-chip-w" data-i="${i}" title="Antippen und dann ein neues Symbol wählen, um diesen Eintrag zu ersetzen">${esc(symText(e.kat,e.st,e.sk))}${e.text?` <small>${esc(e.text.slice(0,40))}</small>`:""}</button><button class="r-chip-x" data-x="${i}" aria-label="Eintrag ${esc(symText(e.kat,e.st,e.sk))} löschen" title="Löschen">✕</button></span>`};
+const chipHTML=i=>{const e=R.eintraege[i];return `<span class="r-chip${R.ersetze===i?" aktiv":""}"><button class="r-chip-w" data-i="${i}" title="Antippen und dann ein neues Symbol wählen, um diesen Eintrag zu ersetzen">${esc(symText(e.kat,e.st,e.sk,e.art))}${e.text?` <small>${esc(e.text.slice(0,40))}</small>`:""}</button><button class="r-chip-x" data-x="${i}" aria-label="Eintrag ${esc(symText(e.kat,e.st,e.sk,e.art))} löschen" title="Löschen">✕</button></span>`};
 function rasterNotizFeld(k){return R.ansicht==="liste"&&!R.anordnen?[...document.querySelectorAll("#r-kinder .r-notiz2")].find(x=>x.dataset.k===k):$("#r-notiz")}
 function rasterNotizBestaetigen(k){
   if(abwesend(k))return abwesendHinweis(k);
@@ -1971,22 +1992,23 @@ function rasterZeichnen(){
     ${hatNamen?"":`<p class="note">Keine Namen gefunden. Trag sie in kuerzellisten/Kuerzelliste-${esc(R.gid)} ein (Spalten Vorname, Nachname, Kürzel), dann erscheinen sie hier. Sie verlassen diesen Rechner nicht.</p>`}
     <div class="r-leiste" id="r-leiste">
       ${liste?`<span class="wer">Notizen direkt in der Zeile des Kindes</span><span class="sp" style="flex:1"></span>`:`<span class="wer" id="r-wer">Kind antippen</span>
-      ${leisteSym().map((x,i)=>symKnopf(x,i)).join("")}${R.eingabe!=="knoepfe"?reglerHTML(""):""}
+      ${leisteSym().map((x,i)=>symKnopf(x,i)).join("")}<button class="sym no r-note-b" id="r-note-l" aria-pressed="${!!R.wahl&&R.noteOffen===R.wahl}" title="Note für das gewählte Kind eintragen (Test, Abfrage, Referat …)">Note</button>${R.eingabe!=="knoepfe"?reglerHTML(""):""}
       <input id="r-notiz" placeholder="Notiz (keine Namen): Enter/✓ speichert sie, oder Symbol antippen hängt sie an" autocomplete="off"><button class="btn ghost small" id="r-notiz-ok" aria-label="Notiz für das gewählte Kind speichern" title="Notiz für das gewählte Kind als eigenen Eintrag speichern">✓</button>`}
       ${R.eingabe!=="knoepfe"?`<button class="btn primary small" id="r-rg-alle" title="Alle verschobenen Regler auf einmal als Mitarbeit eintragen">Regler eintragen</button>`:""}
       <button class="btn ghost small" id="r-undo">Rückgängig</button>
     </div>
     <div class="guard" id="r-guard" hidden></div>
+    ${!liste&&R.wahl&&R.noteOffen===R.wahl?`<div class="r-noteleiste">${noteFormHTML(R.wahl)}</div>`:""}
     <div class="r-meine" id="r-meine" hidden></div>
     <div class="${liste?"r-liste":"kinder"}" id="r-kinder"></div>
-    <p class="note">${liste?"Je Zeile ein Kind: „krank“, „fehlt“ oder „zu spät“ (mit Minuten) markiert die Anwesenheit, nochmal antippen hebt es auf. Symbol antippen trägt sofort ein. Ins Notizfeld schreiben und mit Enter oder ✓ bestätigen speichert die Notiz als eigenen Eintrag. Steht Text im Feld, wenn du ein Symbol antippst, wird er an dieses Symbol gehängt. Einen Eintrag des Kindes antippen und dann ein neues Symbol wählen ersetzt ihn, ✕ löscht ihn. „Fokus“ markiert die Kinder mit den wenigsten Beobachtungen. Der Entwurf wird laufend in diesem Browser gesichert und erst mit der Freigabe in die Akten geschrieben.":R.anordnen?"Tippe ein Kind an und dann den Platz, vor den es soll (oder ziehe es mit der Maus). Die Anordnung bleibt für diese Lerngruppe gespeichert.":"„Fokus“ markiert die Kinder mit den wenigsten Beobachtungen. Der Entwurf wird laufend in diesem Browser gesichert und erst mit der Freigabe in die Akten geschrieben."}</p>`;
+    <p class="note">${liste?"Je Zeile ein Kind: „krank“, „fehlt“ oder „zu spät“ (mit Minuten) markiert die Anwesenheit, nochmal antippen hebt es auf. Symbol antippen trägt sofort ein. „Note“ öffnet ein Feld für eine Note (Test, Abfrage, Referat …) in der Skala der Lerngruppe. Ins Notizfeld schreiben und mit Enter oder ✓ bestätigen speichert die Notiz als eigenen Eintrag. Steht Text im Feld, wenn du ein Symbol antippst, wird er an dieses Symbol gehängt. Einen Eintrag des Kindes antippen und dann ein neues Symbol wählen ersetzt ihn, ✕ löscht ihn. „Fokus“ markiert die Kinder mit den wenigsten Beobachtungen. Der Entwurf wird laufend in diesem Browser gesichert und erst mit der Freigabe in die Akten geschrieben.":R.anordnen?"Tippe ein Kind an und dann den Platz, vor den es soll (oder ziehe es mit der Maus). Die Anordnung bleibt für diese Lerngruppe gespeichert.":"„Fokus“ markiert die Kinder mit den wenigsten Beobachtungen. Der Entwurf wird laufend in diesem Browser gesichert und erst mit der Freigabe in die Akten geschrieben."}</p>`;
   const box=$("#r-kinder");
   if(liste){
     if(R.ersetze!=null&&!R.eintraege[R.ersetze])R.ersetze=null;
     const sy=leisteSym();
     box.innerHTML=kinderListe().map(k=>{const idx=R.eintraege.map((e,i)=>e.k===k?i:-1).filter(i=>i>=0);const aktiv=R.ersetze!=null&&R.eintraege[R.ersetze].k===k;
       const anw=R.eintraege.find(e=>e.k===k&&e.kat==="A"&&e.st!=="spät"),spaet=R.eintraege.find(e=>e.k===k&&e.kat==="A"&&e.st==="spät");
-      return `<div class="r-zeile${aktiv?" aktiv":""}${anw?" abw":""}" data-k="${esc(k)}"><div class="r-wer2"><span class="k">${esc(k)}</span><span class="n">${esc(anzeigeName(k))}</span>${R.fokus.includes(k)&&!anw?`<span class="r-fok">Fokus</span>`:""}</div><div class="r-anw" role="group" aria-label="Anwesenheit ${esc(k)}"><button class="r-anw-b" data-k="${esc(k)}" data-a="krank" aria-pressed="${anw&&anw.st==="krank"?"true":"false"}" title="Kind ist krank (nochmal antippen hebt auf)">krank</button><button class="r-anw-b" data-k="${esc(k)}" data-a="fehlt" aria-pressed="${anw&&anw.st==="fehlt"?"true":"false"}" title="Kind fehlt, Grund unbekannt (nochmal antippen hebt auf)">fehlt</button><button class="r-anw-b" data-k="${esc(k)}" data-a="spät" aria-pressed="${spaet?"true":"false"}" title="Verspätung mit Minuten eintragen">zu spät</button>${R.spaetOffen===k?`<span class="r-min"><input type="number" min="1" max="120" class="r-min-in" data-k="${esc(k)}" value="${spaet?spaet.sk:spaetVorschlag()}" aria-label="Minuten Verspätung ${esc(k)}"> min <button class="btn ghost small r-min-ok" data-k="${esc(k)}" aria-label="Verspätung speichern">✓</button></span>`:""}</div><div class="r-knoepfe">${R.eingabe!=="knoepfe"?reglerHTML(k):""}${sy.map((x,i)=>symKnopf(x,i,k)).join("")}</div><div class="r-heute">${idx.length?idx.map(chipHTML).join(""):`<span class="r-leer">noch nichts</span>`}${aktiv?`<small class="r-tipp">Neues Symbol wählen oder Notiz bestätigen</small>`:""}</div><div class="r-notizzeile"><input class="r-notiz2" data-k="${esc(k)}" placeholder="Notiz zu ${esc(k)} (keine Namen), Enter speichert" autocomplete="off" aria-label="Notiz zu ${esc(k)}" value="${esc(R.notizen[k]||"")}"><button class="btn ghost small r-ok" data-k="${esc(k)}" aria-label="Notiz zu ${esc(k)} speichern" title="Notiz als Eintrag speichern">✓</button></div></div>`}).join("");
+      return `<div class="r-zeile${aktiv?" aktiv":""}${anw?" abw":""}" data-k="${esc(k)}"><div class="r-wer2"><span class="k">${esc(k)}</span><span class="n">${esc(anzeigeName(k))}</span>${R.fokus.includes(k)&&!anw?`<span class="r-fok">Fokus</span>`:""}</div><div class="r-anw" role="group" aria-label="Anwesenheit ${esc(k)}"><button class="r-anw-b" data-k="${esc(k)}" data-a="krank" aria-pressed="${anw&&anw.st==="krank"?"true":"false"}" title="Kind ist krank (nochmal antippen hebt auf)">krank</button><button class="r-anw-b" data-k="${esc(k)}" data-a="fehlt" aria-pressed="${anw&&anw.st==="fehlt"?"true":"false"}" title="Kind fehlt, Grund unbekannt (nochmal antippen hebt auf)">fehlt</button><button class="r-anw-b" data-k="${esc(k)}" data-a="spät" aria-pressed="${spaet?"true":"false"}" title="Verspätung mit Minuten eintragen">zu spät</button>${R.spaetOffen===k?`<span class="r-min"><input type="number" min="1" max="120" class="r-min-in" data-k="${esc(k)}" value="${spaet?spaet.sk:spaetVorschlag()}" aria-label="Minuten Verspätung ${esc(k)}"> min <button class="btn ghost small r-min-ok" data-k="${esc(k)}" aria-label="Verspätung speichern">✓</button></span>`:""}</div><div class="r-knoepfe">${R.eingabe!=="knoepfe"?reglerHTML(k):""}${sy.map((x,i)=>symKnopf(x,i,k)).join("")}<button class="sym no r-note-b" data-k="${esc(k)}" aria-pressed="${R.noteOffen===k}" title="Note eintragen (Test, Abfrage, Referat …)">Note</button></div>${R.noteOffen===k?noteFormHTML(k):""}<div class="r-heute">${idx.length?idx.map(chipHTML).join(""):`<span class="r-leer">noch nichts</span>`}${aktiv?`<small class="r-tipp">Neues Symbol wählen oder Notiz bestätigen</small>`:""}</div><div class="r-notizzeile"><input class="r-notiz2" data-k="${esc(k)}" placeholder="Notiz zu ${esc(k)} (keine Namen), Enter speichert" autocomplete="off" aria-label="Notiz zu ${esc(k)}" value="${esc(R.notizen[k]||"")}"><button class="btn ghost small r-ok" data-k="${esc(k)}" aria-label="Notiz zu ${esc(k)} speichern" title="Notiz als Eintrag speichern">✓</button></div></div>`}).join("");
     box.querySelectorAll(".r-notiz2").forEach(f=>{f.addEventListener("input",()=>{R.notizen[f.dataset.k]=f.value});f.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();rasterNotizBestaetigen(f.dataset.k)}})});
     box.querySelectorAll(".r-ok").forEach(b=>b.addEventListener("click",()=>rasterNotizBestaetigen(b.dataset.k)));
     reglerVerdrahten(box,x=>x.dataset.k);
@@ -1995,13 +2017,15 @@ function rasterZeichnen(){
     box.querySelectorAll(".r-min-ok").forEach(b=>b.addEventListener("click",()=>spaetSpeichern(b.dataset.k)));
     box.querySelectorAll(".r-min-in").forEach(f=>{f.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();spaetSpeichern(f.dataset.k)}if(ev.key==="Escape"){R.spaetOffen=null;rasterZeichnen()}})});
     if(R.spaetOffen){const f=[...box.querySelectorAll(".r-min-in")].find(x=>x.dataset.k===R.spaetOffen);if(f){f.focus();f.select()}}
-    box.querySelectorAll(".sym").forEach(b=>b.addEventListener("click",()=>rasterEintragen(b.dataset.k,+b.dataset.i)));
+    box.querySelectorAll(".sym:not(.r-note-b)").forEach(b=>b.addEventListener("click",()=>rasterEintragen(b.dataset.k,+b.dataset.i)));
+    box.querySelectorAll(".r-note-b").forEach(b=>b.addEventListener("click",()=>{if(abwesend(b.dataset.k))return abwesendHinweis(b.dataset.k);R.noteOffen=R.noteOffen===b.dataset.k?null:b.dataset.k;rasterZeichnen()}));
+    noteFormVerdrahten(box);
     box.querySelectorAll(".r-chip-w").forEach(b=>b.addEventListener("click",()=>{const i=+b.dataset.i;R.ersetze=R.ersetze===i?null:i;rasterZeichnen()}));
     box.querySelectorAll(".r-chip-x").forEach(b=>b.addEventListener("click",()=>{R.eintraege.splice(+b.dataset.x,1);R.ersetze=null;rasterSpeichernEntwurf();rasterZeichnen()}));
   }else kinderListe().forEach(k=>{
     const b=document.createElement("button");b.className="kind"+(R.fokus.includes(k)&&!abwesend(k)?" fokus":"")+(abwesend(k)?" abw":"")+(R.anordnen?" ziehen":"");b.dataset.k=k;b.setAttribute("aria-pressed",R.wahl===k?"true":"false");
     const meine=R.eintraege.filter(e=>e.k===k);
-    b.innerHTML=`<span class="k">${esc(k)}</span><span class="n">${esc(anzeigeName(k))||"&nbsp;"}</span><span class="e">${meine.map(e=>esc(symText(e.kat,e.st,e.sk))).join(" ")}</span>`;
+    b.innerHTML=`<span class="k">${esc(k)}</span><span class="n">${esc(anzeigeName(k))||"&nbsp;"}</span><span class="e">${meine.map(e=>esc(symText(e.kat,e.st,e.sk,e.art))).join(" ")}</span>`;
     if(R.anordnen){b.draggable=true;
       b.addEventListener("dragstart",ev=>{ev.dataTransfer.setData("text/plain",k)});
       b.addEventListener("dragover",ev=>{ev.preventDefault();b.classList.add("ueber")});
@@ -2011,7 +2035,7 @@ function rasterZeichnen(){
         if(R.halte!==k){const l=kinderListe();const a=l.indexOf(R.halte);l.splice(a,1);l.splice(l.indexOf(k),0,R.halte);R.reihenfolge=l;store.set(`sitzplan-${R.gid}`,l)}
         R.halte=null;rasterZeichnen()});
       if(R.halte===k)b.classList.add("ueber");
-    }else b.addEventListener("click",()=>{R.wahl=R.wahl===k?null:k;rasterZeichnen()});
+    }else b.addEventListener("click",()=>{R.wahl=R.wahl===k?null:k;if(R.noteOffen&&R.noteOffen!==R.wahl)R.noteOffen=R.wahl;rasterZeichnen()});
     box.appendChild(b);
   });
   if(!liste){const m=$("#r-meine");const idx=R.wahl?R.eintraege.map((e,i)=>e.k===R.wahl?i:-1).filter(i=>i>=0):[];
@@ -2027,7 +2051,9 @@ function rasterZeichnen(){
    $("#r-notiz").addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();nOk()}});
    reglerVerdrahten($("#r-leiste"),()=>R.wahl);$("#r-leiste").querySelectorAll(".r-rg").forEach(x=>x.disabled=!R.wahl||abwesend(R.wahl));
    if(R.wahl&&abwesend(R.wahl))abwesendHinweis(R.wahl);
-   $("#r-leiste").querySelectorAll(".sym").forEach(b=>{b.disabled=!R.wahl||abwesend(R.wahl);b.addEventListener("click",()=>{if(R.wahl)rasterEintragen(R.wahl,+b.dataset.i)})});}
+   $("#r-leiste").querySelectorAll(".sym:not(.r-note-b)").forEach(b=>{b.disabled=!R.wahl||abwesend(R.wahl);b.addEventListener("click",()=>{if(R.wahl)rasterEintragen(R.wahl,+b.dataset.i)})});
+   const nl=$("#r-note-l");nl.disabled=!R.wahl||abwesend(R.wahl);nl.addEventListener("click",()=>{if(!R.wahl)return;R.noteOffen=R.noteOffen===R.wahl?null:R.wahl;rasterZeichnen()});
+   noteFormVerdrahten(sec);}
   if($("#r-rg-alle")){$("#r-rg-alle").addEventListener("click",reglerAlleEintragen);reglerKnopfAktualisieren()}
   $("#r-undo").disabled=!R.eintraege.length;
   $("#r-undo").addEventListener("click",()=>{R.eintraege.pop();rasterSpeichernEntwurf();rasterZeichnen()});
@@ -2039,6 +2065,27 @@ function rasterZeichnen(){
   $("#r-eingabe").addEventListener("change",e=>{R.eingabe=e.target.value;store.set("live-eingabe",R.eingabe);R.ersetze=null;rasterZeichnen()});
   $("#r-sort").addEventListener("change",e=>{R.sort=e.target.value;store.set("live-sort",R.sort);rasterZeichnen()});
   $("#r-skala").addEventListener("change",e=>{R.regler={};R.bewegt={};R.skala=e.target.value;store.set(`skala-${R.gid}`,R.skala);R.wahl=null;rasterZeichnen()});
+}
+/* Noten in der Live-Beobachtung (Test, Abfrage, Referat …), Skala der Lerngruppe: Punkte bei NP, sonst Noten 1–6 */
+const NOTEN_ARTEN=["Test","Abfrage","Referat","Hausaufgabe","Protokoll","Sonstige Leistung"];
+function noteWertLesen(s,np){s=String(s||"").trim().replace(".",",");
+  if(np){if(!/^\d{1,2}(,\d)?$/.test(s))return null;const v=zahl(s);return v>=0&&v<=15?s.replace(/,0$/,""):null}
+  if(!/^[1-6]([+-]|,\d{1,2})?$/.test(s)||s==="6-"||zahl(s)>6)return null;return s}
+function noteFormHTML(k){const np=R.skala==="np";const art=store.get("live-note-art","Test");
+  return `<span class="r-noteform" data-k="${esc(k)}"><select class="nf-art" aria-label="Art der Note">${NOTEN_ARTEN.map(a=>`<option${a===art?" selected":""}>${a}</option>`).join("")}</select><input class="nf-wert" placeholder="${np?"Punkte 0–15":"Note, z. B. 2- oder 2,3"}" aria-label="${np?"Punkte":"Note"} für ${esc(k)}" autocomplete="off" inputmode="decimal"><input class="nf-thema" placeholder="Thema (optional, keine Namen)" aria-label="Thema" autocomplete="off"><button class="btn primary small nf-ok" aria-label="Note für ${esc(k)} eintragen">✓</button><button class="btn ghost small nf-zu" aria-label="Abbrechen">✕</button></span>`}
+function noteFormVerdrahten(box){
+  box.querySelectorAll(".r-noteform").forEach(f=>{const k=f.dataset.k;const ok=()=>{
+      const np=R.skala==="np";const w=noteWertLesen(f.querySelector(".nf-wert").value,np);
+      if(w==null){$("#r-guard").hidden=false;$("#r-guard").textContent=np?"Bitte Punkte von 0 bis 15 eingeben.":"Bitte eine Note von 1 bis 6 eingeben, gern mit + oder − (z. B. 2-) oder als Dezimalzahl (2,3).";f.querySelector(".nf-wert").focus();return}
+      const thema=f.querySelector(".nf-thema").value.trim();const p=notizPruefen(thema);if(p){$("#r-guard").hidden=false;$("#r-guard").textContent=p;return}
+      if(abwesend(k))return abwesendHinweis(k);
+      const art=f.querySelector(".nf-art").value;store.set("live-note-art",art);
+      R.eintraege.push({k,kat:"NO",st:w,sk:np?"np":"note",art,text:thema,zeit:hhmm(new Date())});
+      R.noteOffen=null;$("#r-guard").hidden=true;rasterSpeichernEntwurf();rasterZeichnen()};
+    f.querySelector(".nf-ok").addEventListener("click",ok);
+    f.querySelector(".nf-zu").addEventListener("click",()=>{R.noteOffen=null;rasterZeichnen()});
+    f.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();ok()}if(ev.key==="Escape"){R.noteOffen=null;rasterZeichnen()}}));
+    if(R.noteOffen===k)setTimeout(()=>f.querySelector(".nf-wert").focus(),0)});
 }
 const leisteSym=()=>[...(R.eingabe==="regler"?[]:SKALEN[R.skala].werte.map(v=>["MM",v,"mm"])),...SYM.filter(x=>x[0]!=="MM")];
 /* Stufenloser Regler: links schwächer, rechts stärker. Noten intern negativ, damit rechts besser ist. */
@@ -2082,12 +2129,12 @@ function notizPruefen(t){
 }
 function rasterUebersicht(){
   const sec=$("#raster");
-  const zeilen=R.eintraege.map((e,i)=>`<tr class="${e.kat==="!"&&!e.text?"fehlt":""}"><td class="m">${esc(e.zeit)}</td><td class="m">${esc(e.k)}</td><td>${esc(anzeigeName(e.k))}</td><td class="m">${esc(e.kat==="A"?symText(e.kat,e.st,e.sk):e.kat==="N"?"Notiz":e.kat==="!"?"!":e.kat==="*"?"*":e.kat==="MM"?"MM "+mmText(e.st,e.sk):e.kat+" "+e.st)}</td><td><input data-i="${i}" value="${esc(e.text)}" placeholder="${e.kat==="!"?"Bitte beobachtbar beschreiben":"Situation (optional)"}"></td><td><button class="btn ghost small" data-weg="${i}" aria-label="Eintrag löschen">✕</button></td></tr>`).join("");
+  const zeilen=R.eintraege.map((e,i)=>`<tr class="${e.kat==="!"&&!e.text?"fehlt":""}"><td class="m">${esc(e.zeit)}</td><td class="m">${esc(e.k)}</td><td>${esc(anzeigeName(e.k))}</td><td class="m">${esc(e.kat==="A"||e.kat==="NO"?symText(e.kat,e.st,e.sk,e.art):e.kat==="N"?"Notiz":e.kat==="!"?"!":e.kat==="*"?"*":e.kat==="MM"?"MM "+mmText(e.st,e.sk):e.kat+" "+e.st)}</td><td><input data-i="${i}" value="${esc(e.text)}" placeholder="${e.kat==="!"?"Bitte beobachtbar beschreiben":"Situation (optional)"}"></td><td><button class="btn ghost small" data-weg="${i}" aria-label="Eintrag löschen">✕</button></td></tr>`).join("");
   sec.innerHTML=`<div class="r-kopf"><h2>${esc(R.gid)} · Freigabe</h2><span class="uhr">${R.eintraege.length} Einträge</span><span class="sp"></span><button class="btn ghost small" id="r-zurueck">Zurück zur Beobachtung</button></div>
     ${R.eintraege.length?`<div class="r-tab-wrap"><table class="r-tab"><thead><tr><th>Zeit</th><th>Kürzel</th><th>Name (nur hier)</th><th>Was</th><th>Situation</th><th></th></tr></thead><tbody>${zeilen}</tbody></table></div>`:`<p>Keine Einträge in dieser Stunde.</p>`}
     <div class="guard" id="r-guard" hidden></div>
-    <p class="note">Gespeichert wird je Kind in der Akte, nur mit Kürzel: mündliche Mitarbeit unter „Leistungen“ (als ${esc(SKALEN[R.skala].name)}), AV, SV, !, *, Notizen und Anwesenheit (krank, fehlt, zu spät) unter „Arbeits- und Sozialverhalten“. Nur Beobachtbares, keine Deutungen oder Diagnosen.</p>
-    ${(()=>{const a=R.eintraege.filter(e=>e.kat==="A");return a.length?`<p class="note"><strong>Fehlzeiten bitte auch ins Klassenbuch bzw. die Schulsoftware eintragen:</strong> ${a.map(e=>esc(e.k)+" "+esc(symText(e.kat,e.st,e.sk))).join(", ")}</p>`:""})()}
+    <p class="note">Gespeichert wird je Kind in der Akte, nur mit Kürzel: mündliche Mitarbeit (als ${esc(SKALEN[R.skala].name)}) und Noten (Test, Abfrage, Referat …) unter „Leistungen“, AV, SV, !, *, Notizen und Anwesenheit (krank, fehlt, zu spät) unter „Arbeits- und Sozialverhalten“. Nur Beobachtbares, keine Deutungen oder Diagnosen.</p>
+    ${(()=>{const a=R.eintraege.filter(e=>e.kat==="A");return a.length?`<p class="note"><strong>Fehlzeiten bitte auch ins Klassenbuch bzw. die Schulsoftware eintragen:</strong> ${a.map(e=>esc(e.k)+" "+esc(symText(e.kat,e.st,e.sk,e.art))).join(", ")}</p>`:""})()}
     <div class="actions"><button class="btn primary" id="r-speichern"${R.eintraege.length?"":" disabled"}>Freigeben und in Akten speichern</button><button class="btn ghost" id="r-verwerfen">Verwerfen</button><span class="toast" id="r-toast" role="status"></span></div>`;
   sec.querySelectorAll("input[data-i]").forEach(inp=>inp.addEventListener("input",()=>{R.eintraege[+inp.dataset.i].text=inp.value.trim();rasterSpeichernEntwurf()}));
   sec.querySelectorAll("[data-weg]").forEach(b=>b.addEventListener("click",()=>{R.eintraege.splice(+b.dataset.weg,1);rasterSpeichernEntwurf();rasterUebersicht()}));
@@ -2107,8 +2154,8 @@ function rasterUebersicht(){
         const fh=await gd.getFileHandle(k+".md",{create:true});let t=await (await fh.getFile()).text();
         for(const e of liste){
           const was=wasAkte(e);
-          const zeile=`- ${R.heute} | Beobachtung | ${was}${e.text?": "+e.text.replace(/\|/g,"/"):""} (${kontext}, ${e.zeit}) | Quelle: beobachtung-dokumentieren (Live-Raster) | bestätigt`;
-          t=abschnittErgaenzen(t,e.kat==="MM"?"Leistungen":"Arbeits- und Sozialverhalten",zeile);
+          const zeile=`- ${R.heute} | Beobachtung | ${was}${e.text?(e.kat==="NO"?"; ":": ")+e.text.replace(/\|/g,"/"):""} (${kontext}, ${e.zeit}) | Quelle: beobachtung-dokumentieren (Live-Raster) | bestätigt`;
+          t=abschnittErgaenzen(t,e.kat==="MM"||e.kat==="NO"?"Leistungen":"Arbeits- und Sozialverhalten",zeile);
         }
         const w=await fh.createWritable();await w.write(t);await w.close();
       }
@@ -2123,40 +2170,66 @@ function rasterUebersicht(){
 }
 /* ---------- Notenübersicht (liest nur, schreibt nichts) ---------- */
 const zahl=x=>parseFloat(String(x).replace(",","."));
-// ein Wert in Notenskala 1–6 (Dezimal); null wenn keiner erkennbar
+// ein Wert in Notenskala 1–6 (Dezimal); null wenn keiner erkennbar. i/len: Stelle des Werts im Text (für Korrekturen)
 function notenWert(was){
-  let m=was.match(/MM ≈\S+ \(Regler (-?[\d,.]+)\)/);if(m)return {v:3-zahl(m[1]),art:"sym"};
+  let m=was.match(/MM (≈\S+ \(Regler (-?[\d,.]+)\))/);if(m)return {v:3-zahl(m[2]),art:"sym",i:m.index+3,len:m[1].length};
   m=was.match(/(\d{1,2}(?:[.,]\d+)?)\s*NP\b/)||was.match(/\bNP\s*(\d{1,2}(?:[.,]\d+)?)/)||was.match(/\bMM (\d{1,2}(?:[.,]\d+)?) ?P\b/);
-  if(m){const p=zahl(m[1]);if(p>=0&&p<=15)return {v:Math.min(6,Math.max(1,(17-p)/3)),art:"np",roh:p}}
+  if(m){const p=zahl(m[1]);let i=m.index,len=m[0].length;if(m[0].startsWith("MM ")){i+=3;len-=3}
+    if(p>=0&&p<=15)return {v:Math.min(6,Math.max(1,(17-p)/3)),art:"np",roh:p,i,len}}
   m=was.match(/Note\s*(\d(?:[.,]\d+)?)\s*([+-])?(?![\d])/);
-  if(m){let n=zahl(m[1]);if(m[2]==="+")n-=0.3;if(m[2]==="-")n+=0.3;if(n>=0.7&&n<=6.3)return {v:Math.min(6,Math.max(1,n)),art:"note"}}
-  m=was.match(/^MM (\+\+|\+|o|--|-)(?:\s|$|:)/);if(m)return {v:{"++":1,"+":2,"o":3,"-":4,"--":5}[m[1]],art:"sym"};
+  if(m){let n=zahl(m[1]);if(m[2]==="+")n-=0.3;if(m[2]==="-")n+=0.3;if(n>=0.7&&n<=6.3)return {v:Math.min(6,Math.max(1,n)),art:"note",i:m.index,len:m[0].replace(/\s+$/,"").length}}
+  m=was.match(/^MM (\+\+|\+|o|--|-)(?:\s|$|:)/);if(m)return {v:{"++":1,"+":2,"o":3,"-":4,"--":5}[m[1]],art:"sym",i:3,len:m[1].length};
   return null;
 }
+const SONST_RE=/^(test|abfrage|referat|vortrag|präsentation|hausaufgabe|protokoll|sonstige leistung)/i;
 function notenAusAkte(text){
   const r={mm:[],test:[],ka:[]};
   for(const z of text.split("\n")){
     const t=z.match(/^\s*-\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|(.*)$/);if(!t)continue;
     const [,d,art,was,rest]=t;if(/\|\s*(offen|verworfen)\s*$/i.test(rest)||/^vorschlag$/i.test(art))continue;
     const w=notenWert(was);if(!w)continue;
-    const e={d,v:w.v,was,roh:w.roh};
-    if(/^(klausur|klassenarbeit)/i.test(art)||/^(klausur|klassenarbeit)/i.test(was)){const n=was.match(/(?:Nr\.?\s*|Klausur\s+|Klassenarbeit\s+)(\d+)/i);e.nr=n?+n[1]:null;r.ka.push(e)}
-    else if(/^test/i.test(art)||/^test/i.test(was))r.test.push(e);
-    else if(/^(mitarbeit|mm\b|mündlich)/i.test(was))r.mm.push(e);
+    // ersetzt/gestrichen: bleibt sichtbar (durchgestrichen), zählt aber nicht mehr
+    const alt=/\|\s*(ersetzt|gestrichen)\b[^|]*$/i.test(rest);
+    const e={d,v:w.v,was,roh:w.roh,z,art,alt,status:(rest.match(/\|\s*([^|]*)$/)||[])[1]||""};
+    if(/^(klausur|klassenarbeit)/i.test(art)||/^(klausur|klassenarbeit)/i.test(was)){const n=was.match(/(?:Nr\.?\s*|Klausur\s+|Klassenarbeit\s+)(\d+)/i);e.nr=n?+n[1]:null;e.typ="ka";r.ka.push(e)}
+    else if(/^test/i.test(art)||SONST_RE.test(was)){e.typ="te";r.test.push(e)}
+    else if(/^(mitarbeit|mm\b|mündlich)/i.test(was)){e.typ="mm";r.mm.push(e)}
   }
   return r;
 }
 function gewichtung(){const t=(ordner.profil&&ordner.profil.text)||"";const m=t.match(/gewichtung:\s*\{([^}]*)\}/);let mu=50,sc=50;
   if(m){const a=m[1].match(/m(ü|ue)ndlich[a-z_]*:\s*(\d+)/i),b=m[1].match(/schriftlich:\s*(\d+)/i);if(a)mu=+a[2];if(b)sc=+b[1]}return {mu,sc,ausProfil:!!m}}
 const mittel=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
+/* Änderungen in der Noteneinsicht: erst als Entwurf (localStorage noten-aend-<gruppe>), dann „Speichern“ schreibt in die Akten.
+   Korrektur: alte Zeile bekommt Status „ersetzt <Datum>“, darunter eine neue Zeile mit Verweis. Streichen: Status „gestrichen <Datum>“. */
+const heuteDE=()=>datumDE(heuteISO());
+const statusSetzen=(z,s)=>z.replace(/\|[^|]*$/,"| "+s);
+const ohnePipe=s=>String(s||"").replace(/\|/g,"/").replace(/\s+/g," ").trim();
+function wertErsetzen(was,neu){const w=notenWert(was);return w?was.slice(0,w.i)+neu+was.slice(w.i+w.len):was+" "+neu}
+function opsAnwenden(t,ops){const neu=new Set(),fehl=[];
+  for(const o of ops){
+    if(o.typ==="neu"){t=abschnittErgaenzen(t,"Leistungen",o.zeile);neu.add(o.zeile);continue}
+    const L=t.split("\n");const i=L.indexOf(o.alt);if(i<0){fehl.push(o);continue}
+    const st=statusSetzen(o.alt,o.status);L[i]=st;neu.add(st);if(o.zeile){L.splice(i+1,0,o.zeile);neu.add(o.zeile)}
+    t=L.join("\n")}
+  return {t,neu,fehl}}
+function textPruefen(t,namen){if(!t)return "";if(nameVerdacht(t))return "Steht da ein Name? Bitte nur Kürzel verwenden.";
+  const w=t.toLowerCase().split(/[^a-zäöüß]+/).filter(x=>x.length>2);
+  for(const n of Object.values(namen||{}))for(const x of [n.vor,n.nach])if(x&&x.length>2&&w.includes(x.toLowerCase()))return `Da steht ein Name aus deiner Kürzelliste („${x}“). Bitte weglassen oder durch das Kürzel ersetzen.`;
+  return ""}
+const N_ARTEN=["Mitarbeit","Klausur","Test","Abfrage","Referat","Hausaufgabe","Protokoll","Sonstige Leistung"];
+function neueZeile(art,nr,dat,wertTxt,bem){const quelle=`Quelle: Noteneinsicht, eingetragen ${heuteDE()}`;bem=ohnePipe(bem);
+  const was=art==="Klausur"?`Klausur ${nr||1}: ${wertTxt}${bem?"; "+bem:""}`:`${art}: ${wertTxt}${bem?"; "+bem:""}`;
+  return `- ${dat} | ${art==="Klausur"||art==="Test"?"Beleg":"Beobachtung"} | ${was} | ${quelle} | bestätigt`}
 async function zeigeNoten(gidStart){
   const slot=$("#panel-slot");const gruppen=ordner.gruppen.map(g=>g.id);if(!gruppen.length)return;
   let gid=gidStart&&gruppen.includes(gidStart)?gidStart:store.get("noten-gruppe",gruppen[0]);if(!gruppen.includes(gid))gid=gruppen[0];
-  let namen={};
+  let namen={},ed=null,meldung="",bearb=store.get("noten-bearbeiten",false),reg=[];
+  const opsK=()=>"noten-aend-"+gid;const ops=()=>store.get(opsK(),[])||[];const opsSetzen=l=>store.set(opsK(),l.length?l:null);
   const zeichnen=async()=>{
     const g=ordner.gruppen.find(x=>x.id===gid);store.set("noten-gruppe",gid);
     const modus=store.get("noten-modus","einzeln"),sort=store.get("noten-sort","kuerzel"),zr=store.get("noten-zeitraum","sj"),zeigN=store.get("akten-namen",false);
-    if((zeigN||sort==="nachname"||sort==="vorname")&&!Object.keys(namen).length)namen=await namenLesen(gid);
+    if((zeigN||bearb||sort==="nachname"||sort==="vorname")&&!Object.keys(namen).length)namen=await namenLesen(gid);
     const np=skalaStandard(gid,g.gruppeText)==="np";
     const sj=(g.gruppeText.match(/^schuljahr:\s*(\d{4})/m)||[])[1]||String(new Date().getMonth()>=7?new Date().getFullYear():new Date().getFullYear()-1);
     const hj2=`${+sj+1}-02-01`;const imZr=d=>zr==="sj"?true:zr==="hj1"?d<hj2:d>=hj2;
@@ -2164,27 +2237,59 @@ async function zeigeNoten(gidStart){
     const zeig=v=>v==null?"":np?String(Math.round(Math.max(0,Math.min(15,17-3*v)))):komma(v,1);
     const zeigGenau=v=>v==null?"":np?komma(Math.max(0,Math.min(15,17-3*v)),1):komma(v,2);
     const zeugnis=v=>v==null?"":np?String(Math.round(Math.max(0,Math.min(15,17-3*v))))+" P":String(Math.min(6,Math.max(1,Math.round(v))));
-    const daten=g.akten.map(a=>{const r=notenAusAkte(a.text);const f=x=>x.filter(e=>imZr(e.d)).sort((p,q)=>p.d.localeCompare(q.d));
-      const mm=f(r.mm),te=f(r.test),ka=f(r.ka);const mu=mittel([...mm,...te].map(e=>e.v)),sc=mittel(ka.map(e=>e.v));
+    const O=ops();const fehlAlle=[];let neuAlle=new Set();
+    const daten=g.akten.map(a=>{const ap=opsAnwenden(a.text,O.filter(o=>o.k===a.kuerzel));ap.fehl.forEach(o=>fehlAlle.push(o));ap.neu.forEach(z=>neuAlle.add(z));
+      const r=notenAusAkte(ap.t);const f=x=>x.filter(e=>imZr(e.d)).sort((p,q)=>p.d.localeCompare(q.d));
+      const mm=f(r.mm),te=f(r.test),ka=f(r.ka);let n=0;ka.forEach(e=>{if(!e.alt)n++;e.key="Nr. "+(e.nr||(e.alt?n+1:n))});
+      const gilt=x=>x.filter(e=>!e.alt);const mu=mittel([...gilt(mm),...gilt(te)].map(e=>e.v)),sc=mittel(gilt(ka).map(e=>e.v));
       const z=mu!=null&&sc!=null?(W.mu*mu+W.sc*sc)/(W.mu+W.sc):mu??sc;return {k:a.kuerzel,mm,te,ka,mu,sc,z}});
     // Klausur-Spalten: nach Nr., sonst nach Reihenfolge
-    const kaSp=[];daten.forEach(d=>d.ka.forEach((e,i)=>{const key="Nr. "+(e.nr||i+1);if(!kaSp.includes(key))kaSp.push(key)}));
+    const kaSp=[];daten.forEach(d=>d.ka.forEach(e=>{if(!kaSp.includes(e.key))kaSp.push(e.key)}));
     kaSp.sort((a,b)=>a.localeCompare(b,"de",{numeric:true}));
-    const kaVon=(d,key)=>d.ka.filter((e,i)=>"Nr. "+(e.nr||i+1)===key);
+    const kaVon=(d,key)=>d.ka.filter(e=>e.key===key);
     let reihe=sortiereKuerzel(daten.map(d=>d.k),namen,sort==="zeugnis"?"kuerzel":sort);
     if(sort==="zeugnis")reihe.sort((a,b)=>{const A=daten.find(d=>d.k===a).z,B=daten.find(d=>d.k===b).z;return (A??99)-(B??99)});
     const nameVon=k=>{const n=namen[k];return n?[n.nach,n.vor].filter(Boolean).join(", "):""};
-    const zellen=e=>e.map(x=>`<span class="n-e" title="${esc(datumDE(x.d)+": "+x.was)}">${esc(np&&x.roh!=null?komma(x.roh,1).replace(/,0$/,""):np?zeig(x.v):Math.abs(x.v*10-Math.round(x.v*10))<0.01&&[0,3,7].includes(Math.round(x.v*10)%10)?notenTendenz(x.v):komma(x.v,1))}</span>`).join("");
+    const wertAnz=x=>np&&x.roh!=null?komma(x.roh,1).replace(/,0$/,""):np?zeig(x.v):Math.abs(x.v*10-Math.round(x.v*10))<0.01&&[0,3,7].includes(Math.round(x.v*10)%10)?notenTendenz(x.v):komma(x.v,1);
+    reg=[];
+    const zellen=(e,k)=>e.map(x=>{const neu=neuAlle.has(x.z);const cls=`n-e${x.alt?" alt":""}${neu?" neu":""}`;
+      const tip=esc(datumDE(x.d)+": "+x.was+(x.alt?" ("+x.status+")":"")+(neu?" (noch nicht gespeichert)":""));
+      if(!bearb||(x.alt&&!neu))return `<span class="${cls}" title="${tip}">${esc(wertAnz(x))}</span>`;
+      reg.push({k,x,neu});return `<button type="button" class="${cls}" data-c="${reg.length-1}" title="${tip}${neu?" – antippen zum Zurücknehmen":" – antippen zum Korrigieren oder Streichen"}">${esc(wertAnz(x))}</button>`}).join("");
+    const gilt=x=>x.filter(e=>!e.alt);const hatTests=daten.some(x=>x.te.length);
     const zeilen=reihe.map(k=>{const d=daten.find(x=>x.k===k);
-      return `<tr><td class="m">${esc(k)}</td>${zeigN?`<td>${esc(nameVon(k))}</td>`:""}
-        <td>${modus==="einzeln"?`<div class="n-liste">${zellen(d.mm)||'<span class="n-leer">–</span>'}</div>`:`<span class="n-anz">${d.mm.length} Noten</span>`}</td>
-        ${d.te.length||daten.some(x=>x.te.length)?`<td>${zellen(d.te)}</td>`:""}
+      return `<tr${ed&&ed.k===k?' class="n-akt"':""}><td class="m">${esc(k)}</td>${zeigN?`<td>${esc(nameVon(k))}</td>`:""}
+        <td>${modus==="einzeln"||bearb?`<div class="n-liste">${zellen(d.mm,k)||'<span class="n-leer">–</span>'}</div>`:`<span class="n-anz">${gilt(d.mm).length} Noten</span>`}</td>
+        ${hatTests?`<td><div class="n-liste">${zellen(d.te,k)}</div></td>`:""}
         <td class="m b">${zeigGenau(d.mu)}</td>
-        ${kaSp.map(key=>`<td class="m">${zellen(kaVon(d,key))}</td>`).join("")}
+        ${kaSp.map(key=>`<td class="m">${zellen(kaVon(d,key),k)}</td>`).join("")}
         <td class="m b">${zeigGenau(d.sc)}</td>
-        <td class="m z">${zeugnis(d.z)}${d.z!=null?`<small> (${zeigGenau(d.z)})</small>`:""}</td></tr>`}).join("");
-    const hatTests=daten.some(x=>x.te.length);
+        <td class="m z">${zeugnis(d.z)}${d.z!=null?`<small> (${zeigGenau(d.z)})</small>`:""}</td>${bearb?`<td><button type="button" class="btn ghost small n-plus" data-k="${esc(k)}" aria-label="Neue Note für ${esc(k)}" title="Neue Note für ${esc(k)}">+ Note</button></td>`:""}</tr>`});
+    const zeilenHTML=reihe.length?zeilen.join(""):"";
     const ds=a=>{const v=a.filter(x=>x!=null);return v.length?zeigGenau(mittel(v)):""};
+    const naechsteNr=Math.max(0,...daten.flatMap(d=>gilt(d.ka).map(e=>e.nr||0)),kaSp.length)+1;
+    const wertHinweis=np?"Punkte 0–15":"Note 1–6, z. B. 2- oder 2,3";
+    const artSel=(id,a)=>`<select id="${id}">${N_ARTEN.map(x=>`<option${x===a?" selected":""}>${x}</option>`).join("")}</select>`;
+    // Eingabebereich
+    let edHTML="";
+    if(ed&&ed.typ==="chip"){const c=ed.r;const x=c.x;
+      edHTML=c.neu?`<div class="n-edit"><strong>${esc(c.k)}</strong> · ${esc(datumDE(x.d))}: „${esc(x.was)}“ ist eine noch nicht gespeicherte Änderung.<div class="actions"><button class="btn ghost small" id="ne-zurueck">Änderung zurücknehmen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div></div>`
+      :`<div class="n-edit"><div><strong>${esc(c.k)}</strong> · ${esc(datumDE(x.d))}: „${esc(x.was)}“</div>
+        <div class="n-felder"><label>Richtige ${np?"Punktzahl":"Note"} <input id="ne-wert" placeholder="${wertHinweis}" autocomplete="off" inputmode="decimal"></label><label>Grund (optional) <input id="ne-grund" placeholder="z. B. Rechenfehler bei der Punktsumme" autocomplete="off"></label></div>
+        <div class="actions"><button class="btn primary small" id="ne-korr">Korrigieren</button><button class="btn ghost small" id="ne-streich">Streichen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div>
+        <p class="note">Die alte Note bleibt in der Akte stehen, durchgestrichen mit „ersetzt“ bzw. „gestrichen“ und Datum. Die korrigierte Note behält das Datum der alten und bekommt einen Verweis.</p></div>`}
+    else if(ed&&ed.typ==="neu"){const a=store.get("noten-neu-art","Mitarbeit");
+      edHTML=`<div class="n-edit"><div><strong>Neue Note für ${esc(ed.k)}</strong>${zeigN&&nameVon(ed.k)?` · ${esc(nameVon(ed.k))}`:""}</div>
+        <div class="n-felder"><label>Art ${artSel("ne-art",a)}</label><label class="ne-nr"${a==="Klausur"?"":" hidden"}>Nr. <input id="ne-nr" type="number" min="1" max="20" value="${naechsteNr-1||1}"></label><label>Datum <input id="ne-dat" type="date" value="${heuteISO()}"></label><label>${np?"Punkte":"Note"} <input id="ne-wert" placeholder="${wertHinweis}" autocomplete="off" inputmode="decimal"></label><label>Bemerkung (optional) <input id="ne-bem" placeholder="z. B. Thema, keine Namen" autocomplete="off"></label></div>
+        <div class="actions"><button class="btn primary small" id="ne-add">Hinzufügen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div></div>`}
+    else if(ed&&ed.typ==="alle"){const a=ed.art||"Klausur";
+      edHTML=`<div class="n-edit"><div><strong>Noten für alle eintragen</strong> (z. B. eine Klausur oder einen Test). Leere Felder werden übersprungen, Enter springt zum nächsten Kind.</div>
+        <div class="n-felder"><label>Art ${artSel("na-art",a)}</label><label class="ne-nr"${a==="Klausur"?"":" hidden"}>Nr. <input id="na-nr" type="number" min="1" max="20" value="${ed.nr||naechsteNr}"></label><label>Datum <input id="na-dat" type="date" value="${ed.dat||heuteISO()}"></label><label>Bemerkung für alle (optional) <input id="na-bem" value="${esc(ed.bem||"")}" placeholder="z. B. Thema" autocomplete="off"></label></div>
+        <div class="n-alle">${reihe.map(k=>`<label><span class="m">${esc(k)}</span>${zeigN&&nameVon(k)?`<span class="n-nm">${esc(nameVon(k))}</span>`:""}<input class="na-w" data-k="${esc(k)}" value="${esc((ed.w||{})[k]||"")}" placeholder="${np?"0–15":"1–6"}" autocomplete="off" inputmode="decimal"></label>`).join("")}</div>
+        <div class="actions"><button class="btn primary small" id="na-ok">Übernehmen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div></div>`}
+    const aendHTML=O.length?`<div class="n-aend"><div><strong>${O.length} ${O.length===1?"Änderung":"Änderungen"} noch nicht gespeichert</strong> (bleiben in diesem Browser, bis du speicherst oder verwirfst)</div>
+        <div class="n-aend-l">${O.map((o,i)=>`<span class="r-chip${fehlAlle.includes(o)?" fehl":""}"><span class="r-chip-w">${esc(o.k)}: ${esc(o.info)}${fehlAlle.includes(o)?" (Eintrag nicht mehr gefunden)":""}</span><button class="r-chip-x" data-o="${i}" aria-label="Änderung zurücknehmen" title="Zurücknehmen">✕</button></span>`).join("")}</div>
+        <div class="actions"><button class="btn primary small" id="n-save">In Akten speichern</button><button class="btn ghost small" id="n-verw">Alle verwerfen</button><span class="toast" id="n-toast" role="status"></span></div></div>`:"";
     slot.innerHTML=`<div class="panel" role="region" aria-label="Notenübersicht"><div class="p-kopf"><h4>Notenübersicht</h4><span class="sp"></span><button class="btn ghost small" id="n-close">Schließen</button></div>
       <div class="n-steuer">
         <label class="r-skala">Lerngruppe <select id="n-gruppe">${gruppen.map(x=>`<option${x===gid?" selected":""}>${esc(x)}</option>`).join("")}</select></label>
@@ -2192,19 +2297,79 @@ async function zeigeNoten(gidStart){
         <label class="r-skala">Zeitraum <select id="n-zr"><option value="sj"${zr==="sj"?" selected":""}>Schuljahr ${sj}/${String(+sj+1).slice(2)}</option><option value="hj1"${zr==="hj1"?" selected":""}>1. Halbjahr</option><option value="hj2"${zr==="hj2"?" selected":""}>2. Halbjahr</option></select></label>
         <label class="r-skala">Sortieren <select id="n-sort">${[...SORT_OPT,["zeugnis","Zeugnisnote"]].map(([k,v])=>`<option value="${k}"${sort===k?" selected":""}>${v}</option>`).join("")}</select></label>
         <button class="btn ghost small" id="n-namen" aria-pressed="${zeigN}">${zeigN?"Namen ausblenden":"Namen einblenden"}</button>
+        <button class="btn ${bearb?"primary":"ghost"} small" id="n-bearb" aria-pressed="${bearb}" title="Noten eintragen, korrigieren oder streichen">${bearb?"Bearbeiten beenden":"Noten bearbeiten"}</button>
+        ${bearb?`<button class="btn ghost small" id="n-alle">Für alle eintragen</button>`:""}
         <button class="btn ghost small" id="n-druck">Drucken</button>
       </div>
-      <div class="r-tab-wrap"><table class="r-tab n-tab"><thead><tr><th>Kürzel</th>${zeigN?"<th>Name (nur hier)</th>":""}<th>Mitarbeit</th>${hatTests?"<th>Tests</th>":""}<th>Ø mündl./sonst.</th>${kaSp.map(x=>`<th>Klausur ${esc(x)}</th>`).join("")}<th>Ø schriftl.</th><th>Zeugnis (Vorschlag)</th></tr></thead>
-      <tbody>${zeilen||`<tr><td colspan="9">Keine Akten in dieser Lerngruppe.</td></tr>`}</tbody>
-      <tfoot><tr><td>Ø Gruppe</td>${zeigN?"<td></td>":""}<td></td>${hatTests?"<td></td>":""}<td class="m">${ds(daten.map(d=>d.mu))}</td>${kaSp.map(key=>`<td class="m">${ds(daten.flatMap(d=>kaVon(d,key).map(e=>e.v)))}</td>`).join("")}<td class="m">${ds(daten.map(d=>d.sc))}</td><td class="m">${ds(daten.map(d=>d.z))}</td></tr></tfoot></table></div>
-      <p class="note">${np?"Notenpunkte 0–15":"Noten 1–6"} · Gewichtung mündlich/sonstige ${W.mu} % zu schriftlich ${W.sc} %${W.ausProfil?" (aus deinem Profil)":" (Standard, im Profil unter bewertung.gewichtung einstellbar)"}. Mitarbeit aus der Live-Beobachtung und aus übernommenen Notenlisten. Symbole zählen als ++ = 1, + = 2, o = 3, − = 4, −− = 5. ${np?"Noten werden mit 17 − 3 × Note in Punkte umgerechnet. ":"Punkte werden mit (17 − Punkte) / 3 in Noten umgerechnet. "}${hatTests?"Tests zählen wie eine Mitarbeitsnote zu „mündlich/sonstige“. ":""}Fährst du mit der Maus über eine Note, siehst du Datum und Eintrag. Der Zeugnisvorschlag ist rein rechnerisch, die pädagogische Entscheidung bleibt bei dir. Die Seite liest nur und ändert keine Akte.</p></div>`;
+      ${meldung?`<div class="guard" id="n-guard">${esc(meldung)}</div>`:`<div class="guard" id="n-guard" hidden></div>`}
+      ${aendHTML}${edHTML}
+      <div class="r-tab-wrap"><table class="r-tab n-tab"><thead><tr><th>Kürzel</th>${zeigN?"<th>Name (nur hier)</th>":""}<th>Mitarbeit</th>${hatTests?"<th>Tests/sonst.</th>":""}<th>Ø mündl./sonst.</th>${kaSp.map(x=>`<th>Klausur ${esc(x)}</th>`).join("")}<th>Ø schriftl.</th><th>Zeugnis (Vorschlag)</th>${bearb?"<th></th>":""}</tr></thead>
+      <tbody>${zeilenHTML||`<tr><td colspan="9">Keine Akten in dieser Lerngruppe.</td></tr>`}</tbody>
+      <tfoot><tr><td>Ø Gruppe</td>${zeigN?"<td></td>":""}<td></td>${hatTests?"<td></td>":""}<td class="m">${ds(daten.map(d=>d.mu))}</td>${kaSp.map(key=>`<td class="m">${ds(daten.flatMap(d=>gilt(kaVon(d,key)).map(e=>e.v)))}</td>`).join("")}<td class="m">${ds(daten.map(d=>d.sc))}</td><td class="m">${ds(daten.map(d=>d.z))}</td>${bearb?"<td></td>":""}</tr></tfoot></table></div>
+      <p class="note">${np?"Notenpunkte 0–15":"Noten 1–6"} · Gewichtung mündlich/sonstige ${W.mu} % zu schriftlich ${W.sc} %${W.ausProfil?" (aus deinem Profil)":" (Standard, im Profil unter bewertung.gewichtung einstellbar)"}. Mitarbeit aus der Live-Beobachtung und aus übernommenen Notenlisten. Symbole zählen als ++ = 1, + = 2, o = 3, − = 4, −− = 5. ${np?"Noten werden mit 17 − 3 × Note in Punkte umgerechnet. ":"Punkte werden mit (17 − Punkte) / 3 in Noten umgerechnet. "}${hatTests?"Tests und sonstige Noten (Abfrage, Referat …) zählen wie eine Mitarbeitsnote zu „mündlich/sonstige“. ":""}Fährst du mit der Maus über eine Note, siehst du Datum und Eintrag. Durchgestrichene Noten wurden korrigiert oder gestrichen und zählen nicht mehr. Der Zeugnisvorschlag ist rein rechnerisch, die pädagogische Entscheidung bleibt bei dir. Mit „Noten bearbeiten“ kannst du Noten antippen und korrigieren oder streichen und mit „+ Note“ neue eintragen. Erst „In Akten speichern“ schreibt sie in die Akten.</p></div>`;
+    meldung="";
+    const fehler=t=>{const g=$("#n-guard");g.hidden=false;g.textContent=t};
+    const opDazu=o=>{const l=ops();l.push(o);opsSetzen(l);ed=null;zeichnen()};
     $("#n-close").addEventListener("click",()=>slot.innerHTML="");
-    $("#n-gruppe").addEventListener("change",e=>{gid=e.target.value;namen={};zeichnen()});
+    $("#n-gruppe").addEventListener("change",e=>{gid=e.target.value;namen={};ed=null;zeichnen()});
     $("#n-modus").addEventListener("change",e=>{store.set("noten-modus",e.target.value);zeichnen()});
     $("#n-zr").addEventListener("change",e=>{store.set("noten-zeitraum",e.target.value);zeichnen()});
     $("#n-sort").addEventListener("change",e=>{store.set("noten-sort",e.target.value);zeichnen()});
     $("#n-namen").addEventListener("click",()=>{store.set("akten-namen",!store.get("akten-namen",false));zeichnen()});
+    $("#n-bearb").addEventListener("click",()=>{bearb=!bearb;store.set("noten-bearbeiten",bearb);ed=null;zeichnen()});
+    if($("#n-alle"))$("#n-alle").addEventListener("click",()=>{ed=ed&&ed.typ==="alle"?null:{typ:"alle",art:store.get("noten-alle-art","Klausur")};zeichnen()});
     $("#n-druck").addEventListener("click",()=>{document.body.classList.add("druck-noten");window.print();setTimeout(()=>document.body.classList.remove("druck-noten"),500)});
+    slot.querySelectorAll("button.n-e").forEach(b=>b.addEventListener("click",()=>{const c=+b.dataset.c;ed=ed&&ed.typ==="chip"&&ed.c===c?null:{typ:"chip",c,k:reg[c].k,r:reg[c]};zeichnen()}));
+    slot.querySelectorAll(".n-plus").forEach(b=>b.addEventListener("click",()=>{ed=ed&&ed.typ==="neu"&&ed.k===b.dataset.k?null:{typ:"neu",k:b.dataset.k};zeichnen()}));
+    slot.querySelectorAll(".n-aend .r-chip-x").forEach(b=>b.addEventListener("click",()=>{const l=ops();l.splice(+b.dataset.o,1);opsSetzen(l);ed=null;zeichnen()}));
+    if($("#n-verw"))$("#n-verw").addEventListener("click",e=>{const b=e.currentTarget;if(b.dataset.sicher!=="1"){b.dataset.sicher="1";b.textContent="Wirklich alle verwerfen?";return}opsSetzen([]);ed=null;zeichnen()});
+    if($("#ne-zu"))$("#ne-zu").addEventListener("click",()=>{ed=null;zeichnen()});
+    const artUmschalten=(sel,feld)=>{const s=$(sel);if(s)s.addEventListener("change",()=>{const l=slot.querySelector(".n-edit .ne-nr");if(l)l.hidden=s.value!=="Klausur";store.set(feld,s.value);if(ed)ed.art=s.value})};
+    artUmschalten("#ne-art","noten-neu-art");artUmschalten("#na-art","noten-alle-art");
+    const wertTxt=s=>{const w=noteWertLesen(s,np);return w==null?null:np?w+" NP":"Note "+w};
+    const wertFehler=np?"Bitte Punkte von 0 bis 15 eingeben.":"Bitte eine Note von 1 bis 6 eingeben, gern mit + oder − (z. B. 2-) oder als Dezimalzahl (2,3).";
+    // Korrigieren / Streichen / Zurücknehmen
+    if($("#ne-zurueck"))$("#ne-zurueck").addEventListener("click",()=>{const z=ed.r.x.z;const l=ops().filter(o=>!(o.k===ed.k&&(o.zeile===z||(o.alt&&statusSetzen(o.alt,o.status)===z))));opsSetzen(l);ed=null;zeichnen()});
+    if($("#ne-korr")){const go=()=>{const x=ed.r.x;const w=wertTxt($("#ne-wert").value);if(!w){fehler(wertFehler);$("#ne-wert").focus();return}
+        const grund=ohnePipe($("#ne-grund").value);const p=textPruefen(grund,namen);if(p)return fehler(p);
+        const altW=x.was.slice(notenWert(x.was).i,notenWert(x.was).i+notenWert(x.was).len);
+        const zeile=`- ${x.d} | ${x.art} | ${ohnePipe(wertErsetzen(x.was,w))} | Quelle: Noteneinsicht, Korrektur ${heuteDE()}, ersetzt Eintrag vom ${datumDE(x.d)} (${ohnePipe(altW)})${grund?", Grund: "+grund:""} | bestätigt`;
+        opDazu({typ:"korr",k:ed.k,alt:x.z,status:`ersetzt ${heuteDE()}`,zeile,info:`${x.typ==="ka"?"Klausur "+x.key.replace("Nr. ",""):x.typ==="te"?x.was.split(":")[0]:"Mitarbeit"} vom ${datumDE(x.d)}: ${altW} → ${w}${grund?" ("+grund+")":""}`})};
+      $("#ne-korr").addEventListener("click",go);["#ne-wert","#ne-grund"].forEach(s=>$(s).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}}));setTimeout(()=>$("#ne-wert")&&$("#ne-wert").focus(),0)}
+    if($("#ne-streich"))$("#ne-streich").addEventListener("click",()=>{const x=ed.r.x;const grund=ohnePipe($("#ne-grund").value);const p=textPruefen(grund,namen);if(p)return fehler(p);
+      const w=notenWert(x.was);opDazu({typ:"streich",k:ed.k,alt:x.z,status:`gestrichen ${heuteDE()}${grund?": "+grund:""}`,info:`${datumDE(x.d)} „${x.was.slice(w.i,w.i+w.len)}“ streichen${grund?" ("+grund+")":""}`})});
+    // Neue Note für ein Kind
+    if($("#ne-add")){const go=()=>{const art=$("#ne-art").value,w=wertTxt($("#ne-wert").value);if(!w){fehler(wertFehler);$("#ne-wert").focus();return}
+        const dat=$("#ne-dat").value||heuteISO(),bem=$("#ne-bem").value.trim();const p=textPruefen(bem,namen);if(p)return fehler(p);
+        const nr=art==="Klausur"?Math.max(1,Math.round(+$("#ne-nr").value||1)):null;
+        opDazu({typ:"neu",k:ed.k,zeile:neueZeile(art,nr,dat,w,bem),info:`neu: ${art==="Klausur"?"Klausur "+nr:art} ${datumDE(dat)} ${w}`})};
+      $("#ne-add").addEventListener("click",go);["#ne-wert","#ne-bem"].forEach(s=>$(s).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}}));setTimeout(()=>$("#ne-wert")&&$("#ne-wert").focus(),0)}
+    // Für alle eintragen
+    if($("#na-ok")){const felder=[...slot.querySelectorAll(".na-w")];
+      const merk=()=>{ed.art=$("#na-art").value;ed.nr=$("#na-nr").value;ed.dat=$("#na-dat").value;ed.bem=$("#na-bem").value;ed.w={};felder.forEach(f=>{if(f.value.trim())ed.w[f.dataset.k]=f.value.trim()})};
+      felder.forEach((f,i)=>{f.addEventListener("input",()=>{f.classList.remove("falsch")});f.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();(felder[i+1]||$("#na-ok")).focus()}})});
+      $("#na-ok").addEventListener("click",()=>{merk();const art=ed.art,dat=ed.dat||heuteISO(),bem=ed.bem.trim();const p=textPruefen(bem,namen);if(p)return fehler(p);
+        const nr=art==="Klausur"?Math.max(1,Math.round(+ed.nr||1)):null;let falsch=0;const neu=[];
+        felder.forEach(f=>{const v=f.value.trim();if(!v)return;const w=wertTxt(v);if(!w){f.classList.add("falsch");falsch++;return}neu.push({typ:"neu",k:f.dataset.k,zeile:neueZeile(art,nr,dat,w,bem),info:`neu: ${art==="Klausur"?"Klausur "+nr:art} ${datumDE(dat)} ${w}`})});
+        if(falsch)return fehler(`${falsch} ${falsch===1?"Wert ist":"Werte sind"} ungültig (rot markiert). ${wertFehler}`);
+        if(!neu.length)return fehler("Noch keine Werte eingetragen.");
+        opsSetzen([...ops(),...neu]);ed=null;zeichnen()});
+      setTimeout(()=>felder[0]&&!felder.some(f=>f===document.activeElement)&&felder[0].focus(),0)}
+    // Speichern
+    if($("#n-save"))$("#n-save").addEventListener("click",async()=>{
+      const b=$("#n-save");b.disabled=true;$("#n-toast").textContent="Speichere …";
+      try{
+        const root=await schreibRecht(),sd=await sdSchreib();const gd=await (await sd.getDirectoryHandle("lerngruppen")).getDirectoryHandle(gid);
+        const l=ops(),proK={};l.forEach(o=>(proK[o.k]=proK[o.k]||[]).push(o));
+        const plan=[];
+        for(const [k,ol] of Object.entries(proK)){const fh=await gd.getFileHandle(k+".md");const t=await (await fh.getFile()).text();const r=opsAnwenden(t,ol);
+          if(r.fehl.length)throw new Error(`${k}: ${r.fehl.length===1?"Ein Eintrag":r.fehl.length+" Einträge"} zum Korrigieren oder Streichen ${r.fehl.length===1?"steht":"stehen"} so nicht mehr in der Akte. Diese Änderung mit ✕ zurücknehmen und neu machen. Es wurde nichts gespeichert.`);
+          plan.push([fh,r.t])}
+        for(const [fh,t] of plan){const w=await fh.createWritable();await w.write(t);await w.close()}
+        opsSetzen([]);ed=null;await ordnerLesen(root);renderOrdner();meldung="";
+        await zeichnen();const g=$("#n-guard");g.hidden=false;g.classList.add("ok");g.textContent=`${l.length} ${l.length===1?"Änderung":"Änderungen"} bei ${plan.length} ${plan.length===1?"Kind":"Kindern"} in den Akten gespeichert.`;
+      }catch(err){$("#n-toast").textContent="";fehler((err&&err.message)||"Speichern hat nicht geklappt.");b.disabled=false}
+    });
   };
   await zeichnen();slot.scrollIntoView({block:"start",behavior:"smooth"});
 }
@@ -2499,5 +2664,6 @@ async function allesAktualisieren(){zuletztAktualisiert=Date.now();await planAbr
 setInterval(()=>{if(document.visibilityState==="visible")allesAktualisieren()},30*60*1000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-zuletztAktualisiert>10*60*1000)allesAktualisieren()});
 </script>
+<script src="werkzeuge/startseite/sicherung.js"></script>
 </body>
 </html>

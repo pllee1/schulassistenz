@@ -29,10 +29,11 @@ Tipp: Rechtsklick auf `Schulassistenz-Start.html` → „Senden an“ → „Des
 Braucht den verbundenen Datenordner. Das Raster zeigt jedes Kind der Lerngruppe als Kachel mit Kürzel und, falls in `kuerzellisten/Kuerzelliste-<lerngruppe>.xlsx` (oder `.csv`) eingetragen, Vorname und Anfangsbuchstabe des Nachnamens. Die Namen werden nur auf diesem Rechner gelesen und nirgends gespeichert.
 
 - **Eintragen:** Kind antippen, dann Symbol: `++ + o -` mündliche Mitarbeit, `AV+ AV-` Arbeitsverhalten, `SV+ SV-` Sozialverhalten, `!` Auffälligkeit (später beschreiben), `*` besondere Stärke. Optional vorher eine Situation in Stichworten eintippen. Steht darin ein Name aus der Kürzelliste, nimmt die Seite den Eintrag nicht an.
+- **Note:** Knopf „Note“ beim Kind öffnet ein Feld für eine Note (Test, Abfrage, Referat, Hausaufgabe, Protokoll, Sonstige Leistung), in Noten 1–6 (auch `2-` oder `2,3`) bzw. Punkten 0–15 ab Jahrgang 11. Optional ein Thema. Sie landet unter „Leistungen“ und zählt in der Notenübersicht zu „mündlich/sonstige“.
 - **Fokus:** markiert die Kinder mit den bisher wenigsten Beobachtungen.
 - **Rückgängig** nimmt den letzten Eintrag zurück. Der Entwurf wird laufend im Browser gesichert, auch wenn das Fenster zugeht.
 - **Sitzplan anordnen:** ein Kind antippen, dann den Platz, vor den es soll. Die Reihenfolge bleibt je Lerngruppe gespeichert.
-- **Stunde beenden:** Übersicht zum Prüfen. Situationen ergänzen, Einträge löschen, `!` braucht eine Beschreibung. „Freigeben und in Akten speichern“ schreibt je Kind eine Zeile in die Akte (nur Kürzel): Mitarbeit unter „Leistungen“, alles andere unter „Arbeits- und Sozialverhalten“.
+- **Stunde beenden:** Übersicht zum Prüfen. Situationen ergänzen, Einträge löschen, `!` braucht eine Beschreibung. „Freigeben und in Akten speichern“ schreibt je Kind eine Zeile in die Akte (nur Kürzel): Mitarbeit und Noten unter „Leistungen“, alles andere unter „Arbeits- und Sozialverhalten“.
 - **Mit Claude auswerten:** gibt Claude nur Kürzel und Beobachtungszeilen, z. B. für mündliche Noten.
 
 ## Material suchen (Materiallager)
@@ -101,6 +102,15 @@ Was in Dateien steht, kommt über deinen Cloud-Speicher (z. B. OneDrive) auf and
 
 Rechts unter „Lerngruppen und Akten“ öffnet „Kürzel nachschlagen“ eine Liste aller Kürzel mit Namen aus deinen Kürzellisten. Du kannst nach Name oder Kürzel suchen und nach Lerngruppe filtern. „Akte“ öffnet die Akte, „Auch als“ zeigt verknüpfte Kürzel. Unter „Kürzellisten-Dateien“ findest du die Pfade zum Bearbeiten in Excel. Die Namen werden nur auf diesem Rechner angezeigt und gehen nie an Claude.
 
+## Notenübersicht: Noten eintragen und korrigieren
+
+„Noten bearbeiten“ schaltet die Übersicht zum Eintragen um.
+
+- **Korrigieren oder streichen:** eine Note antippen, richtige Note und optional einen Grund eingeben. Die alte Zeile bleibt in der Akte stehen und bekommt den Status `ersetzt <Datum>` (bzw. `gestrichen <Datum>`), sie erscheint durchgestrichen und zählt nicht mehr. Die korrigierte Note steht direkt darunter, mit dem Datum der alten Note und dem Vermerk „Korrektur …, ersetzt Eintrag vom …“.
+- **+ Note:** neue Note für ein Kind (Mitarbeit, Klausur mit Nr., Test, Abfrage, Referat …, Datum, Bemerkung).
+- **Für alle eintragen:** eine Spalte für die ganze Gruppe, z. B. Klausur 2. Werte eintippen, Enter springt zum nächsten Kind, leere Felder werden übersprungen.
+- Alle Änderungen sind erst ein Entwurf (orange, bleibt in diesem Browser). Erst **In Akten speichern** schreibt sie, nur mit Kürzeln. Einzelne Änderungen nimmst du mit ✕ zurück.
+
 ## Skala im Live-Raster
 
 Oben im Raster wählst du unter „Mitarbeit als“ zwischen Symbolen (++ bis --), Noten 1–6 und Punkten 0–15. Die Wahl gilt je Lerngruppe und bleibt in diesem Browser gespeichert. Voreingestellt sind Punkte ab Jahrgang 11, sonst Symbole. Wer es dauerhaft festlegen will, trägt in meine-einstellungen.js z. B. `live_skala: { "13-che-ea": "np", "10d-inf": "note" }` ein. In den Akten steht dann `MM ++`, `MM Note 2` oder `MM 12 NP`.
@@ -110,6 +120,17 @@ Oben im Raster wählst du unter „Mitarbeit als“ zwischen Symbolen (++ bis --
 Im Kalender (Knopf „Kalender“) erzeugt „Für Outlook“ die Datei „Schulassistenz-Termine.ics“: gefilterte Kalendertermine plus Termine und Fristen aus der Aufgabenliste, ohne Stundenplan, von heute bis in 6 Monaten, Schülernamen durch [Name] ersetzt. In Outlook doppelklicken oder „Kalender hinzufügen“ → „Aus Datei hochladen“. Das ist ein Stand von heute, nicht automatisch aktuell.
 
 Automatisch aktuell geht nur ungefiltert: Die ICS-Links einzelner IServ-Kalender (in IServ beim Kalender „Link-Freigabe“) in Outlook unter „Kalender hinzufügen“ → „Aus dem Internet abonnieren“ eintragen. Outlook aktualisiert sie dann selbst, alle paar Stunden.
+
+## Schülerdaten sichern
+
+Rechts bei den Lerngruppen „Sichern“ (oder Kachel „Schülerdaten sichern“ unter Verwaltung). Gesichert werden `lerngruppen/`, `kuerzellisten/`, `ausgaben/` und `archiv/` aus dem Schülerdaten-Ordner. Akten mit abgelaufener Löschfrist kommen nicht in die Sicherung.
+
+1. **Kopie auf dem Server:** „Jetzt sichern“ legt eine ZIP-Datei in `sicherungen/` im Schülerdaten-Ordner ab (bei IServ also auf IServ) und prüft sie. Schützt vor versehentlichem Löschen oder Überschreiben. Es bleiben die neuesten 4; ältere schlägt die Seite zum Löschen vor.
+2. **Datei zum Mitnehmen:** Mit Passwort (mind. 10 Zeichen) verschlüsselt (AES-256). Für einen USB-Stick oder einen Ort, den die Schulleitung erlaubt, nicht für einen privaten Cloud-Speicher. Öffnen lässt sie sich nur auf der Startseite („Sicherungsdatei öffnen“). Ohne Passwort ist sie verloren. Ältere Dateien auf dem Stick löschen, eine aktuelle reicht.
+
+**Zurückholen:** Bei einer Sicherung „Ansehen / zurückholen“. Die Seite zeigt, welche Dateien heute fehlen oder anders sind. „Fehlende zurückholen“ ergänzt nur, „Auch geänderte ersetzen“ überschreibt nach Rückfrage. Vorher sichert sie den heutigen Stand automatisch (`vor-wiederherstellung-….zip`). Dateien mit abgelaufener Löschfrist werden nie zurückgeholt.
+
+**Erinnerung:** Ist die letzte Sicherung 7 Tage alt, erscheint oben ein Hinweis mit „Jetzt sichern“ und „Morgen erinnern“. Das Protokoll steht in `sicherungen/protokoll.md` (nur Datum, Ziel, Dateiname). Ändern in `meine-einstellungen.js`: `sicherung_tage: 7` (0 = aus), `sicherung_behalten: 4`.
 
 ## Schülerdaten auf dem Schulserver (z. B. IServ)
 
