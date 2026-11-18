@@ -61,6 +61,8 @@ Regeln im Live-Modus:
 
 Die Startseite von schulassistenz hat ein eigenes Live-Raster (Kind antippen, Symbol wählen, „Stunde beenden“, Freigabe). Es zeigt Namen nur lokal und schreibt die freigegebenen Einträge selbst in die Akten, mit `Quelle: beobachtung-dokumentieren (Live-Raster)`. Diese Einträge sind schon bestätigt; nicht erneut schreiben, aber bei Auswertungen wie alle anderen Beobachtungen nutzen. Fragt die Lehrkraft nach einem schnellen Weg für die Stunde, auf das Raster verweisen.
 
+Im Live-Raster kann die Lehrkraft je Kind auch eine **Note** eintragen (Knopf „Note“: Test, Abfrage, Referat, Hausaufgabe, Protokoll, Sonstige Leistung; Note 1–6 mit Tendenz/Dezimal oder Punkte 0–15 je nach Lerngruppe). In der Akte steht sie unter „Leistungen“ als `Abfrage: Note 2-; Thema (Fach, Gruppe, Uhrzeit)`. Bei mündlichen Noten zählt sie zu „mündlich/sonstige“.
+
 Die Skala für die mündliche Mitarbeit wählt die Lehrkraft im Raster je Lerngruppe. In den Akten steht sie so:
 - Symbole: `MM ++`, `MM +`, `MM o`, `MM -`, `MM --`
 - Noten: `MM Note 2` (1–6)

@@ -64,6 +64,7 @@ Jeder Eintrag ist eine Zeile: `Datum | Art | Inhalt | Quelle | Status`.
 
 - **Art:** `Beleg` (aus einem Dokument), `Beobachtung` (von der Lehrkraft notiert), `Vorschlag` (von einem Skill abgeleitet).
 - **Status:** `bestätigt` oder `offen`. Ein Vorschlag bleibt `offen`, bis die Lehrkraft ihn annimmt. Skills behandeln offene Vorschläge nie wie Tatsachen und kennzeichnen sie, wenn sie sie zeigen.
+- **Korrigiert oder gestrichen:** Die Noteneinsicht der Startseite setzt den Status alter Einträge auf `ersetzt <Datum>` bzw. `gestrichen <Datum>[: Grund]`. Eine Korrektur steht als neue Zeile direkt darunter, mit dem Datum des alten Eintrags und `Quelle: Noteneinsicht, Korrektur <Datum>, ersetzt Eintrag vom <Datum> (<alter Wert>)`. Einträge mit `ersetzt` oder `gestrichen` zählen nicht mehr (keine Noten, keine Auswertung), bleiben aber als Nachweis stehen; nicht löschen.
 - Neueste Einträge unten im Bereich. Bestehende Einträge nicht umschreiben; Korrekturen als neuer Eintrag mit Verweis („ersetzt Eintrag vom 03.11.“), außer die Lehrkraft will einen Fehler direkt löschen.
 
 ## 3. Lerngruppen-Akte (gruppe.md)

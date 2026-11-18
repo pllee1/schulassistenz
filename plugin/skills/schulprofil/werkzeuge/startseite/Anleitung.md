@@ -29,10 +29,11 @@ Tipp: Rechtsklick auf `Schulassistenz-Start.html` → „Senden an“ → „Des
 Braucht den verbundenen Datenordner. Das Raster zeigt jedes Kind der Lerngruppe als Kachel mit Kürzel und, falls in `kuerzellisten/Kuerzelliste-<lerngruppe>.xlsx` (oder `.csv`) eingetragen, Vorname und Anfangsbuchstabe des Nachnamens. Die Namen werden nur auf diesem Rechner gelesen und nirgends gespeichert.
 
 - **Eintragen:** Kind antippen, dann Symbol: `++ + o -` mündliche Mitarbeit, `AV+ AV-` Arbeitsverhalten, `SV+ SV-` Sozialverhalten, `!` Auffälligkeit (später beschreiben), `*` besondere Stärke. Optional vorher eine Situation in Stichworten eintippen. Steht darin ein Name aus der Kürzelliste, nimmt die Seite den Eintrag nicht an.
+- **Note:** Knopf „Note“ beim Kind öffnet ein Feld für eine Note (Test, Abfrage, Referat, Hausaufgabe, Protokoll, Sonstige Leistung), in Noten 1–6 (auch `2-` oder `2,3`) bzw. Punkten 0–15 ab Jahrgang 11. Optional ein Thema. Sie landet unter „Leistungen“ und zählt in der Notenübersicht zu „mündlich/sonstige“.
 - **Fokus:** markiert die Kinder mit den bisher wenigsten Beobachtungen.
 - **Rückgängig** nimmt den letzten Eintrag zurück. Der Entwurf wird laufend im Browser gesichert, auch wenn das Fenster zugeht.
 - **Sitzplan anordnen:** ein Kind antippen, dann den Platz, vor den es soll. Die Reihenfolge bleibt je Lerngruppe gespeichert.
-- **Stunde beenden:** Übersicht zum Prüfen. Situationen ergänzen, Einträge löschen, `!` braucht eine Beschreibung. „Freigeben und in Akten speichern“ schreibt je Kind eine Zeile in die Akte (nur Kürzel): Mitarbeit unter „Leistungen“, alles andere unter „Arbeits- und Sozialverhalten“.
+- **Stunde beenden:** Übersicht zum Prüfen. Situationen ergänzen, Einträge löschen, `!` braucht eine Beschreibung. „Freigeben und in Akten speichern“ schreibt je Kind eine Zeile in die Akte (nur Kürzel): Mitarbeit und Noten unter „Leistungen“, alles andere unter „Arbeits- und Sozialverhalten“.
 - **Mit Claude auswerten:** gibt Claude nur Kürzel und Beobachtungszeilen, z. B. für mündliche Noten.
 
 ## Material suchen (Materiallager)
@@ -100,6 +101,15 @@ Was in Dateien steht, kommt über deinen Cloud-Speicher (z. B. OneDrive) auf and
 ## Kürzel nachschlagen
 
 Rechts unter „Lerngruppen und Akten“ öffnet „Kürzel nachschlagen“ eine Liste aller Kürzel mit Namen aus deinen Kürzellisten. Du kannst nach Name oder Kürzel suchen und nach Lerngruppe filtern. „Akte“ öffnet die Akte, „Auch als“ zeigt verknüpfte Kürzel. Unter „Kürzellisten-Dateien“ findest du die Pfade zum Bearbeiten in Excel. Die Namen werden nur auf diesem Rechner angezeigt und gehen nie an Claude.
+
+## Notenübersicht: Noten eintragen und korrigieren
+
+„Noten bearbeiten“ schaltet die Übersicht zum Eintragen um.
+
+- **Korrigieren oder streichen:** eine Note antippen, richtige Note und optional einen Grund eingeben. Die alte Zeile bleibt in der Akte stehen und bekommt den Status `ersetzt <Datum>` (bzw. `gestrichen <Datum>`), sie erscheint durchgestrichen und zählt nicht mehr. Die korrigierte Note steht direkt darunter, mit dem Datum der alten Note und dem Vermerk „Korrektur …, ersetzt Eintrag vom …“.
+- **+ Note:** neue Note für ein Kind (Mitarbeit, Klausur mit Nr., Test, Abfrage, Referat …, Datum, Bemerkung).
+- **Für alle eintragen:** eine Spalte für die ganze Gruppe, z. B. Klausur 2. Werte eintippen, Enter springt zum nächsten Kind, leere Felder werden übersprungen.
+- Alle Änderungen sind erst ein Entwurf (orange, bleibt in diesem Browser). Erst **In Akten speichern** schreibt sie, nur mit Kürzeln. Einzelne Änderungen nimmst du mit ✕ zurück.
 
 ## Skala im Live-Raster
 
