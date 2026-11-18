@@ -1,6 +1,6 @@
 ---
 name: "schulprofil"
-description: "Legt das Schulprofil der Lehrkraft an, liest es, passt hochgeladene Schulvorlagen (ILE-Bogen, Zeugnisformular, Briefkopf, Anträge, Sicherungsblätter) an und füllt sie als Word-Datei. Jeder schulassistenz-Skill fragt zuerst hier nach. Auch für die Datenschutz-Checkliste beim ersten Start."
+description: "Legt das Schulprofil der Lehrkraft an, liest es, passt hochgeladene Schulvorlagen (ILE-Bogen, Zeugnisformular, Briefkopf, Anträge) an und füllt sie als Word-Datei. Jeder schulassistenz-Skill fragt zuerst hier nach. Auch für die Datenschutz-Checkliste beim ersten Start."
 ---
 
 # Schulprofil
@@ -59,7 +59,7 @@ Runde 1, Rahmen: Bundesland, Schulform, Schulname (optional) und eigenes Kürzel
 
 Runde 2, Bewertung: Notenskala je Stufe, Notenschlüssel (Prozentgrenzen) je Fachgruppe, Rundungsregel, Gewichtung schriftlich zu mündlich, Operatorenliste, ob Klassenarbeiten mit Schüler-Code statt Namen geschrieben werden.
 
-Runde 3, Vorlagen und Layout: „Hast du Vorlagen deiner Schule, die das Plugin füllen soll? Zum Beispiel Briefkopf, ILE-Bogen, Zeugnisformular, Förderplan, Protokollvorlage, Anträge an die Schulleitung, ein Sicherungs- oder Lernblatt, das alle Klassen kennen.“ Jede hochgeladene Vorlage nach Abschnitt 4 verarbeiten. Dazu Logo, Schrift, Fachfarben, Sonderregeln (z. B. Grundschrift in der Primarstufe).
+Runde 3, Vorlagen und Layout: „Hast du Vorlagen deiner Schule, die das Plugin füllen soll? Zum Beispiel Briefkopf, ILE-Bogen, Zeugnisformular, Förderplan, Protokollvorlage, Anträge an die Schulleitung.“ Jede hochgeladene Vorlage nach Abschnitt 4 verarbeiten. Dazu Logo, Schrift, Fachfarben, Sonderregeln (z. B. Grundschrift in der Primarstufe).
 
 Runde 4, Ablage und Werkzeuge: Datenordner, Ablagemuster für fertiges Material, Gruppenordner auf dem Schulserver (welche, wofür; Abschnitt 4b), Lernplattform, Schul-KI, Schulsoftware für Exporte.
 
@@ -144,7 +144,6 @@ Werkzeug: `skripte/vorlage.py` in diesem Skill (python-docx). Es arbeitet im Ori
 | `briefkopf` | jedes Schreiben der Schule: Elternbriefe, Einladungen, Erinnerungen, Anträge ohne eigenes Formular, Bescheinigungen, Protokolle | elterngespraech-vorbereiten, exkursion-planen, verwaltungsassistent, zeugnis-vorbereiten, postfach-assistent (Briefe), pruefung-korrigieren |
 | `antrag` (+ `anlass`) | Formular an die Schulleitung, z. B. `anlass: unterschreitung` (Arbeit mit zu vielen schwachen Noten), `schulfahrt` | pruefung-korrigieren (10.3a), exkursion-planen |
 | `elternbrief` (+ `anlass`) | festes Schreiben der Schule zu einem Anlass | wie oben |
-| `sicherung` | Sicherungs- bzw. Lernblatt, das die Schule einheitlich nutzt (z. B. Grafiz, Lernlandkarte, Merkblatt-Raster) | unterricht-planen, material-gestalten |
 | `ile`, `foerderplan`, `zeugnis`, `protokoll`, `sap` | wie in den jeweiligen Skills | |
 
 **Füllen (für alle Skills):**
@@ -191,7 +190,6 @@ vorlagen:
   - {art: sap, fach: <Fach>, jahrgaenge: <z. B. 5-10>, datei: vorlagen/sap-<fach>.md, original: <Pfad auf dem Schulserver>}
   - {art: briefkopf, datei: vorlagen/<schule>-briefkopf.docx, beschreibung: vorlagen/<schule>-briefkopf.felder.md}
   - {art: antrag, anlass: unterschreitung, datei: vorlagen/<…>.docx, beschreibung: vorlagen/<…>.felder.md}
-  - {art: sicherung, name: <z. B. Grafiz>, datei: vorlagen/<…>.docx, beschreibung: vorlagen/<…>.felder.md}
 layout:
   standard: <Name des Layouts oder Verweis auf einen Layout-Skill>
 ablage:
