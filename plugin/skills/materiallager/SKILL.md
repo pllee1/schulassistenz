@@ -16,6 +16,7 @@ Profil über **schulprofil** lesen:
 - `ablage.material_wurzel`: Ordner, in dem das Material liegt (z. B. `D:\Schule\Material`). Fehlt der Eintrag, aus `ablage.material` ableiten oder einmal fragen und ins Profil übernehmen.
 - `ablage.quellen_ordner`: Name des Quellen-Ordners je Einheit (Standard `90_Quellen`).
 - `ablage.material_ausschliessen`: Ordner, die nie ins Register kommen (siehe Abschnitt 6).
+- `ablage.schulserver`, `ablage.schulserver_ordner`: Gruppenordner der Schule (z. B. Fachgruppe auf IServ), **nur lesen** (Regeln in **schulprofil**, Abschnitt 1).
 - `rahmen`: Fächer, Jahrgänge, Lehrplan (für den Lehrplanbezug).
 
 Fehlt ein Ablagemuster, die vorhandene Ordnerordnung ansehen, einen Vorschlag machen und nach Bestätigung über **schulprofil** speichern.
@@ -30,6 +31,8 @@ materiallager/
   quellen.md      Wissensbasis der Einheit (Abschnitt 3)
 ```
 
+`bestand-schulserver.csv` (von der Startseite, nur lesen): wie `bestand.csv` plus Spalte `gruppe`; `pfad` ist der volle Laufwerkspfad auf dem Schulserver (z. B. `S:\Fachgruppe-NaWi\…`).
+
 `bestand.csv` und `register.csv`: UTF-8, Trennzeichen Semikolon, Pfade relativ zur Materialwurzel mit `\`.
 
 - **bestand.csv:** `pfad;titel;art;fach;jahrgang;niveau;thema;stunde;wissensbasis;groesse_kb;geaendert` (aus Ordnernamen abgeleitet).
@@ -43,10 +46,12 @@ Nur Zeilen anhängen oder ändern, nie die Datei neu schreiben, ohne die vorhand
 
 Auslöser: „Habe ich schon etwas zu …?“, „Such mir das AB zur Redoxreihe“, und immer, bevor **unterricht-planen**, **einheit-planen**, **material-gestalten** oder **pruefung-entwerfen** etwas neu erstellen.
 
-1. `register.csv` und `bestand.csv` lesen; ist der Ordner verbunden und der Bestand älter als eine Woche oder fehlt er, im Materialordner selbst suchen (Ordnernamen, Dateinamen). Ohne Ordnerzugriff (z. B. im Browser-Chat): um die Datei `bestand.csv` bitten oder darum, die Startseite „Material suchen“ zu nutzen.
-2. Treffer knapp zeigen: Titel, Art, Jahrgang/Kurs, Pfad, Stand. Höchstens 8, die besten zuerst (gleiches Thema und Jahrgang > gleiches Thema anderer Jahrgang > verwandtes Thema). Wissensbasis der Einheit (`quellen.md`) zuerst nennen, wenn es sie gibt.
+1. `register.csv`, `bestand.csv` und, wenn vorhanden, `bestand-schulserver.csv` lesen; ist der Ordner verbunden und der Bestand älter als eine Woche oder fehlt er, im Materialordner selbst suchen (Ordnernamen, Dateinamen). Ohne Ordnerzugriff (z. B. im Browser-Chat): um die Datei `bestand.csv` bitten oder darum, die Startseite „Material suchen“ zu nutzen.
+2. Treffer knapp zeigen: Titel, Art, Jahrgang/Kurs, Pfad, Stand; Treffer vom Schulserver mit „Schulserver · <Gruppe>“ kennzeichnen. Höchstens 8, die besten zuerst (gleiches Thema und Jahrgang > gleiches Thema anderer Jahrgang > verwandtes Thema). Wissensbasis der Einheit (`quellen.md`) zuerst nennen, wenn es sie gibt.
 3. Anbieten: so verwenden, anpassen (anderes Niveau, anderer Jahrgang, kürzer, differenziert) mit **material-gestalten**, oder neu erstellen. Entlastung vor Perfektion: Vorhandenes zuerst.
 4. Inhalte nur lesen, wenn die Lehrkraft es will oder für die Anpassung nötig ist (PDF/DOCX/PPTX-Text auslesen).
+
+**Material vom Schulserver:** Gleichrangig mit eigenem Material suchen, wenn `ablage.schulserver` gesetzt ist; dort nur lesen. Anpassen heißt immer: neue Datei im eigenen Material (`ablage.material`), Herkunft im Register (`lizenz: Kollegium · Fachgruppe <Name>`, `notiz: Vorlage <Pfad auf dem Schulserver>`). Ins Register darf eine Zeile mit dem Schulserver-Pfad (voller Laufwerkspfad), um Schlagworte zu vergeben; die Datei selbst bleibt unverändert. In `quellen.md` einer Einheit Schulserver-Material verlinken, nicht kopieren.
 
 ## 3. Wissensbasis einer Einheit
 
@@ -113,7 +118,7 @@ Auf Wunsch („Verschlagworte meinen Ordner 10\Nawi E“):
 
 ## 8. Startseite
 
-Kachel **Material suchen** (lokal): Die Startseite liest den Materialordner im Browser, leitet Jahrgang, Fach, Kurs, Thema und Art aus den Ordnernamen ab, mischt `register.csv` ein und sucht ohne Claude. „Für Claude speichern“ schreibt `materiallager/bestand.csv`. „Weiterverwenden“ öffnet Claude mit Titel und Pfad. Neue Kacheln zu diesem Skill in `kacheln.js`.
+Kachel **Material suchen** (lokal): Die Startseite liest den Materialordner im Browser und, wenn in `meine-einstellungen.js` `schulordner` eingetragen ist, über den IServ-Helfer (ab 0.5, nur lesen) die gewählten Gruppenordner des Schulservers, leitet Jahrgang, Fach, Kurs, Thema und Art aus den Ordnernamen ab, mischt `register.csv` ein und sucht ohne Claude. „Für Claude speichern“ schreibt `materiallager/bestand.csv` und `bestand-schulserver.csv`. „Weiterverwenden“ öffnet Claude mit Titel und Pfad. Neue Kacheln zu diesem Skill in `kacheln.js`.
 
 ## 9. Grundsätze
 

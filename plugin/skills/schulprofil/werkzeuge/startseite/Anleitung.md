@@ -123,3 +123,15 @@ Chrome und Edge öffnen keine Netzlaufwerke. Die Startseite greift deshalb über
 4. **Umziehen:** Liegen noch Akten im Datenordner, erscheint rechts „Schülerdaten umziehen“. Schritt 1 kopiert alles und vergleicht jede Datei. Vorhandenes wird nie überschrieben. Schritt 2 löscht die alte Fassung erst auf deinen Klick. Liegt der Datenordner in einem Cloud-Speicher, danach dort den Papierkorb leeren.
 
 Ohne Internet zeigt die Seite keine Akten an, alles andere funktioniert weiter. Die Genehmigung der Schulleitung für die Arbeit am Privatgerät bleibt nötig; den neuen Speicherort der Schulleitung kurz mitteilen.
+
+## Gruppenordner der Schule (z. B. IServ Gruppen)
+
+Schuleigene Arbeitspläne, Vorlagen und Material der Fachgruppen liegen oft in den Gruppenordnern auf dem Schulserver (IServ: Dateien › Gruppen). schulassistenz kann sie **nur lesen**: durchsuchen, öffnen, auswerten und als Vorlage für eigenes Material nutzen. Dort wird nie etwas geändert, verschoben oder gelöscht; Anpassungen landen immer in deinem eigenen Material.
+
+1. **Startseite:** In `meine-einstellungen.js` eintragen:
+   `schulordner: { web: "https://<eure-iserv-adresse>/webdav/Groups", laufwerk: "S:\\" },`
+   IServ-Helfer ab 0.5 nötig (in `chrome://extensions` aktualisieren), Startseite neu laden. Unter „Material suchen“ dann „Gruppenordner wählen“ (Klassen- und Kursgruppen sind abgewählt, weil dort Abgaben von Schülerinnen und Schülern liegen) und „Schulserver einlesen“. Treffer tragen das Zeichen „Schulserver“; der Filter „Ablage“ trennt dein Material vom Schulserver. „Für Claude speichern“ legt zusätzlich `materiallager/bestand-schulserver.csv` an.
+2. **Claude:** Explorer › „Dieser PC“ rechtsklicken › „Netzlaufwerk verbinden“, Laufwerk **S:**, Ordner `https://<eure-iserv-adresse>/webdav/Groups`, „Verbindung bei Anmeldung wiederherstellen“ anhaken, mit IServ-Daten anmelden (wie beim Laufwerk für die Schülerdaten). In der Claude-App nur die Gruppenordner freigeben, die Claude lesen soll, z. B. `S:\Fachgruppe-NaWi` und `S:\Lehrer`. Klassen- und Kursgruppen nicht freigeben. Im Profil steht das unter `ablage.schulserver`.
+3. **Auf jedem PC** einmal: Netzlaufwerk verbinden und in der Claude-App freigeben; auf der Startseite „Gruppenordner wählen“ und „Schulserver einlesen“.
+
+Gut zu wissen: Windows lädt über ein solches Laufwerk Dateien nur bis 50 MB. Größere Videos öffnest du direkt in IServ. Ohne Internet bleibt die zuletzt eingelesene Liste in der Suche, öffnen geht dann nicht.

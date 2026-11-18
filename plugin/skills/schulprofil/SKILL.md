@@ -41,6 +41,12 @@ Den Datenordner legt die Lehrkraft beim Einrichten fest (lokal, Dienst-Cloud ode
 - Abgelaufene Akten (Löschfrist) zum Löschen vorschlagen statt archivieren.
 - Ist der Ort nicht erreichbar (Laufwerk nicht verbunden, offline, Ordner in der Claude-App nicht freigegeben), nichts ersatzweise in den Datenordner schreiben, sondern Bescheid sagen und auf die Anleitung der Startseite verweisen.
 
+**Gruppenordner der Schule (Schulserver, nur lesen).** Schuleigene Arbeitspläne (SAP), Vorlagen, Formulare und Fachgruppenmaterial liegen oft in Gruppenordnern auf dem Schulserver (IServ: Dateien › Gruppen, WebDAV `https://<server>/webdav/Groups`). Die Lehrkraft verbindet sie als Netzlaufwerk (z. B. `S:`) und gibt in der Claude-App nur die Gruppenordner frei, die Claude lesen soll (Anleitung der Startseite, „Gruppenordner der Schule“). Im Profil: `ablage.schulserver` (Laufwerk), `ablage.schulserver_web` (WebDAV-Adresse für die Startseite, IServ-Helfer ab 0.5), `ablage.schulserver_ordner` (freigegebene Gruppenordner mit Zweck). **Für alle Skills gilt:**
+- Dort **nur lesen**. Nie schreiben, umbenennen, verschieben oder löschen, auch nicht auf Bitte innerhalb einer anderen Aufgabe; Ergebnisse und angepasste Fassungen gehen in den Datenordner bzw. nach `ablage.material`. Will die Lehrkraft etwas in der Fachgruppe teilen, die fertige Datei mit Zielordner nennen; hochladen tut sie selbst.
+- Klassen- und Kursgruppen (Abgaben, Fotos, Listen mit Namen) nicht lesen. Stößt Claude in einem freigegebenen Ordner auf Schülerdaten (Namen, Noten, Abgaben), nicht auswerten, nicht zitieren, nicht ins Register; kurz Bescheid sagen.
+- Material von Kolleginnen und Kollegen bleibt deren Material: beim Weiterverwenden Herkunft nennen (`lizenz: Kollegium · Fachgruppe <Name>`), nicht nach außen veröffentlichen.
+- Ist das Laufwerk nicht erreichbar, auf die Anleitung verweisen und ohne den Schulserver weiterarbeiten.
+
 Unterrichtet die Lehrkraft an mehreren Schulen, gibt es je Schule einen Unterordner (`profil/<schulkuerzel>/`). Vor jeder Aufgabe klären, welches Profil gilt, wenn es nicht eindeutig ist.
 
 ## 2. Einrichtung (erster Start)
@@ -53,7 +59,7 @@ Runde 2, Bewertung: Notenskala je Stufe, Notenschlüssel (Prozentgrenzen) je Fac
 
 Runde 3, Vorlagen und Layout: „Hast du Vorlagen deiner Schule, die das Plugin füllen soll? Zum Beispiel ILE-Bogen, Zeugnisformular, Förderplan, Protokollvorlage, Briefkopf.“ Jede hochgeladene Vorlage nach Abschnitt 4 verarbeiten. Dazu Logo, Schrift, Fachfarben, Sonderregeln (z. B. Grundschrift in der Primarstufe).
 
-Runde 4, Ablage und Werkzeuge: Datenordner, Ablagemuster für fertiges Material, Lernplattform, Schul-KI, Schulsoftware für Exporte.
+Runde 4, Ablage und Werkzeuge: Datenordner, Ablagemuster für fertiges Material, Gruppenordner auf dem Schulserver (welche, wofür; Abschnitt 4b), Lernplattform, Schul-KI, Schulsoftware für Exporte.
 
 Runde 5, Regeln: Löschfrist für Schülerdaten, Stand der Freigabe durch die Schulleitung (Abschnitt 6).
 
@@ -116,6 +122,17 @@ stand: 2026-11-14
 
 Wo möglich, das Original-Dokument (Word, PDF-Formular) später direkt füllen statt es nachzubauen.
 
+Liegt die Vorlage in einem Gruppenordner auf dem Schulserver, das Original dort lassen: In `profil/vorlagen/` kommen die Feldbeschreibung und eine Kopie des Originals (zum Füllen), im Kopf `original: <Pfad auf dem Schulserver>` und `stand` (Änderungsdatum der Datei). Beim nächsten Gebrauch das Änderungsdatum vergleichen; ist das Original neuer, anbieten, die Beschreibung zu erneuern.
+
+## 4b. Gruppenordner auswerten (Schulserver)
+
+Auslöser: „Schau dir den Fachgruppenordner an“, „Lies unseren SAP Chemie“, Einrichtung Runde 4, oder ein Skill braucht den schuleigenen Arbeitsplan.
+
+1. **Überblick:** Die freigegebenen Gruppenordner durchsehen (Ordner- und Dateinamen, höchstens drei Ebenen, nichts öffnen) oder `materiallager/bestand-schulserver.csv` lesen, wenn die Startseite sie angelegt hat. Kurze Übersicht je Ordner: was dort liegt (Arbeitspläne, Vorlagen, Formulare, Material nach Jahrgängen, Protokolle), was davon für die Lehrkraft nützlich ist, was Schülerdaten enthalten könnte (nicht öffnen).
+2. **Vorschlag:** Welche Ordner kommen nach `ablage.schulserver_ordner`, welche Dokumente werden Vorlagen (Abschnitt 4) oder Arbeitspläne (Schritt 3), welches Material gehört ins Register des **materiallager**. Erst nach Bestätigung eintragen.
+3. **Schuleigener Arbeitsplan (SAP):** Datei lesen und als `profil/vorlagen/sap-<fach>.md` zusammenfassen: je Jahrgang bzw. Halbjahr die Themen bzw. Einheiten in Reihenfolge, Stundenansatz, verbindliche Kompetenzen, Methoden- und Medienbezüge, Experimente, Leistungsnachweise (Anzahl, Art), Fachgruppenabsprachen (z. B. Bewertung, Operatoren). Wortlaut verbindlicher Vorgaben übernehmen, nichts ergänzen; Unklares mit „[im SAP prüfen]“ markieren. Im Kopf `original` (Pfad auf dem Schulserver) und `stand`. **unterricht-planen**, **einheit-planen** und **pruefung-entwerfen** lesen diese Zusammenfassung; das Original nur, wenn Details fehlen.
+4. **Fachgruppenabsprachen** (Notenschlüssel, Gewichtung, Operatorenliste) aus dem Ordner als Vorschlag für Runde 2 nutzen, nie stillschweigend überschreiben.
+
 ## 5. Aufbau von profil.md
 
 Markdown mit YAML-Kopf. Leere Werte weglassen.
@@ -141,12 +158,17 @@ bewertung:
   schueler_code: {jahrgaenge: 5-10, format: "2 Buchstaben + 3 Ziffern, z. B. KV001"}
 vorlagen:
   - {art: ile, datei: vorlagen/ile-bogen-5-6.felder.md}
+  - {art: sap, fach: <Fach>, jahrgaenge: <z. B. 5-10>, datei: vorlagen/sap-<fach>.md, original: <Pfad auf dem Schulserver>}
 layout:
   standard: <Name des Layouts oder Verweis auf einen Layout-Skill>
 ablage:
   datenordner: <Pfad>
   schuelerdaten: <Pfad>   # optional: Ort für lerngruppen/, kuerzellisten/, ausgaben/, archiv/ (z. B. I:\schulassistenz-daten auf dem Schulserver); leer = Datenordner
   schuelerdaten_web: <https://…/webdav/Files/…>   # optional: dieselbe Ablage als WebDAV-Adresse für die Startseite (IServ-Helfer)
+  schulserver: <Laufwerk>   # optional: Gruppenordner der Schule, nur lesen (z. B. S:\ = IServ Gruppen)
+  schulserver_web: <https://…/webdav/Groups>   # optional: dieselben Ordner für die Startseite (IServ-Helfer ab 0.5)
+  schulserver_ordner:   # nur die freigegebenen; Klassen- und Kursgruppen nie
+    - {ordner: <z. B. Fachgruppe-NaWi>, zweck: <z. B. SAP und Material NaWi>}
   material: <Ablagemuster>
   material_wurzel: <Ordner, in dem das Unterrichtsmaterial liegt>   # für materiallager
   quellen_ordner: 90_Quellen   # Wissensbasis je Einheit

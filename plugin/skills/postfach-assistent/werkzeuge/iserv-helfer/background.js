@@ -74,9 +74,11 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   return true;
 });
 
-/* Schülerdaten-Ordner auf IServ (WebDAV, Bereich „Eigene“) für die Startseite.
-   Nur Adressen der Form https://<host>/webdav/Files/…, Anmeldung über den Browser (kein Passwort im Helfer). */
-const DAV_RE = /^https:\/\/[a-z0-9.-]+\/webdav\/Files(\/[^?#]*)?$/i;
+/* Schülerdaten-Ordner auf IServ (WebDAV, Bereich „Eigene“) und Gruppenordner (Bereich „Groups“) für die Startseite.
+   Nur Adressen der Form https://<host>/webdav/Files/… (lesen und schreiben) und https://<host>/webdav/Groups/… (nur lesen).
+   Anmeldung über den Browser (kein Passwort im Helfer). */
+const DAV_RE = /^https:\/\/[a-z0-9.-]+\/webdav\/(Files|Groups)(\/[^?#]*)?$/i;
+const DAV_GRUPPEN_RE = /^https:\/\/[a-z0-9.-]+\/webdav\/Groups(\/|$)/i;
 const b64aus = buf => { const u = new Uint8Array(buf); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
 const b64ein = t => { const s = atob(t || ""); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
 const xmlText = t => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
@@ -98,8 +100,9 @@ function davListe(xml, basisUrl) {
 }
 async function dav(m) {
   const url = String(m.url || "");
-  if (!DAV_RE.test(url)) return { ok: false, fehler: "Der Helfer greift nur auf IServ „Eigene“ (…/webdav/Files/…) zu." };
-  if (m.op === "anmelden") { chrome.tabs.create({ url: url.replace(/(\/webdav\/Files).*$/, "$1/") }); return { ok: true }; }
+  if (!DAV_RE.test(url)) return { ok: false, fehler: "Der Helfer greift nur auf IServ „Eigene“ (…/webdav/Files/…) und Gruppenordner (…/webdav/Groups/…) zu." };
+  if (DAV_GRUPPEN_RE.test(url) && !["liste", "lesen", "anmelden"].includes(m.op)) return { ok: false, fehler: "Gruppenordner auf dem Schulserver liest der Helfer nur, er ändert dort nichts." };
+  if (m.op === "anmelden") { chrome.tabs.create({ url: url.replace(/(\/webdav\/(Files|Groups)).*$/, "$1/") }); return { ok: true }; }
   const opt = { credentials: "include", cache: "no-store" };
   let r;
   if (m.op === "liste") r = await fetch(url.replace(/\/?$/, "/"), { ...opt, method: "PROPFIND", headers: { "Depth": "1", "Content-Type": "application/xml; charset=utf-8" },

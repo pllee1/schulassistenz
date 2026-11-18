@@ -16,6 +16,9 @@ window.SA_EINSTELLUNGEN = {
   favoriten: ["pruefung", "eltern", "woche", "pseudonymisierer"], // Startauswahl, danach per ★ auf der Seite
   // Optional: Materiallager. wurzel = Ordner mit deinem Unterrichtsmaterial (nur Anzeige), ausschliessen = Ordner, die nie eingelesen werden.
   // materiallager: { wurzel: "D:\\Schule\\Material", ausschliessen: ["Privat"], quellen_ordner: "90_Quellen" },
+  // Optional: Gruppenordner der Schule (nur lesen), z. B. IServ „Gruppen“ über den IServ-Helfer ab 0.5.
+  // web = WebDAV-Adresse der Gruppen, laufwerk = derselbe Ort als Netzlaufwerk für Claude (nur Anzeige), gruppen = feste Auswahl (leer = auf der Seite wählen)
+  // schulordner: { web: "https://<eure-iserv-adresse>/webdav/Groups", laufwerk: "S:\\", gruppen: [] },
   // Optional: Filter für Schulkalender. Ohne Eintrag leitet die Seite Jahrgänge und Klassen aus „lerngruppen“ ab.
   // kalender_filter: { jahrgaenge: [7, 8], klassen: ["7b"], faecher: ["Deutsch"], immer: ["Gesamtkonferenz", "Ferien"], nie: ["AG"] }
 };

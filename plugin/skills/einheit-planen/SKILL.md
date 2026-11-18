@@ -20,7 +20,7 @@ Arbeitet ohne Daten einzelner Kinder.
 
 ## 0. Vorher
 
-- Profil über **schulprofil** lesen: Bundesland, Schulform, Lehrplan, schuleigene Arbeitspläne unter `vorlagen`, Layout, `ablage.material`, `werkzeuge` (Lernplattform, Schul-KI).
+- Profil über **schulprofil** lesen: Bundesland, Schulform, Lehrplan, schuleigene Arbeitspläne unter `vorlagen` (`art: sap`), Layout, `ablage.material`, `werkzeuge` (Lernplattform, Schul-KI). Fehlt der Arbeitsplan des Fachs und ist `ablage.schulserver` gesetzt, in den Gruppenordnern danach suchen (nur lesen; **schulprofil**, Abschnitt 4b). Fachgruppenmaterial zur Einheit über **materiallager** mit suchen.
 - **Lerngruppe** aus `lerngruppen/<gruppe>/gruppe.md`: Fach, Jahrgang, Niveau, Anzahl. Aus **Schwerpunkte** und **Leistungen** (z. B. Notenspiegel und schwache Aufgabenbereiche der letzten Klausur) ergibt sich, welches Vorwissen fehlt und was in die Stunden eingebaut werden muss.
 - **Stundenplan** aus `planung/stundenplan.md` (Startseite, aus dem Stundenplan-Abo): Wochentage und Uhrzeiten der Lerngruppe, Einzel- oder Doppelstunde. Der Plan reicht nur wenige Wochen; die weiteren Termine aus dem Wochenmuster fortschreiben und als „aus Wochenmuster“ kennzeichnen.
 - **Materiallager:** Über **materiallager** vorhandenes Material zum Thema suchen (alle Jahrgänge und Kurse) und die **Wissensbasis** der Einheit (`90_Quellen\quellen.md` im Ordner der Einheit) lesen. Gibt es sie noch nicht, den Quellen-Ordner anlegen und fragen, welche Quellen es gibt (Buchseiten, Material aus dem Kollegium, Uploads); Hochgeladenes nach **materiallager** Abschnitt 4 dort einsortieren. Der Stoffverteilungsplan baut auf diesen Quellen auf.

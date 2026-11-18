@@ -24,6 +24,7 @@ Claude fragt in vier kurzen Runden nach Schule und Rahmen (Bundesland, Schulform
 
 - **Datenordner wählen:** ein Ordner nur für schulassistenz, z. B. `Dokumente\Schule\schulassistenz` oder ein Ordner in der Dienst-Cloud, wenn die Schulleitung das so festlegt.
 - **Schülerdaten getrennt ablegen (optional):** Akten, Kürzellisten und Ausgaben mit Schülerbezug können auf dem Schulserver liegen (z. B. IServ „Eigene“: die Startseite greift über den IServ-Helfer zu, Claude über ein Netzlaufwerk), der Rest im Datenordner. Sie brauchen nur wenige KB je Lerngruppe. Anleitung: Startseite, Abschnitt „Schülerdaten auf dem Schulserver“.
+- **Gruppenordner der Schule lesen (optional):** Schuleigene Arbeitspläne, Vorlagen und Fachgruppenmaterial aus den Gruppenordnern des Schulservers (z. B. IServ „Gruppen“) nur lesend nutzen: „Material suchen“ durchsucht sie über den IServ-Helfer ab 0.5, Claude liest sie über ein Netzlaufwerk und fasst z. B. den Arbeitsplan fürs Planen zusammen. Dort wird nie etwas geändert. Anleitung: Startseite, Abschnitt „Gruppenordner der Schule“.
 - **Vorlagen deiner Schule** (Briefkopf, ILE-Bogen, Zeugnisformular, Notenschlüssel, Logo) kannst du hochladen. Claude übernimmt Aufbau und Formulierungen ins Profil.
 
 Claude legt dabei in deinem Datenordner an:

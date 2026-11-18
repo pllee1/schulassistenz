@@ -2234,7 +2234,35 @@ const MAT_E=Object.assign({wurzel:"",ausschliessen:[],quellen_ordner:"90_Quellen
 const MAT_AUS_GENAU=["schulassistenz","schulassistenz-plugin","noten","protokolle","korrektur","korrekturen","$recycle.bin",".git","node_modules"];
 const MAT_AUS_TEIL=["antrag","anträge","antraege","elternbrief","notenliste","notenspiegel","kürzelliste","kuerzelliste","klassenliste","schülerliste","schuelerliste","zeugnis","gutachten","attest","entschuldigung","korrigiert"];
 const MAT_SKIP_DATEI=/^(~\$|\.|desktop\.ini$|thumbs\.db$)|\.(lnk|tmp|ini|db|ds_store)$/i;
-let mat={handle:null,zustand:"aus",index:null,register:[],laeuft:false};
+let mat={handle:null,zustand:"aus",index:null,schul:null,register:[],laeuft:false};
+/* Gruppenordner der Schule (IServ „Groups“) über den IServ-Helfer ab 0.5, nur lesen.
+   meine-einstellungen.js: schulordner: { web: "https://<server>/webdav/Groups", laufwerk: "S:\\", gruppen: ["Fachgruppe-…"] } */
+const SCH=Object.assign({web:"",laufwerk:"",gruppen:[]},E.schulordner||{});
+SCH.web=String(SCH.web||"").trim().replace(/\/+$/,"");
+const schulAn=()=>/^https:\/\/[^/]+\/webdav\/Groups$/i.test(SCH.web);
+const SCH_KLASSE=/(^|[\s._-])(klasse|kl|kurs|jg|jahrgang)[\s._-]*\d|\.wop$|^\d{1,2}[a-z]([\s._-]|$)/i;   // Klassen- und Kursgruppen: dort liegen Schülerabgaben
+const schulHelferOk=()=>{const v=document.documentElement.getAttribute("data-sa-helfer")||"";const [a,b]=v.split(".").map(Number);return a>0||b>=5};
+const schulVoll=p=>(SCH.laufwerk?SCH.laufwerk.replace(/[\\/]+$/,"")+"\\":"IServ › Gruppen › ")+p;
+const schulUrl=p=>SCH.web+"/"+p.split("\\").map(encodeURIComponent).join("/");
+function schulAuswahl(alle){const fest=(SCH.gruppen||[]).filter(Boolean);if(fest.length)return fest;
+  const g=store.get("schul-gruppen",null);if(Array.isArray(g))return g;return (alle||[]).filter(n=>!SCH_KLASSE.test(n))}
+async function schulGruppenListe(){const r=await davRuf("liste",SCH.web+"/");return r.eintraege.filter(x=>x.dir).map(x=>x.name).sort((a,b)=>a.localeCompare(b,"de"))}
+async function schulScannen(gruppen,fort){
+  const out=[];const MAX=30000;const warte=gruppen.map(g=>({url:SCH.web+"/"+encodeURIComponent(g)+"/",teile:[g],tiefe:1}));let aktiv=0,n=0,fehler=null;
+  async function arbeiter(){while(true){const j=warte.shift();if(!j){if(!aktiv)return;await new Promise(r=>setTimeout(r,40));continue}
+    aktiv++;try{const r=await davRuf("liste",j.url);
+      for(const x of r.eintraege){if(out.length>=MAX)break;
+        if(x.dir){if(j.tiefe<10&&!matAusgeschlossen(x.name)&&!/^\./.test(x.name))warte.push({url:davUrl(j.url,x.name)+"/",teile:[...j.teile,x.name],tiefe:j.tiefe+1});continue}
+        if(MAT_SKIP_DATEI.test(x.name)||matAusgeschlossen(x.name))continue;
+        let d="";try{d=x.mod?new Date(x.mod).toISOString().slice(0,10):""}catch{}
+        out.push({pfad:[...j.teile,x.name].join("\\"),...matAbleiten(j.teile,x.name),groesse_kb:Math.round((x.size||0)/1024),geaendert:d,schule:true,gruppe:j.teile[0]});
+        if(++n%100===0&&fort)fort(n)}
+    }catch(e){if(e.anmelden)fehler=e;else if(!e.fehlt&&!fehler)fehler=e}finally{aktiv--}
+    if(fehler&&fehler.anmelden)return}}
+  await Promise.all(Array.from({length:4},arbeiter));
+  if(fehler&&(fehler.anmelden||!out.length))throw fehler;return out;
+}
+const MIME={pdf:"application/pdf",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",gif:"image/gif",svg:"image/svg+xml",webp:"image/webp",txt:"text/plain;charset=utf-8",md:"text/plain;charset=utf-8",htm:"text/html",html:"text/html",mp4:"video/mp4",webm:"video/webm",mp3:"audio/mpeg"};
 const matNorm=s=>String(s||"").toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss").replace(/[_\-.,;:()]+/g," ");
 const MAT_FAECHER=[["Mathematik",/^(mathe|mathematik)$/],["Biologie",/^(bio|biologie)$/],["Chemie",/^(chemie|che)$/],["Physik",/^(physik)$/],["Naturwissenschaften",/^(nawi|naturwissenschaften?|nw)$/],["Informatik",/^(informatik|inf|info)$/],["Deutsch",/^(deutsch)$/],["Englisch",/^(englisch|english)$/],["Französisch",/^(franzoesisch|franz)$/],["Spanisch",/^(spanisch)$/],["Latein",/^(latein)$/],["Geschichte",/^(geschichte)$/],["Erdkunde",/^(erdkunde|geographie|geografie|ek)$/],["Politik",/^(politik|pw|sowi)$/],["Wirtschaft",/^(wirtschaft|wat|arbeitslehre)$/],["Gesellschaftslehre",/^(gesellschaftslehre|gl)$/],["Religion",/^(religion|reli)$/],["Werte und Normen",/^(wun|ethik|philosophie)$/],["Kunst",/^(kunst)$/],["Musik",/^(musik)$/],["Sport",/^(sport)$/],["Sachunterricht",/^(sachunterricht|sachkunde)$/],["Technik",/^(technik)$/]];
 function matFach(seg){const w=matNorm(seg).split(/\s+/);for(const [n,re] of MAT_FAECHER)if(w.some(x=>re.test(x)))return n;for(const [n,muster] of Object.entries(MAT_E.faecher||{}))if(w.some(x=>new RegExp("^("+muster+")$","i").test(x)))return n;return ""}
@@ -2242,6 +2270,7 @@ function matNiveau(seg){const w=matNorm(seg).split(/\s+/);if(w.includes("ea"))re
 function matJahrgang(seg){const s=matNorm(seg).trim();let m;
   if((m=s.match(/^(\d{1,2})$/))&&+m[1]>=1&&+m[1]<=13)return m[1];
   if((m=s.match(/^(?:jg|jahrgang|klasse|kl)\s*(\d{1,2})\b/)))return m[1];
+  if((m=s.match(/\b(?:jg|jahrgang)\s*(\d{1,2})\b(?!\s*\d)/))&&+m[1]>=1&&+m[1]<=13)return m[1];
   if(/^q[1-4]$/.test(s))return s.toUpperCase();if(/^(e phase|einfuehrungsphase)$/.test(s))return "11";
   if(/^(abitur|altabitur)\b/.test(s))return "13";return ""}
 function matArt(name,segs,ext){const t=matNorm(name),s=matNorm(segs.join(" "));
@@ -2300,18 +2329,19 @@ const csvFeld=v=>{v=String(v??"");return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""
 async function matRegisterLesen(){mat.register=[];if(!ordnerHandle)return;
   try{const d=await ordnerHandle.getDirectoryHandle("materiallager");mat.register=matCsvZeilen(await lies(await d.getFileHandle("register.csv")))}catch{}}
 function matAlle(){
-  const idx=(mat.index&&mat.index.eintraege)||[];const reg=new Map(mat.register.map(r=>[String(r.pfad||"").toLowerCase(),r]));
-  const liste=idx.map(e=>{const r=reg.get(e.pfad.toLowerCase());if(!r)return e;reg.delete(e.pfad.toLowerCase());const m={...e,imRegister:true};
+  const idx=[...((mat.index&&mat.index.eintraege)||[]),...((schulAn()&&mat.schul&&mat.schul.eintraege)||[])];const reg=new Map(mat.register.map(r=>[String(r.pfad||"").toLowerCase(),r]));
+  const liste=idx.map(e=>{const k=(e.schule?schulVoll(e.pfad):e.pfad).toLowerCase();const r=reg.get(k);if(!r)return e;reg.delete(k);const m={...e,imRegister:true};
     ["titel","art","fach","jahrgang","niveau","thema","lehrplan","schlagworte","lizenz","notiz"].forEach(k=>{if(r[k])m[k]=r[k]});return m});
-  reg.forEach(r=>{if(!r.pfad)return;const link=/^https?:\/\//i.test(r.pfad);liste.push({...r,titel:r.titel||r.pfad,link,imRegister:true,fehlt:!link,wissensbasis:matWissen(r.pfad.split("\\"))})});
+  reg.forEach(r=>{if(!r.pfad)return;const link=/^https?:\/\//i.test(r.pfad);if(!link&&SCH.laufwerk&&r.pfad.toLowerCase().startsWith(SCH.laufwerk.replace(/[\\/]+$/,"").toLowerCase()+"\\")&&!(mat.schul&&mat.schul.eintraege))return;liste.push({...r,titel:r.titel||r.pfad,link,imRegister:true,fehlt:!link,wissensbasis:matWissen(r.pfad.split("\\"))})});
   return liste;
 }
 function matSuche(q,f){
   const w=matNorm(q).split(/\s+/).filter(Boolean);
   return matAlle().map(e=>{
+    if(f.quelle==="eigen"&&e.schule)return null;if(f.quelle==="schule"&&!e.schule)return null;
     if(f.fach&&e.fach!==f.fach)return null;if(f.jahrgang&&String(e.jahrgang)!==f.jahrgang)return null;if(f.art&&e.art!==f.art)return null;if(f.wissen&&!e.wissensbasis)return null;
     if(!w.length)return {e,s:0};
-    const ti=matNorm(e.titel),sw=matNorm([e.schlagworte,e.thema,e.stunde,e.lehrplan,e.notiz].join(" ")),pf=matNorm(e.pfad+" "+e.art+" "+e.fach+" "+e.niveau);
+    const ti=matNorm(e.titel),sw=matNorm([e.schlagworte,e.thema,e.stunde,e.lehrplan,e.notiz].join(" ")),pf=matNorm(e.pfad+" "+e.art+" "+e.fach+" "+e.niveau+(e.schule?" schulserver schule gruppe":""));
     let s=0;for(const x of w){if(ti.includes(x))s+=3;else if(sw.includes(x))s+=2;else if(pf.includes(x))s+=1;else return null}
     return {e,s:s+(e.imRegister?0.5:0)};
   }).filter(Boolean).sort((a,b)=>b.s-a.s||String(b.e.geaendert||"").localeCompare(String(a.e.geaendert||"")));
@@ -2333,70 +2363,107 @@ let alertLeise=()=>{};
 async function matBestandSpeichern(){
   const h=await schreibRecht();const d=await h.getDirectoryHandle("materiallager",{create:true});
   const k=["pfad","titel","art","fach","jahrgang","niveau","thema","stunde","wissensbasis","groesse_kb","geaendert"];
-  const t="\uFEFF"+k.join(";")+"\n"+mat.index.eintraege.map(e=>k.map(x=>csvFeld(x==="wissensbasis"?(e[x]?"ja":""):e[x])).join(";")).join("\n")+"\n";
-  await schreibe(d,"bestand.csv",t);
+  const t="\uFEFF"+k.join(";")+"\n"+((mat.index&&mat.index.eintraege)||[]).map(e=>k.map(x=>csvFeld(x==="wissensbasis"?(e[x]?"ja":""):e[x])).join(";")).join("\n")+"\n";
+  if(mat.index)await schreibe(d,"bestand.csv",t);
+  if(schulAn()&&mat.schul&&mat.schul.eintraege.length){const ks=["pfad","gruppe","titel","art","fach","jahrgang","niveau","thema","stunde","wissensbasis","groesse_kb","geaendert"];
+    await schreibe(d,"bestand-schulserver.csv","\uFEFF"+ks.join(";")+"\n"+mat.schul.eintraege.map(e=>ks.map(x=>csvFeld(x==="pfad"?schulVoll(e.pfad):x==="wissensbasis"?(e[x]?"ja":""):e[x])).join(";")).join("\n")+"\n")}
   if(!await existiert(d,"register.csv"))await schreibe(d,"register.csv","\uFEFFpfad;titel;art;fach;jahrgang;niveau;thema;lehrplan;schlagworte;lizenz;notiz;stand\n");
 }
 async function matDateiHandle(pfad){let d=mat.handle;const t=pfad.split("\\");for(const s of t.slice(0,-1))d=await d.getDirectoryHandle(s);return d.getFileHandle(t[t.length-1])}
+const mVoll=e=>e.link?e.pfad:e.schule?schulVoll(e.pfad):matVoll(e.pfad);
 const matVoll=p=>(MAT_E.wurzel?MAT_E.wurzel.replace(/[\\/]+$/,"")+"\\":(mat.handle?mat.handle.name+"\\":""))+p;
 async function zeigeMaterial(){
   const slot=$("#panel-slot");
   const zu=()=>{slot.innerHTML=""};
   if(!kannOrdner){slot.innerHTML=`<div class="panel"><h4>Material suchen</h4><p>Das geht nur in Edge oder Chrome.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",zu);return}
   await matStart(false);await matRegisterLesen();
-  if(mat.zustand!=="an"){
+  if(schulAn()&&!mat.schul){const c=await IDB.get("schul-index");if(c&&Array.isArray(c.eintraege))mat.schul=c}
+  if(mat.zustand!=="an"&&!(schulAn()&&store.get("schul-ohne-eigene",false))){
     slot.innerHTML=`<div class="panel"><h4>Material suchen</h4>
       <p>Das Materiallager liest deine Materialordner hier im Browser und macht sie durchsuchbar. Es verschiebt nichts und lädt nichts hoch.</p>
       <p>Wähle den Ordner, in dem dein Unterrichtsmaterial liegt${MAT_E.wurzel?`: <span class="path">${esc(MAT_E.wurzel)}</span>`:" (z. B. den Ordner über dem Datenordner)"}. Ordner mit Schülerdaten (Anträge, Noten, Korrekturen, Zeugnisse …) und der Datenordner selbst werden übersprungen.</p>
       <div class="guard" id="m-guard" hidden></div>
-      <div class="actions"><button class="btn primary" id="m-verb">${mat.zustand==="erlauben"?"Zugriff erlauben":"Materialordner wählen"}</button><button class="btn ghost" id="p-close">Schließen</button></div></div>`;
+      <div class="actions"><button class="btn primary" id="m-verb">${mat.zustand==="erlauben"?"Zugriff erlauben":"Materialordner wählen"}</button>${schulAn()?`<button class="btn ghost" id="m-nurschule">Nur Schulserver durchsuchen</button>`:""}<button class="btn ghost" id="p-close">Schließen</button></div></div>`;
+    if($("#m-nurschule"))$("#m-nurschule").addEventListener("click",()=>{store.set("schul-ohne-eigene",true);zeigeMaterial()});
     alertLeise=t=>{$("#m-guard").hidden=false;$("#m-guard").textContent=t};
     $("#m-verb").addEventListener("click",async()=>{const ok=mat.zustand==="erlauben"?(await matStart(true),mat.zustand==="an"):await matVerbinden();if(ok)zeigeMaterial()});
     $("#p-close").addEventListener("click",zu);return;
   }
-  const f=store.get("mat-filter",{fach:"",jahrgang:"",art:"",wissen:false});
+  const f=Object.assign({quelle:""},store.get("mat-filter",{fach:"",jahrgang:"",art:"",wissen:false}));
   const alle=matAlle();
   const opt=(feld,wert)=>[...new Set(alle.map(e=>String(e[feld]||"")).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de",{numeric:true})).map(x=>`<option${x===wert?" selected":""}>${esc(x)}</option>`).join("");
   slot.innerHTML=`<div class="panel" role="region" aria-label="Material suchen"><div class="p-kopf"><h4>Material suchen</h4><span class="sp"></span><span class="note" id="m-stand"></span></div>
     <div class="fields"><label style="flex:3 1 240px">Suchbegriff<input id="m-q" type="search" placeholder="z. B. Redoxreihe Arbeitsblatt, Kegel Lösung" autocomplete="off" value="${esc(store.get("mat-q",""))}"></label>
     <label style="flex:1 1 130px">Fach<select id="m-fach"><option value="">alle</option>${opt("fach",f.fach)}</select></label>
     <label style="flex:1 1 90px">Jahrgang<select id="m-jg"><option value="">alle</option>${opt("jahrgang",f.jahrgang)}</select></label>
-    <label style="flex:1 1 130px">Art<select id="m-art"><option value="">alle</option>${opt("art",f.art)}</select></label></div>
+    <label style="flex:1 1 130px">Art<select id="m-art"><option value="">alle</option>${opt("art",f.art)}</select></label>
+    ${schulAn()?`<label style="flex:1 1 130px">Ablage<select id="m-quelle"><option value="">alle</option><option value="eigen"${f.quelle==="eigen"?" selected":""}>mein Material</option><option value="schule"${f.quelle==="schule"?" selected":""}>Schulserver</option></select></label>`:""}</div>
     <label class="note m-check"><input type="checkbox" id="m-wissen" ${f.wissen?"checked":""}> nur Wissensbasis (Quellen der Einheiten)</label>
     <div id="m-liste" class="m-liste"></div>
     <div class="guard" id="m-guard" hidden></div>
-    <div class="actions"><button class="btn ghost small" id="m-scan">${mat.index?"Neu einlesen":"Jetzt einlesen"}</button>${ordnerHandle&&mat.index?`<button class="btn ghost small" id="m-save">Für Claude speichern</button>`:""}<button class="btn ghost small" id="m-ordner">Anderen Ordner wählen</button><button class="btn ghost small" id="m-wb">Wissensbasis anlegen</button><button class="btn ghost" id="p-close">Schließen</button><span class="toast" id="m-toast" role="status"></span></div></div>`;
+    <div class="guard" id="m-gruppen" hidden></div>
+    <div class="actions">${mat.handle?`<button class="btn ghost small" id="m-scan">${mat.index?"Neu einlesen":"Jetzt einlesen"}</button>`:""}${schulAn()?`<button class="btn ghost small" id="m-schul">${mat.schul?"Schulserver neu einlesen":"Schulserver einlesen"}</button><button class="btn ghost small" id="m-gwahl">Gruppenordner wählen</button>`:""}${ordnerHandle&&(mat.index||mat.schul)?`<button class="btn ghost small" id="m-save">Für Claude speichern</button>`:""}<button class="btn ghost small" id="m-ordner">Anderen Ordner wählen</button><button class="btn ghost small" id="m-wb">Wissensbasis anlegen</button><button class="btn ghost" id="p-close">Schließen</button><span class="toast" id="m-toast" role="status"></span></div></div>`;
   alertLeise=t=>{$("#m-guard").hidden=false;$("#m-guard").textContent=t};
-  const stand=()=>{$("#m-stand").textContent=mat.index?`${mat.index.eintraege.length} Dateien aus „${mat.handle.name}“, Stand ${datumDE(mat.index.stand.slice(0,10))}${mat.register.length?` · ${mat.register.length} im Register`:""}`:"Noch nicht eingelesen"};
+  const stand=()=>{const t=[];if(mat.index&&mat.handle)t.push(`${mat.index.eintraege.length} Dateien aus „${mat.handle.name}“, Stand ${datumDE(mat.index.stand.slice(0,10))}`);
+    if(schulAn()&&mat.schul)t.push(`${mat.schul.eintraege.length} vom Schulserver (${mat.schul.gruppen.length} Gruppenordner), Stand ${datumDE(mat.schul.stand.slice(0,10))}`);
+    if(mat.register.length)t.push(`${mat.register.length} im Register`);$("#m-stand").textContent=t.length?t.join(" · "):"Noch nicht eingelesen"};
   const zeig=()=>{
-    const q=$("#m-q").value.trim(),fl={fach:$("#m-fach").value,jahrgang:$("#m-jg").value,art:$("#m-art").value,wissen:$("#m-wissen").checked};
+    const q=$("#m-q").value.trim(),fl={fach:$("#m-fach").value,jahrgang:$("#m-jg").value,art:$("#m-art").value,wissen:$("#m-wissen").checked,quelle:$("#m-quelle")?$("#m-quelle").value:""};
     store.set("mat-q",q);store.set("mat-filter",fl);
     const box=$("#m-liste");
-    if(!mat.index){box.innerHTML=`<div class="empty">Klick auf „Jetzt einlesen“. Beim ersten Mal dauert das je nach Ordnergröße bis zu einer Minute.</div>`;return}
-    if(!q&&!fl.fach&&!fl.jahrgang&&!fl.art&&!fl.wissen){box.innerHTML=`<div class="empty">Suchbegriff eingeben oder filtern. Gesucht wird in Datei- und Ordnernamen und in den Schlagworten aus dem Register.</div>`;return}
+    if(!mat.index&&!(schulAn()&&mat.schul)){box.innerHTML=`<div class="empty">Klick auf „${mat.handle?"Jetzt einlesen":"Schulserver einlesen"}“. Beim ersten Mal dauert das je nach Ordnergröße bis zu einer Minute.</div>`;return}
+    if(!q&&!fl.fach&&!fl.jahrgang&&!fl.art&&!fl.wissen&&!fl.quelle){box.innerHTML=`<div class="empty">Suchbegriff eingeben oder filtern. Gesucht wird in Datei- und Ordnernamen und in den Schlagworten aus dem Register.</div>`;return}
     const t=matSuche(q,fl),zeige=t.slice(0,60);
     box.innerHTML=t.length?`<p class="note">${t.length} Treffer${t.length>60?", die ersten 60":""}</p>`+zeige.map(({e},i)=>`<div class="m-treffer">
-      <div class="m-kopf"><b>${esc(e.titel)}</b>${e.wissensbasis?'<span class="pill">Wissensbasis</span>':""}${e.fehlt?'<span class="pill open">nicht gefunden</span>':""}</div>
+      <div class="m-kopf"><b>${esc(e.titel)}</b>${e.schule?`<span class="pill">Schulserver · ${esc(e.gruppe||"")}</span>`:""}${e.wissensbasis?'<span class="pill">Wissensbasis</span>':""}${e.fehlt?'<span class="pill open">nicht gefunden</span>':""}</div>
       <div class="m-chips">${[e.art,e.fach,e.jahrgang?"Jg. "+e.jahrgang:"",e.niveau,e.thema,e.stunde].filter(Boolean).map(x=>`<span class="chip">${esc(x)}</span>`).join("")}${e.lizenz&&e.lizenz!=="eigen"?`<span class="chip">${esc(e.lizenz)}</span>`:""}</div>
       ${e.schlagworte?`<div class="note">${esc(e.schlagworte)}</div>`:""}
-      <div class="path m-pfad">${esc(e.link?e.pfad:matVoll(e.pfad))}</div>
+      <div class="path m-pfad">${esc(mVoll(e))}</div>
       <div class="actions">${e.link?`<a class="btn ghost small" href="${esc(e.pfad)}" target="_blank" rel="noopener">Link öffnen</a>`:e.fehlt?"":`<button class="btn ghost small" data-a="auf" data-i="${i}">Ansehen</button>`}<button class="btn ghost small" data-a="pfad" data-i="${i}">Pfad kopieren</button><button class="btn primary small" data-a="nutzen" data-i="${i}">Weiterverwenden</button></div></div>`).join("")
       :`<div class="empty">Nichts gefunden. Anderer Begriff, Filter lockern, oder Claude fragen, ob es im Register unter anderem Namen steht.</div>`;
     box.querySelectorAll("[data-a]").forEach(b=>b.addEventListener("click",async()=>{
       const e=zeige[+b.dataset.i].e;
-      if(b.dataset.a==="pfad"){kopiere(e.link?e.pfad:matVoll(e.pfad),$("#m-toast"));setTimeout(()=>{if($("#m-toast").textContent.startsWith("Kopiert"))$("#m-toast").textContent="Pfad kopiert. Im Explorer: Windows-Taste + E, Pfad in die Adresszeile."},0)}
-      else if(b.dataset.a==="auf"){try{const fh=await matDateiHandle(e.pfad);const file=await fh.getFile();const url=URL.createObjectURL(file);
+      if(b.dataset.a==="pfad"){kopiere(mVoll(e),$("#m-toast"));setTimeout(()=>{if($("#m-toast").textContent.startsWith("Kopiert"))$("#m-toast").textContent="Pfad kopiert. Im Explorer: Windows-Taste + E, Pfad in die Adresszeile."},0)}
+      else if(b.dataset.a==="auf"){try{let file;if(e.schule){$("#m-toast").textContent="Lade vom Schulserver …";const r=await davRuf("lesen",schulUrl(e.pfad));const n=e.pfad.split("\\").pop();
+          file=new File([davBuf(r.daten)],n,{type:MIME[e.ext]||"application/octet-stream"});$("#m-toast").textContent=""}
+        else{const fh=await matDateiHandle(e.pfad);file=await fh.getFile()}const url=URL.createObjectURL(file);
         if(/^(pdf|png|jpe?g|gif|svg|webp|txt|md|html?|mp4|webm|mp3)$/.test(e.ext||"")){window.open(url,"_blank","noopener")}
         else{const a=document.createElement("a");a.href=url;a.download=file.name;a.click();$("#m-toast").textContent="Kopie heruntergeladen. Zum Bearbeiten die Datei über „Pfad kopieren“ im Explorer öffnen."}
-        setTimeout(()=>URL.revokeObjectURL(url),60000)}catch{alertLeise("Datei nicht gefunden. Bitte „Neu einlesen“.")}}
+        setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(err){alertLeise(err&&err.anmelden?"Bitte bei IServ anmelden (Knopf „Schulserver einlesen“ öffnet die Anmeldung), dann noch einmal.":"Datei nicht gefunden. Bitte „Neu einlesen“.")}}
       else{const beschr=[e.art,e.fach,e.jahrgang?"Jg. "+e.jahrgang:"",e.niveau,e.thema].filter(Boolean).join(", ");
-        oeffne({id:"material-nutzen",titel:"Material weiterverwenden",typ:"claude",felder:["gruppe","thema"],auftrag:`Materiallager: Ich möchte dieses Material wiederverwenden: „${e.titel}“ (${beschr}). Datei: ${e.link?e.pfad:matVoll(e.pfad)}\nFür {gruppe}. Was angepasst werden soll: {thema}`},{thema:""});
+        oeffne({id:"material-nutzen",titel:"Material weiterverwenden",typ:"claude",felder:["gruppe","thema"],auftrag:`Materiallager: Ich möchte dieses Material wiederverwenden: „${e.titel}“ (${beschr}${e.schule?", vom Schulserver, Gruppenordner "+e.gruppe+", nur lesen":""}). Datei: ${mVoll(e)}\nFür {gruppe}. Was angepasst werden soll: {thema}`},{thema:""});
         $("#f-thema")&&($("#f-thema").placeholder="z. B. auf G-Niveau, kürzer, mit Hilfekarten");}
     }));
   };
   stand();zeig();
-  ["#m-q","#m-fach","#m-jg","#m-art","#m-wissen"].forEach(s=>$(s).addEventListener(s==="#m-q"?"input":"change",zeig));
-  $("#m-scan").addEventListener("click",async()=>{
+  ["#m-q","#m-fach","#m-jg","#m-art","#m-wissen","#m-quelle"].forEach(s=>{if($(s))$(s).addEventListener(s==="#m-q"?"input":"change",zeig)});
+  if($("#m-schul"))$("#m-schul").addEventListener("click",async()=>{
+    if(mat.laeuft)return;
+    if(!helferDa()||!schulHelferOk()){alertLeise("Für den Schulserver braucht die Startseite den IServ-Helfer ab Version 0.5. In chrome://extensions beim IServ-Helfer auf „Aktualisieren“ (↻) klicken, dann diese Seite neu laden (F5).");return}
+    mat.laeuft=true;$("#m-schul").disabled=true;$("#m-toast").textContent="Frage Gruppenordner ab …";
+    try{const alle=await schulGruppenListe();const gr=schulAuswahl(alle).filter(g=>alle.includes(g));
+      if(!gr.length){alertLeise("Kein Gruppenordner ausgewählt. „Gruppenordner wählen“.");return}
+      const e=await schulScannen(gr,n=>$("#m-toast").textContent=`Lese Schulserver … ${n} Dateien`);
+      mat.schul={stand:new Date().toISOString(),gruppen:gr,eintraege:e};await IDB.set("schul-index",mat.schul);
+      mat.laeuft=false;await zeigeMaterial();
+      setTimeout(()=>{if($("#m-toast"))$("#m-toast").textContent=`${e.length} Dateien vom Schulserver eingelesen (nur gelesen, nichts verändert).${ordnerHandle?" „Für Claude speichern“ gibt Claude die Liste.":""}`},0);
+    }catch(err){if(err&&err.anmelden){alertLeise("Bitte bei IServ anmelden: Im neuen Tab mit deinen IServ-Daten anmelden, dann hier noch einmal „Schulserver einlesen“.");try{await davRuf("anmelden",SCH.web+"/")}catch{}}
+      else alertLeise("Schulserver nicht lesbar: "+(err&&err.message||err))}
+    finally{mat.laeuft=false;if($("#m-schul"))$("#m-schul").disabled=false}
+  });
+  if($("#m-gwahl"))$("#m-gwahl").addEventListener("click",async()=>{
+    const box=$("#m-gruppen");box.hidden=false;
+    if(!helferDa()||!schulHelferOk()){box.textContent="Dafür braucht die Startseite den IServ-Helfer ab Version 0.5.";return}
+    if((SCH.gruppen||[]).filter(Boolean).length){box.innerHTML=`Die Gruppenordner stehen fest in meine-einstellungen.js (schulordner.gruppen): ${esc(SCH.gruppen.join(", "))}.`;return}
+    box.textContent="Frage Gruppenordner ab …";
+    let alle;try{alle=await schulGruppenListe()}catch(err){if(err&&err.anmelden){box.textContent="Bitte zuerst bei IServ anmelden (neuer Tab), dann noch einmal.";try{await davRuf("anmelden",SCH.web+"/")}catch{}}else box.textContent="Schulserver nicht lesbar: "+(err&&err.message||err);return}
+    const an=new Set(schulAuswahl(alle));
+    box.innerHTML=`<p>Welche Gruppenordner sollen durchsucht werden? Klassen- und Kursgruppen sind abgewählt, weil dort Abgaben von Schülerinnen und Schülern liegen.</p>`+
+      alle.map((g,i)=>`<label class="note m-check"><input type="checkbox" data-g="${i}" ${an.has(g)?"checked":""}> ${esc(g)}${SCH_KLASSE.test(g)?" <span class=\"pill open\">Klasse/Kurs</span>":""}</label>`).join("")+
+      `<div class="actions"><button class="btn primary small" id="m-gok">Übernehmen</button></div>`;
+    $("#m-gok").addEventListener("click",()=>{const w=alle.filter((g,i)=>box.querySelector(`[data-g="${i}"]`).checked);store.set("schul-gruppen",w);box.hidden=true;$("#m-toast").textContent=`${w.length} Gruppenordner gewählt. Jetzt „Schulserver einlesen“.`});
+  });
+  if($("#m-scan"))$("#m-scan").addEventListener("click",async()=>{
     if(mat.laeuft)return;mat.laeuft=true;$("#m-scan").disabled=true;$("#m-toast").textContent="Lese Ordner …";
     try{const e=await matScannen(mat.handle,n=>$("#m-toast").textContent=`Lese Ordner … ${n} Dateien`);
       mat.index={stand:new Date().toISOString(),ordner:mat.handle.name,eintraege:e};await IDB.set("material-index",mat.index);
@@ -2405,19 +2472,21 @@ async function zeigeMaterial(){
     }catch(err){alertLeise("Einlesen fehlgeschlagen: "+(err&&err.message||err))}
     finally{mat.laeuft=false}
   });
-  if($("#m-save"))$("#m-save").addEventListener("click",async()=>{try{await matBestandSpeichern();$("#m-toast").textContent="Gespeichert in materiallager\\bestand.csv."}catch(err){alertLeise(err.message||String(err))}});
-  $("#m-ordner").addEventListener("click",async()=>{if(await matVerbinden())zeigeMaterial()});
+  if($("#m-save"))$("#m-save").addEventListener("click",async()=>{try{await matBestandSpeichern();$("#m-toast").textContent="Gespeichert in materiallager\\"+[mat.index?"bestand.csv":"",schulAn()&&mat.schul?"bestand-schulserver.csv":""].filter(Boolean).join(" und ")+"."}catch(err){alertLeise(err.message||String(err))}});
+  $("#m-ordner").addEventListener("click",async()=>{if(await matVerbinden()){store.set("schul-ohne-eigene",false);zeigeMaterial()}});
   $("#m-wb").addEventListener("click",()=>{const k=ALLE.find(x=>x.id==="wissensbasis");if(k)oeffne(k)});
   $("#p-close").addEventListener("click",zu);
   $("#m-q").focus({preventScroll:true});slot.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 async function matHinweis(roh){
-  if(!mat.index){const c=await IDB.get("material-index");if(c&&Array.isArray(c.eintraege))mat.index=c;else return}
+  if(!mat.index){const c=await IDB.get("material-index");if(c&&Array.isArray(c.eintraege))mat.index=c}
+  if(schulAn()&&!mat.schul){const c=await IDB.get("schul-index");if(c&&Array.isArray(c.eintraege))mat.schul=c}
+  if(!mat.index&&!mat.schul)return;
   if($("#q").value.trim()!==roh)return;
   const t=matSuche(roh,{});if(!t.length)return;
   const d=document.createElement("div");d.className="empty m-hinweis";
   d.innerHTML=`<span>Im Materiallager: ${t.length} Datei${t.length===1?"":"en"} zu „${esc(roh)}“, z. B. ${esc(t[0].e.titel)}</span><button class="btn ghost small" style="justify-self:start">Material anzeigen</button>`;
-  d.querySelector("button").addEventListener("click",()=>{store.set("mat-q",roh);store.set("mat-filter",{fach:"",jahrgang:"",art:"",wissen:false});zeigeMaterial()});
+  d.querySelector("button").addEventListener("click",()=>{store.set("mat-q",roh);store.set("mat-filter",{fach:"",jahrgang:"",art:"",wissen:false,quelle:""});zeigeMaterial()});
   $("#area").appendChild(d);
 }
 

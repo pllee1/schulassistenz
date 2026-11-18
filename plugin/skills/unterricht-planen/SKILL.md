@@ -82,7 +82,7 @@ Jede Planung wird aus dem **gültigen Lehrplan** für Bundesland, Schulform, Fac
 - Lehrplan der **Stufe und Schulform** (Primarstufe, Sek I nach Schulform bzw. Schulzweig, gymnasiale Oberstufe mit Anforderungsniveaus wie gA/eA bzw. Grund-/Leistungskurs), in der Oberstufe dazu die Vorgaben zur Abiturprüfung und die Operatorenliste des Landes.
 - **Förderschwerpunkte**: ggf. die curricularen Vorgaben für den jeweiligen Förderschwerpunkt.
 - **Fachleistungsdifferenzierung** (z. B. G-/E-Kurse an Gesamtschulen): Anforderungen je Niveau getrennt ausweisen; welches Niveau die Lerngruppe hat, steht in gruppe.md.
-- Der **schuleigene Arbeitsplan** (SAP, schulinternes Curriculum) konkretisiert den Lehrplan; seine Vorgaben haben Vorrang. Liegt er im Profil unter `vorlagen`, ihn lesen.
+- Der **schuleigene Arbeitsplan** (SAP, schulinternes Curriculum) konkretisiert den Lehrplan; seine Vorgaben haben Vorrang. Liegt er im Profil unter `vorlagen` (`art: sap`), ihn lesen. Fehlt er, aber es gibt Gruppenordner auf dem Schulserver (`ablage.schulserver`), dort nach dem Arbeitsplan des Fachs suchen (nur lesen) und anbieten, ihn mit **schulprofil** (Abschnitt 4b) zusammenzufassen.
 - **Länderhinweis Niedersachsen:** Kerncurricula (KC) unter cuvo.nibis.de; an der IGS teils eigene KCs (z. B. Naturwissenschaften, Gesellschaftslehre); Fachleistungsdifferenzierung laut Erlass „Die Arbeit in den Schuljahrgängen 5 bis 10 der IGS“: G-/E-Kurse in Mathematik und Englisch ab Jg. 7, Deutsch ab Jg. 8, Naturwissenschaften ab Jg. 9. Für andere Länder die entsprechenden Landesportale nutzen.
 
 **So wird der Lehrplan eingebunden**

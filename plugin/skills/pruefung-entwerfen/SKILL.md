@@ -93,7 +93,7 @@ Gefundene Probleme der Lehrkraft nennen, nicht still korrigieren, wenn sie den B
 1. **Prüfung** (Schülerfassung) mit **material-gestalten** setzen (Abschnitt 4, Layout aus dem Profil). Ohne Layout-Vorgabe: neutraler Standard.
 2. **Erwartungshorizont** als eigenes Lehrer-Dokument im selben Layout.
 3. Optional: **angepasste Fassung**, **Nachschreibklausur** mit gleichem Bauplan und anderen Kontexten bzw. Zahlen, **Bewertungsbogen** für die Rückgabe.
-4. Ablage nach dem Ablagemuster des Profils und Eintrag ins Register nach **materiallager** (Art Prüfung bzw. Erwartungshorizont); sonst als Dateien im Gespräch. Ältere Prüfungen zum Thema vorher über **materiallager** suchen und als Anregung anbieten (Nachschreibklausur, gleiche Schwerpunkte), und die Wissensbasis der Einheit (`quellen.md`) für Inhalte und Kontexte lesen.
+4. Ablage nach dem Ablagemuster des Profils und Eintrag ins Register nach **materiallager** (Art Prüfung bzw. Erwartungshorizont); sonst als Dateien im Gespräch. Ältere Prüfungen zum Thema (auch Fachgruppenklausuren vom Schulserver, nur lesen) vorher über **materiallager** suchen und als Anregung anbieten (Nachschreibklausur, gleiche Schwerpunkte), und die Wissensbasis der Einheit (`quellen.md`) für Inhalte und Kontexte lesen.
 
 Am Ende kurz sagen: Gesamtpunktzahl, AFB-Verteilung, geschätzte Bearbeitungszeit, offene `[prüfen]`-Stellen, und dass die Unterlagen für **pruefung-korrigieren** bereitliegen.
 

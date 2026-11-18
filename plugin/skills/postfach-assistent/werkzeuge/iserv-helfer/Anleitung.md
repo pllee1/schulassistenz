@@ -50,6 +50,10 @@ Chrome zeigt beim Start manchmal den Hinweis „Erweiterungen im Entwicklermodus
 
 Liegen Akten und Kürzellisten auf IServ (Dateien › Eigene), liest und schreibt die Startseite sie über den Helfer. Er greift dafür nur auf Adressen `https://<server>/webdav/Files/…` zu und nutzt deine Anmeldung im Browser. Ein Passwort speichert er nicht. Nach einem Neustart des Browsers fragt die Startseite einmal „Bei IServ anmelden“. Einrichtung: Anleitung der Startseite, Abschnitt „Schülerdaten auf dem Schulserver“.
 
+## Gruppenordner der Schule (ab 0.5)
+
+Ab 0.5 liest der Helfer auch die Gruppenordner auf IServ (Dateien › Gruppen, Adressen `https://<server>/webdav/Groups/…`), damit „Material suchen“ auf der Startseite Arbeitspläne, Vorlagen und Fachgruppenmaterial mit durchsucht. Dort nur lesen: Schreiben, Ordner anlegen und Löschen lehnt der Helfer für Gruppenordner ab. Einrichtung: Anleitung der Startseite, Abschnitt „Gruppenordner der Schule“.
+
 ## Was die Erweiterung ersetzt
 
 - Alle Namen aus der Kürzelliste (auch „Nachname, Vorname“ und Teile von Doppelnamen) und deinen eigenen Namen.
