@@ -2001,7 +2001,7 @@ function rasterZeichnen(){
     ${!liste&&R.wahl&&R.noteOffen===R.wahl?`<div class="r-noteleiste">${noteFormHTML(R.wahl)}</div>`:""}
     <div class="r-meine" id="r-meine" hidden></div>
     <div class="${liste?"r-liste":"kinder"}" id="r-kinder"></div>
-    <p class="note">${liste?"Je Zeile ein Kind: „krank“, „fehlt“ oder „zu spät“ (mit Minuten) markiert die Anwesenheit, nochmal antippen hebt es auf. Symbol antippen trägt sofort ein. „Note“ öffnet ein Feld für eine Note (Test, Abfrage, Referat …) in der Skala der Lerngruppe. Ins Notizfeld schreiben und mit Enter oder ✓ bestätigen speichert die Notiz als eigenen Eintrag. Steht Text im Feld, wenn du ein Symbol antippst, wird er an dieses Symbol gehängt. Einen Eintrag des Kindes antippen und dann ein neues Symbol wählen ersetzt ihn, ✕ löscht ihn. „Fokus“ markiert die Kinder mit den wenigsten Beobachtungen. Der Entwurf wird laufend in diesem Browser gesichert und erst mit der Freigabe in die Akten geschrieben.":R.anordnen?"Tippe ein Kind an und dann den Platz, vor den es soll (oder ziehe es mit der Maus). Die Anordnung bleibt für diese Lerngruppe gespeichert.":"„Fokus“ markiert die Kinder mit den wenigsten Beobachtungen. Der Entwurf wird laufend in diesem Browser gesichert und erst mit der Freigabe in die Akten geschrieben."}</p>`;
+    <p class="note">${liste?"Je Zeile ein Kind: „krank“, „fehlt“ oder „zu spät“ (mit Minuten) markiert die Anwesenheit, nochmal antippen hebt es auf. Symbol antippen trägt sofort ein. „Note“ öffnet ein Feld für eine Note (Mitarbeit, Test, Abfrage, Referat …) in der Skala der Lerngruppe. Ins Notizfeld schreiben und mit Enter oder ✓ bestätigen speichert die Notiz als eigenen Eintrag. Steht Text im Feld, wenn du ein Symbol antippst, wird er an dieses Symbol gehängt. Einen Eintrag des Kindes antippen und dann ein neues Symbol wählen ersetzt ihn, ✕ löscht ihn. „Fokus“ markiert die Kinder mit den wenigsten Beobachtungen. Der Entwurf wird laufend in diesem Browser gesichert und erst mit der Freigabe in die Akten geschrieben.":R.anordnen?"Tippe ein Kind an und dann den Platz, vor den es soll (oder ziehe es mit der Maus). Die Anordnung bleibt für diese Lerngruppe gespeichert.":"„Fokus“ markiert die Kinder mit den wenigsten Beobachtungen. Der Entwurf wird laufend in diesem Browser gesichert und erst mit der Freigabe in die Akten geschrieben."}</p>`;
   const box=$("#r-kinder");
   if(liste){
     if(R.ersetze!=null&&!R.eintraege[R.ersetze])R.ersetze=null;
@@ -2067,7 +2067,7 @@ function rasterZeichnen(){
   $("#r-skala").addEventListener("change",e=>{R.regler={};R.bewegt={};R.skala=e.target.value;store.set(`skala-${R.gid}`,R.skala);R.wahl=null;rasterZeichnen()});
 }
 /* Noten in der Live-Beobachtung (Test, Abfrage, Referat …), Skala der Lerngruppe: Punkte bei NP, sonst Noten 1–6 */
-const NOTEN_ARTEN=["Test","Abfrage","Referat","Hausaufgabe","Protokoll","Sonstige Leistung"];
+const NOTEN_ARTEN=["Mitarbeit","Test","Abfrage","Referat","Hausaufgabe","Protokoll","Sonstige Leistung"];
 function noteWertLesen(s,np){s=String(s||"").trim().replace(".",",");
   if(np){if(!/^\d{1,2}(,\d)?$/.test(s))return null;const v=zahl(s);return v>=0&&v<=15?s.replace(/,0$/,""):null}
   if(!/^[1-6]([+-]|,\d{1,2})?$/.test(s)||s==="6-"||zahl(s)>6)return null;return s}
@@ -2080,7 +2080,7 @@ function noteFormVerdrahten(box){
       const thema=f.querySelector(".nf-thema").value.trim();const p=notizPruefen(thema);if(p){$("#r-guard").hidden=false;$("#r-guard").textContent=p;return}
       if(abwesend(k))return abwesendHinweis(k);
       const art=f.querySelector(".nf-art").value;store.set("live-note-art",art);
-      R.eintraege.push({k,kat:"NO",st:w,sk:np?"np":"note",art,text:thema,zeit:hhmm(new Date())});
+      R.eintraege.push(art==="Mitarbeit"?{k,kat:"MM",st:w,sk:np?"np":"note",text:thema,zeit:hhmm(new Date())}:{k,kat:"NO",st:w,sk:np?"np":"note",art,text:thema,zeit:hhmm(new Date())});
       R.noteOffen=null;$("#r-guard").hidden=true;rasterSpeichernEntwurf();rasterZeichnen()};
     f.querySelector(".nf-ok").addEventListener("click",ok);
     f.querySelector(".nf-zu").addEventListener("click",()=>{R.noteOffen=null;rasterZeichnen()});

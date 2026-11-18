@@ -29,7 +29,7 @@ Tipp: Rechtsklick auf `Schulassistenz-Start.html` → „Senden an“ → „Des
 Braucht den verbundenen Datenordner. Das Raster zeigt jedes Kind der Lerngruppe als Kachel mit Kürzel und, falls in `kuerzellisten/Kuerzelliste-<lerngruppe>.xlsx` (oder `.csv`) eingetragen, Vorname und Anfangsbuchstabe des Nachnamens. Die Namen werden nur auf diesem Rechner gelesen und nirgends gespeichert.
 
 - **Eintragen:** Kind antippen, dann Symbol: `++ + o -` mündliche Mitarbeit, `AV+ AV-` Arbeitsverhalten, `SV+ SV-` Sozialverhalten, `!` Auffälligkeit (später beschreiben), `*` besondere Stärke. Optional vorher eine Situation in Stichworten eintippen. Steht darin ein Name aus der Kürzelliste, nimmt die Seite den Eintrag nicht an.
-- **Note:** Knopf „Note“ beim Kind öffnet ein Feld für eine Note (Test, Abfrage, Referat, Hausaufgabe, Protokoll, Sonstige Leistung), in Noten 1–6 (auch `2-` oder `2,3`) bzw. Punkten 0–15 ab Jahrgang 11. Optional ein Thema. Sie landet unter „Leistungen“ und zählt in der Notenübersicht zu „mündlich/sonstige“.
+- **Note:** Knopf „Note“ beim Kind öffnet ein Feld für eine Note (Mitarbeit, Test, Abfrage, Referat, Hausaufgabe, Protokoll, Sonstige Leistung), in Noten 1–6 (auch `2-` oder `2,3`) bzw. Punkten 0–15 ab Jahrgang 11. Optional ein Thema. Sie landet unter „Leistungen“ und zählt in der Notenübersicht zu „mündlich/sonstige“.
 - **Fokus:** markiert die Kinder mit den bisher wenigsten Beobachtungen.
 - **Rückgängig** nimmt den letzten Eintrag zurück. Der Entwurf wird laufend im Browser gesichert, auch wenn das Fenster zugeht.
 - **Sitzplan anordnen:** ein Kind antippen, dann den Platz, vor den es soll. Die Reihenfolge bleibt je Lerngruppe gespeichert.
