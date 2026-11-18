@@ -213,7 +213,8 @@ regeln:
   loeschfrist_monate: 24
   ki_freigabe_schulleitung: offen | erteilt am <Datum> | nicht erteilt
   fehlzeiten: {frist: 3, frist_einheit: schultage, frist_ab: gesundung, zaehlt_als_entschuldigt: [<z. B. Eltern telefonisch>], eltern_ab_unentsch_std: 5, schwelle_zaehlt_ab: letzte_benachrichtigung, verspaetung_zaehlt: nein}   # Werte der Schule; schwelle_zaehlt_ab: letzte_benachrichtigung | halbjahr | schuljahr
-  klassenarbeit_unterschreitung: {schwelle_prozent: 30, vergleich: mehr_als, noten: [5, 6], ohne: zieldifferent, folge: <z. B. Arbeit wird nicht gewertet>, ausnahme: <z. B. Zustimmung der Schulleitung>, info_an: <z. B. Klassenelternvertretung>, quelle: <Erlass>, vorlagen: [antrag, elternbrief]}   # nur eintragen, was Land/Schule vorgeben (pruefung-korrigieren 10.3a)
+  klassenarbeit_unterschreitung:   # je Stufe (sek1, sek2) oder ein Eintrag für alle
+    sek1: {schwelle_prozent: 30, vergleich: mehr_als, noten: [5, 6], ohne: zieldifferent, folge: <z. B. Arbeit wird nicht gewertet>, ausnahme: <z. B. Zustimmung der Schulleitung>, info_an: <z. B. Klassenelternvertretung>, quelle: <Erlass>, vorlagen: [antrag, elternbrief]}   # nur eintragen, was Land/Schule vorgeben (pruefung-korrigieren 10.3a)
   exkursionen: {erlass: <Landeserlass Schulfahrten>, antrag_frist_wochen: 4, begleitung: <Schlüssel>, kostengrenze: <…>, zahlweg: <…>, startort: <Adresse/Haltestelle>}   # Felder siehe exkursion-planen
 ---
 Freie Hinweise der Lehrkraft (z. B. Fachgruppenabsprachen).
