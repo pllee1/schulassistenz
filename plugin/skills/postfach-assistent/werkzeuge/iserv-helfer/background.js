@@ -165,6 +165,7 @@ async function wuDownload(d) {
   chrome.downloads.cancel(d.id, () => chrome.downloads.erase({ id: d.id }, () => void chrome.runtime.lastError));
   try {
     if (/^(blob|data):/i.test(url)) throw new Error("WebUntis hat die Datei im Browser erzeugt. Bitte die Datei herunterladen und auf die Ampel ziehen.");
+    wuLernen(url);
     const r = await fetch(url, { credentials: "include", cache: "no-store" });
     if (!r.ok) throw new Error("WebUntis antwortet mit " + r.status);
     const buf = await r.arrayBuffer();
@@ -189,9 +190,10 @@ async function wuExport(m) {
     if (d.saWuHinweis) { await sess.remove("saWuHinweis"); return { ok: true, fertig: false, hinweis: d.saWuHinweis }; }
     return { ok: true, fertig: false, wartet: !!d.saWuWarten && Date.now() - d.saWuWarten < WU_WARTEN_MS };
   }
+  if (m.op === "holen") return wuHolen(m);
   if (m.op === "abbrechen") { await sess.remove(["saWuWarten", "saWuDatei", "saWuFehler", "saWuHinweis"]); return { ok: true }; }
-  if (m.op === "status") { const { saWuSeite } = await chrome.storage.local.get("saWuSeite"); return { ok: true, seite: !!saWuSeite }; }
-  if (m.op === "vergessen") { await chrome.storage.local.remove(["saWuSeite", "saWuExport", "saWuExportBlob"]); return { ok: true }; }
+  if (m.op === "status") { const d = await chrome.storage.local.get(["saWuSeite", "saWuStart"]); return { ok: true, seite: !!d.saWuSeite, gelernt: d.saWuStart ? d.saWuStart.gelernt : 0 }; }
+  if (m.op === "vergessen") { await chrome.storage.local.remove(["saWuSeite", "saWuStart", "saWuExport", "saWuExportBlob"]); return { ok: true }; }
   return { ok: false, fehler: "Unbekannter Befehl" };
 }
 chrome.runtime.onMessage.addListener((m, sender, antwort) => {
@@ -199,5 +201,86 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   wuExport(m).then(antwort).catch(e => antwort({ ok: false, fehler: "Helfer-Fehler (" + String((e && e.message) || e) + ")." }));
   return true;
 });
+/* Ab 0.8: Bericht selbst anfordern. Während des Abfangens (op „warten“) liest der Helfer die Anfragen an reports.do mit
+   (nur Adresse, Methode und Formularfelder wie Klasse, Bericht, Zeitraum; keine Antworten, keine Namen). Kommt danach der
+   abgefangene Download, merkt er sich die Start-Anfrage und das Muster der Download-Adresse. „holen“ stellt die Start-Anfrage
+   später selbst (Zeitraum angepasst), liest die msgId aus der Antwort und holt die fertige Datei ab. Nur lesend. */
+let wuMitschnitt = [];
+if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
+  chrome.webRequest.onBeforeRequest.addListener(r => {
+    if (r.tabId < 0 && r.initiator && r.initiator.startsWith("chrome-extension://")) return;   // eigene Anfragen
+    sess.get("saWuWarten").then(({ saWuWarten }) => {
+      if (!saWuWarten || Date.now() - saWuWarten > WU_WARTEN_MS) return;
+      const form = r.requestBody && r.requestBody.formData ? r.requestBody.formData : null;
+      wuMitschnitt.push({ method: r.method, url: r.url, form, zeit: Date.now() });
+      if (wuMitschnitt.length > 40) wuMitschnitt.shift();
+    });
+  }, { urls: ["https://*.webuntis.com/*reports.do*"] }, ["requestBody"]);
+}
+const wuHatMsg = u => /[?&]msgId=/i.test(u);
+function wuLernen(downloadUrl) {
+  const start = [...wuMitschnitt].reverse().find(x => !wuHatMsg(x.url) && (/[?&](name|format)=/i.test(x.url) || (x.form && (x.form.name || x.form.format))));
+  if (!start || !wuHatMsg(downloadUrl)) return;
+  chrome.storage.local.set({ saWuStart: { method: start.method, url: start.url, form: start.form, download: downloadUrl, gelernt: Date.now() } });
+  wuMitschnitt = [];
+}
+const WU_DATUM = /^(\d{8}|\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?|\d{1,2}\.\d{1,2}\.\d{4}|1\d{12})$/;
+function wuFormat(alt, iso) {
+  if (/^\d{8}$/.test(alt)) return iso.replace(/-/g, "");
+  if (/^\d{4}-\d{2}-\d{2}T/.test(alt)) return iso + alt.slice(10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(alt)) return iso;
+  if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(alt)) { const [j, m, t] = iso.split("-"); return `${t}.${m}.${j}`; }
+  if (/^1\d{12}$/.test(alt)) return String(new Date(iso + "T00:00:00").getTime());
+  return alt;
+}
+function wuParse(v) {
+  let m;
+  if ((m = /^(\d{4})(\d{2})(\d{2})$/.exec(v))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if ((m = /^(\d{4}-\d{2}-\d{2})/.exec(v))) return m[1];
+  if ((m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v))) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  if (/^1\d{12}$/.test(v)) return new Date(+v).toISOString().slice(0, 10);
+  return "";
+}
+// Zeitraum anpassen: Ende auf heute, wenn das gelernte Ende vorbei ist; Anfang auf Schuljahresbeginn, wenn er nicht passt.
+function wuDatenAnpassen(paare, von, bis) {
+  const dk = paare.filter(([k, v]) => WU_DATUM.test(v)).map(([k]) => k);
+  const istVon = k => /(^|_)(sd|start|von|from|begin)|startdate/i.test(k), istBis = k => /(^|_)(ed|end|bis|to)|enddate/i.test(k);
+  let kv = dk.find(istVon), kb = dk.find(istBis); if (!kv && !kb && dk.length === 2) [kv, kb] = dk;
+  return paare.map(([k, v]) => {
+    const iso = wuParse(v);
+    if (k === kb && bis && iso && iso < bis) return [k, wuFormat(v, bis)];
+    if (k === kv && von && iso && (iso > von || iso < von.replace(/^(\d{4})/, (x, j) => String(+j - 1)))) return [k, wuFormat(v, von)];
+    return [k, v];
+  });
+}
+const pause = ms => new Promise(r => setTimeout(r, ms));
+const istDatei = (typ, buf) => { const u = new Uint8Array(buf.slice(0, 8)); if (u[0] === 0xD0 && u[1] === 0xCF) return true; if (u[0] === 0x50 && u[1] === 0x4B) return true;
+  if (/json|html/i.test(typ)) return false; if (/pdf/i.test(typ)) return false; return /csv|excel|spreadsheet|octet|text\/plain/i.test(typ); };
+async function wuHolen(m) {
+  const { saWuStart: st } = await chrome.storage.local.get("saWuStart");
+  if (!st) return { ok: false, lernen: true };
+  const u = new URL(st.url);
+  const q = wuDatenAnpassen([...u.searchParams.entries()], m.von, m.bis); u.search = ""; for (const [k, v] of q) u.searchParams.append(k, v);
+  const opt = { credentials: "include", cache: "no-store", method: st.method || "GET" };
+  if (st.form && opt.method !== "GET") { const f = new URLSearchParams(); for (const [k, v] of wuDatenAnpassen(Object.entries(st.form).flatMap(([k, l]) => l.map(x => [k, x])), m.von, m.bis)) f.append(k, v); opt.body = f; }
+  const r = await fetch(u.toString(), opt);
+  if (r.status === 401 || r.status === 403) return { ok: false, anmelden: true, fehler: "Bitte in WebUntis anmelden und noch einmal versuchen." };
+  if (!r.ok) return { ok: false, fehler: "WebUntis antwortet auf die Berichtsanfrage mit " + r.status };
+  const typ0 = r.headers.get("content-type") || ""; const buf0 = await r.arrayBuffer();
+  if (istDatei(typ0, buf0)) return { ok: true, daten: b64aus(buf0), typ: typ0 };
+  const text = new TextDecoder().decode(buf0.slice(0, 20000));
+  if (/<form[^>]*login|j_username|name="?password/i.test(text)) return { ok: false, anmelden: true, fehler: "WebUntis zeigt die Anmeldeseite. Bitte in WebUntis anmelden und noch einmal versuchen." };
+  const msg = (text.match(/"?(?:msgId|messageId)"?\s*[:=]\s*"?(\d+)/i) || text.match(/msgId=(\d+)/i) || [])[1];
+  if (!msg) return { ok: false, fehler: "WebUntis hat keine Berichtsnummer geschickt (Antwort: " + (typ0 || "ohne Typ") + ", " + buf0.byteLength + " Bytes).", neuLernen: true };
+  const dl = new URL(st.download); dl.searchParams.set("msgId", msg);
+  for (let i = 0; i < 40; i++) {
+    await pause(i < 5 ? 1000 : 2000);
+    const d = await fetch(dl.toString(), { credentials: "include", cache: "no-store" });
+    if (!d.ok) continue;
+    const typ = d.headers.get("content-type") || ""; const buf = await d.arrayBuffer();
+    if (istDatei(typ, buf)) return { ok: true, daten: b64aus(buf), typ };
+  }
+  return { ok: false, fehler: "WebUntis hat den Bericht nicht rechtzeitig fertiggestellt. Bitte noch einmal versuchen." };
+}
 // Alte, nicht mehr gültige Lern-Adressen (0.6) entfernen
 chrome.storage.local.remove(["saWuExport", "saWuExportBlob"]);

@@ -246,11 +246,11 @@ async function standLesen(gid){
 
 /* ---------- Helfer: Export aus WebUntis holen ---------- */
 function wuRuf(op,extra){return new Promise((ok,nein)=>{const id=Math.random().toString(36).slice(2);
-  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.7 geladen? Seite neu laden (F5)."))},60000);
+  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.8 geladen? Seite neu laden (F5)."))},60000);
   function h(e){if(e.source!==window||!e.data||e.data.sa!=="wu-export-antwort"||e.data.id!==id)return;clearTimeout(t);window.removeEventListener("message",h);ok(e.data)}
   window.addEventListener("message",h);window.postMessage({sa:"wu-export",op,id,...(extra||{})},"*")})}
 const helferVersion=()=>document.documentElement.getAttribute("data-sa-helfer")||"";
-const helferKann=()=>{const v=helferVersion().split(".").map(Number);return v.length>1&&(v[0]>0||v[1]>=7)};
+const helferKann=()=>{const v=helferVersion().split(".").map(Number);return v.length>1&&(v[0]>0||v[1]>=8)};
 
 /* ---------- Oberfläche ---------- */
 const css=document.createElement("style");
@@ -347,11 +347,21 @@ async function einlesen(bufP,quelle,zeitraum){
 let wartenTimer=null;
 function wartenEnde(){if(wartenTimer){clearInterval(wartenTimer);wartenTimer=null}const l=$("#fz-lernen");if(l)l.innerHTML=""}
 async function holen(){
-  const g=$("#fz-guard");g.hidden=true;const t=$("#fz-toast");t.textContent="";
+  const g=$("#fz-guard");g.hidden=true;const t=$("#fz-toast");
+  t.textContent="Frage WebUntis …";
+  let a=null;try{a=await wuRuf("holen",{von:schuljahrBeginn(),bis:heuteISO()})}catch(e){a={ok:false,fehler:e.message}}
+  t.textContent="";
+  if(a&&a.ok){const buf=davBuf(a.daten);F.antwortNeu=`Antwort von WebUntis: ${a.typ||"ohne Typ"}, ${buf.byteLength} Bytes`;return einlesen(Promise.resolve(buf),"WebUntis über den Helfer","")}
+  if(a&&a.anmelden){g.hidden=false;g.textContent=a.fehler;return}
+  if(a&&!a.lernen){g.hidden=false;g.textContent=(a.fehler||"WebUntis hat nicht geantwortet.")+" Jetzt über den WebUntis-Tab:"}
+  return holenUeberTab();
+}
+async function holenUeberTab(){
+  const g=$("#fz-guard");
   try{const host=(String(E.webuntis||"").match(/^https:\/\/[a-z0-9.-]+\.webuntis\.com/i)||[])[0]||"";
     const a=await wuRuf("warten",{host});if(!a.ok)throw new Error(a.fehler||"Der Helfer antwortet nicht.");
     const box=$("#fz-lernen");
-    box.innerHTML=`<div class="fz-warn"><b>${a.geoeffnet?"WebUntis ist in einem neuen Tab geöffnet.":"Öffne jetzt WebUntis."}</b> ${a.seite?"":"Geh dort zu Klassenbuch › Berichte (Abwesenheiten). "}Wähle Klasse bzw. Kurs und als Zeitraum <b>Aktuelles Schuljahr</b>, dann bei <b>Fehlzeiten pro Schüler*in</b> („pro Stunde“) auf das <b>CSV</b>- oder <b>Excel</b>-Symbol klicken.<br>Der Helfer übernimmt die Datei direkt hierher. Sie landet nicht im Download-Ordner. Er wartet 10 Minuten. <span id="fz-wstat"></span> <button class="btn small ghost" id="fz-wab">Abbrechen</button></div>`;
+    box.innerHTML=`<div class="fz-warn"><b>${a.geoeffnet?"WebUntis ist in einem neuen Tab geöffnet.":"Öffne jetzt WebUntis."}</b> ${a.seite?"":"Geh dort zu Klassenbuch › Berichte (Abwesenheiten). "}Wähle Klasse bzw. Kurs und als Zeitraum <b>Aktuelles Schuljahr</b>, dann bei <b>Fehlzeiten pro Schüler*in</b> („pro Stunde“) auf das <b>CSV</b>- oder <b>Excel</b>-Symbol klicken.<br>Der Helfer übernimmt die Datei direkt hierher. Sie landet nicht im Download-Ordner. Er wartet 10 Minuten. Dabei merkt er sich die Anfrage, ab dann holt „Aus WebUntis holen“ den Bericht ohne diesen Schritt. <span id="fz-wstat"></span> <button class="btn small ghost" id="fz-wab">Abbrechen</button></div>`;
     $("#fz-wab").addEventListener("click",()=>{wuRuf("abbrechen").catch(()=>{});wartenEnde()});
     const start=Date.now();if(wartenTimer)clearInterval(wartenTimer);
     wartenTimer=setInterval(async()=>{
