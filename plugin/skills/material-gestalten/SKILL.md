@@ -5,7 +5,7 @@ description: "Setzt Unterrichtsmaterial und Prüfungen jedes Fachs (schulassiste
 
 # Material gestalten
 
-Setzt fertig geplante Inhalte in ein einheitliches, ruhiges Layout. Inhalt und Didaktik kommen aus **unterricht-planen**, **einheit-planen** oder **pruefung-entwerfen**; dieser Skill regelt Aufbau und Satz. Ausgabe: PDF (ReportLab), Word nur auf Wunsch. Nicht frei neu gestalten: gleiche Bausteine, gleiche Farben, damit Lernende sich auf jedem Blatt zurechtfinden.
+Setzt fertig geplante Inhalte in ein einheitliches, ruhiges Layout. Inhalt und Didaktik kommen aus **unterricht-planen**, **einheit-planen** oder **pruefung-entwerfen**; dieser Skill regelt Aufbau und Satz. Ausgabe: PDF im Layout **„Klar · Band“** (HTML + Chromium, Abschnitt 2b), Word nur auf Wunsch. Nicht frei neu gestalten: gleiche Bausteine, gleiche Farben, damit Lernende sich auf jedem Blatt zurechtfinden.
 
 Arbeitet ohne Schülerdaten.
 
@@ -81,11 +81,22 @@ Abbildungen in dieser Reihenfolge beschaffen, nie umgekehrt:
 
 Lieber ein gutes Foto als drei Skizzen. Eine Abbildung muss eine Aufgabe tragen (beschreiben, vergleichen, beschriften, auswerten), sonst weglassen.
 
+## 2b. Layout „Klar · Band“ (Standard ab Klasse 5)
+
+Alle Arbeitsblätter, Lehrerblätter, Tafelbilder, Klassenarbeiten, Klausuren und Tests ab Klasse 5 werden mit dem Baukasten `skripte/klar.py` gesetzt (HTML/CSS, gedruckt mit Chromium über Playwright zu A4-PDF). Ein vollständiges Muster mit AB, Klassenarbeit Seite 1 und Bewertungsseite steht in `beispiele/beispiel_nawi10.py`. Vor der ersten Nutzung ansehen und genauso aufbauen.
+
+- **Aussehen:** Der Kopf ist ein helles Band in der Fachfarbe über die volle Blattbreite (Logo auf weißem Feld, „Fach · Jahrgang“ fett in Fachfarbe, Thema grau, rechts ein weißes Feld mit Name, Datum und Klasse) mit einer Linie in der Fachfarbe darunter. Aufgabennummern stehen in Kästchen in der Fachfarbe, Aufgabenköpfe auf einem hellen Balken mit Sozialform- und Zeitmarken (Symbol + Text). Situation zwischen zwei feinen Linien, Merkkasten orange mit Reiter „Merke“, Joker grau. Schrift Instrument Sans (OFL, aus `../plakat-gestalten/schriften/`). Text 10 pt, Titel 16,5 pt.
+- **Werte aus dem Profil** in `K.Profil(...)`: Fach, Jahrgang, Thema, Fachfarbe + hell (Abschnitt 1), Logo (ab `logo_ab_klasse`, sonst `None`), Lehrkraft-Kürzel, Schuljahr, `code` (Schüler-Code für den Jahrgang), `noten` (Notenschlüssel der Stufe), `notenpunkte` (Sek II), `muendlich` (Kasten laut Layout-Datei), `unterschrift2` (Oberstufe „Kenntnisnahme“).
+- **Bausteine:** `kopf_ab`, `ab_titel`, `situation`, `aufgabe` (mit `tag`, Niveau ★), `op`, `versuch`, `schritte`, `sicherheit`, `tabelle`, `bild` (mit Quellenzeile), `platzhalter`, `auftrag_mit_hilfe`/`hilfe` (Hilfekarten-Verweis), `satzanfang`, `linien`, `karo`, `merk` + `luecke`, `joker`, `abschluss`, `seite`/`ab_seite` (`quer=True` für Tafelbild, `kopf_ab(cfg, "lehrer"|"tafel")`). Klassenarbeit: `ka_kopf`, `hinweis`, `ka_aufgabe`, `teil` (Punktekasten „/ x BE“, AFB, Kästchenfeld), `material`, `folge_kopf`, `ka_fuss`, `bewertung` (Punktetabelle, Notenschlüssel aus `noten` mit aufgerundeten BE-Grenzen, Ergebnis, Mündliche Leistung, Kommentar, Unterschriften).
+- **Druck:** `K.speichern(cfg, seiten, "Datei.pdf")` schreibt HTML, PDF, PNG je Seite und Graustufen-Probe (`*_grau.png`) und meldet Seiten, deren Inhalt überläuft. Jede `seite` ist genau ein A4-Blatt: Läuft etwas über, kürzen, Kästchenfelder verkleinern oder auf eine zweite Seite verteilen, nie verkleinert drucken.
+- **Keine CSS-Verläufe oder Hintergrundmuster** für Linien, Karo oder Flächen: Manche PDF-Betrachter zeigen sie als pinke Flächen. Schreiblinien (`linien`) und Kästchen (`karo`) sind echte Linien; Verläufe nur innerhalb von SVG-Abbildungen.
+- **Primarstufe (Kl. 1–4)** und Rechner ohne Chromium/Playwright: ReportLab-Gerüst aus Abschnitt 6 mit denselben Inhalten.
+
 ## 3. Arbeitsblätter (Material zu einer Stunde)
 
-- A4, Ränder 18 mm, Satzbreite 174 mm, DejaVu Sans. Titel 15 pt fett in Fachfarbe, Zwischenüberschrift 11,5 pt, Text 10,5 pt, Tabellen 9,5 pt.
-- **Kopfzeile jede Seite:** Logo (9 mm hoch) links (wenn vorhanden, ab `logo_ab_klasse`), daneben „Fach · Jahrgang“ (z. B. „Chemie eA · Jahrgang 13“) fett in Fachfarbe und darunter das Thema grau; rechts „Name: ___ Datum: ___“ (Lehrerblatt: „Lehrerblatt – nicht für SuS“); darunter Linie 1,2 pt in Fachfarbe. Seitenzahl unten rechts.
-- **AB-Aufbau:** Titel „AB n · Leitfrage“ → Auftrags-/Situationskasten (Fachfarbe hell) mit Sozialform und Zeit → nummerierte Teilaufgaben „1 · Vorhersage (allein, 3 Min.)“ → Merkkasten (orange) als Lückentext mit Wortspeicher → Joker (grau). Satzanfänge kursiv grau. Tabellen mit dünnem grauem Gitter, Kopfzeile grau. Antwortlinien grau, 7–8 mm.
+- A4, Ränder 16 mm, Satzbreite 178 mm, Layout „Klar · Band“ (Abschnitt 2b). Im ReportLab-Gerüst (Kl. 1–4, Notlösung): Ränder 18 mm, DejaVu Sans, Titel 15 pt, Text 10,5 pt, Tabellen 9,5 pt.
+- **Kopfzeile jede Seite** (`kopf_ab`; im ReportLab-Gerüst als Zeile): Logo (9–12 mm hoch) links (wenn vorhanden, ab `logo_ab_klasse`), daneben „Fach · Jahrgang“ (z. B. „Chemie eA · Jahrgang 13“) fett in Fachfarbe und darunter das Thema grau; rechts „Name: ___ Datum: ___“ (Lehrerblatt: „Lehrerblatt – nicht für SuS“); darunter Linie 1,2 pt in Fachfarbe. Seitenzahl unten rechts.
+- **AB-Aufbau:** Titel „AB n · Leitfrage“ → Situation („Worum es geht“) → nummerierte Aufgaben mit Titel, Sozialform und Zeit als Marken („1 · Vorhersage“, allein, 3 Min.) und Niveau ★/★★/★★★ → Merkkasten (orange) als Lückentext mit Wortspeicher → Joker (grau). Satzanfänge kursiv grau. Tabellen mit dünnem grauem Gitter, Kopfzeile grau. Antwortlinien grau, 7–8 mm.
 - Versuchsblätter: Material → Durchführung → Sicherheit (rot) → **Versuchsskizze** → Messtabelle → Beobachtung/Auswertung.
 - Schulbuchabbildungen zuschneiden (Randnotizen weg), Quellenzeile 7,5 pt grau. Urheberrecht beachten: nur Abbildungen aus Material, das die Lehrkraft nutzen darf.
 - **Hilfekarten-Verweis an der Aufgabe (immer):** Gibt es zu einer Teilaufgabe Hilfekarten, steht der Verweis direkt an dieser Teilaufgabe – rechtsbündig in der Aufgabenzeile oder als eigene Zeile darunter, 9 pt, grau, mit 💡: „💡 Hilfekarte 2a“ bzw. „💡 Hilfekarten 2a · 2b · 2c“. Die Karten heißen nach Aufgabe und Stufe (2a/2b/2c) und tragen im Kartenkopf den Rückverweis („Hilfekarte 2a · zu AB 1, Aufgabe 2“). Keine Karte ohne Verweis, kein Verweis ohne Karte; im Lehrerblatt (Spalte Material) dieselben Nummern verwenden. Kl. 1–4: nur 💡 + Kartennummer bzw. Kartenbild, kein Text.
@@ -96,10 +107,10 @@ Lieber ein gutes Foto als drei Skizzen. Eine Abbildung muss eine Aufgabe tragen 
 ## 4. Klassenarbeiten, Klausuren, Tests
 
 - **Code statt Name**, wenn das Profil einen Schüler-Code für den Jahrgang vorsieht (`bewertung.schueler_code`, im Gerüst `CODE`): **kein Namensfeld**, die Lernenden tragen ihren Code ein (Format aus dem Profil). Die Zuordnung Code → Name führt nur die Lehrkraft; sie steht nirgends auf der Arbeit. Gilt auf allen Seiten. Ohne Code: Feld „Kürzel“ empfehlen (Akten-Kürzel aus der Kürzelliste), damit **pruefung-korrigieren** die Ergebnisse ohne Schwärzen der Akte zuordnen kann; „Name“ nur, wenn die Lehrkraft das will.
-- **Seite 1: Kopftabelle** (Rahmen 1 pt Fachfarbe): Zeile 1 Logo (22 mm breit; Kl. 1–4 ohne Logo, Titelfeld über volle Breite) | Feld in Fachfarbe hell mit „Klausur Nr. x · Fach“ (13 pt fett, Fachfarbe) und Thema. Darunter Felder mit kleinen grauen Beschriftungen: bei Code **Code** mit Einzelkästchen je Zeichen (je 7 mm, Rahmen Fachfarbe; Flowable `CodeFeld`), sonst Kürzel bzw. Name | Datum | Kurs/Klasse (mit Lehrkraft-Kürzel), dann Bearbeitungszeit | Hilfsmittel. Weitere Pflichtfelder aus der Layout-Datei. Bei Code im grauen Hinweiskasten als erste Zeile fett: „Trage oben nur deinen Code ein – nicht deinen Namen.“
+- **Seite 1: Kopf** (`ka_kopf`: helles Band in Fachfarbe über die volle Breite mit Logo, „Klassenarbeit/Klausur Nr. x · Fach“ fett in Fachfarbe und Thema; im ReportLab-Gerüst als Kopftabelle mit Rahmen 1 pt Fachfarbe, Kl. 1–4 ohne Logo). Darunter Felder mit kleinen grauen Beschriftungen: bei Code **Code** mit Einzelkästchen je Zeichen (je 7 mm, Rahmen Fachfarbe; Flowable `CodeFeld`), sonst Kürzel bzw. Name | Datum | Kurs/Klasse (mit Lehrkraft-Kürzel), dann Bearbeitungszeit | Hilfsmittel. Weitere Pflichtfelder aus der Layout-Datei. Bei Code im grauen Hinweiskasten als erste Zeile fett: „Trage oben nur deinen Code ein – nicht deinen Namen.“
 - Danach grauer Hinweiskasten, ggf. Material-Kasten (Fachfarbe hell) mit Versuchsskizze.
-- **Aufgaben:** Überschrift „Aufgabe n · Thema“ (11,5 pt, Fachfarbe). Jede Teilaufgabe als Zeile: Nummer | Text mit fettem Operator | rechts „x P.“ und darunter „AFB I/II/III“; Linie darunter. Direkt darunter ein **Kästchenfeld (5-mm-Karo)** in passender Höhe. Teilaufgabe + Kästchenfeld (und die Aufgabenüberschrift mit der ersten Teilaufgabe) immer per KeepTogether zusammenhalten.
-- **Folgeseiten:** kleine Kopfzeile mit Logo (falls vorhanden), „Klausur Nr. x · Fach · Jahrgang“, rechts „Code: ________“ bzw. „Kürzel/Name: ___“, Linie in Fachfarbe. Fußzeile links „Lehrkraft-Kürzel · Schuljahr“, rechts „Seite n“.
+- **Aufgaben** (`ka_aufgabe` + `teil`): Überschrift mit Nummernkästchen auf hellem Balken. Jede Teilaufgabe als Zeile: Buchstabe | Text mit fettem Operator | rechts Punktekasten „☐ / x BE“ und darunter „AFB I/II/III“; Linie darunter. Direkt darunter ein **Kästchenfeld (5-mm-Karo)** in passender Höhe. Teilaufgabe + Kästchenfeld (und die Aufgabenüberschrift mit der ersten Teilaufgabe) immer per KeepTogether zusammenhalten.
+- **Folgeseiten** (`folge_kopf`, helles Band): kleine Kopfzeile mit Logo (falls vorhanden), „Klausur Nr. x · Fach · Jahrgang“, rechts „Code: ________“ bzw. „Kürzel/Name: ___“, Linie in Fachfarbe. Fußzeile links „Lehrkraft-Kürzel · Schuljahr“, rechts „Seite n“.
 - **Letzte Seite „Bewertung“:** bei Code oben rechts ebenfalls nur „Code: ________“.
   1. Punktetabelle: Aufgabe | erreichbar | erreicht, letzte Spalte Summe.
   2. **Bewertungsraster** aus dem Notenschlüssel der Stufe im Profil bzw. aus dem Erwartungshorizont von **pruefung-entwerfen** (Kopfzeile in Fachfarbe hell, Zeile „ab BE“ nach der Rundungsregel des Profils aus der Gesamtpunktzahl berechnen, per Code). Ohne Schlüssel im Profil nachfragen, nie einen erfinden. Primarstufe: kindgerechte Sprache.
@@ -117,7 +128,9 @@ Lieber ein gutes Foto als drei Skizzen. Eine Abbildung muss eine Aufgabe tragen 
 - Gehört das Material zu einer Einheit aus **einheit-planen**, in deren Ordner ablegen und dort im Stoffverteilungsplan verlinken.
 - Vorher über **materiallager** prüfen, ob es schon Passendes gibt (dann anpassen statt neu), und die Wissensbasis der Einheit (`quellen.md`) als Inhaltsquelle nutzen. Jede abgelegte Datei nach **materiallager** (Abschnitt 5) ins Register eintragen, fremde Bilder mit Lizenz.
 
-## 6. Gerüst
+## 6. Gerüst ReportLab (Primarstufe Kl. 1–4 und Notlösung ohne Chromium)
+
+Ab Klasse 5 gilt der Baukasten aus Abschnitt 2b. Dieses Gerüst nur für Kl. 1–4 (Primarschrift, Lineatur) oder wenn Playwright/Chromium fehlt; dann im Lieferhinweis nennen.
 
 ```python
 import base64
