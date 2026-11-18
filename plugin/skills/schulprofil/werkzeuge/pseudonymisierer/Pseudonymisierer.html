@@ -50,6 +50,15 @@ button.b2:hover{background:var(--acc2)}
 .page canvas{display:block;max-width:100%;height:auto;cursor:crosshair;touch-action:none}
 .legend span{display:inline-block;border:1px solid var(--muted);width:14px;height:14px;vertical-align:middle;margin:0 4px 0 10px;border-radius:2px}
 .hidden{display:none}
+.csvwrap{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:6px;margin:6px 0}
+table.csv{font-family:var(--f-mono);font-size:12.5px;width:auto;min-width:100%}
+table.csv td,table.csv th{padding:3px 8px;white-space:nowrap;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+table.csv th{color:var(--muted);font-weight:400;position:sticky;left:0;background:var(--card)}
+table.csv tr.kopf td{font-weight:600;background:var(--card2);position:sticky;top:0}
+.m-ersetzt{background:var(--okbg);color:var(--ok)}
+.m-offen{background:var(--warnbg);color:var(--warn);font-weight:600}
+.legende span{padding:0 6px;border-radius:4px}
+.vorschau-titel{margin:14px 0 2px;font-size:15px}
 details summary{cursor:pointer;font-weight:600}
 </style>
 </head>
@@ -376,6 +385,8 @@ function paare(){
   for(const r of liste){const o=r.orig.trim(),k=r.kurz.trim();if(!o||!k||m.has(o))continue;
     const ziel=md.has(o)?"["+[...md.get(o)].join(" oder ")+"]":k;
     m.set(o,ziel);const up=o.toUpperCase();if(!m.has(up))m.set(up,ziel);}
+  // „Nachname, Vorname“ auch ohne Komma erkennen („Muster Max“, wie in WebUntis-Exporten)
+  for(const [o,z] of [...m]){const x=o.match(/^(.+?),\s*(.+)$/);if(x){const v=x[1]+" "+x[2];if(!m.has(v))m.set(v,z);}}
   return m;
 }
 // nur eindeutige volle Namen (für die Zeilen-Auflösung in Excel)
@@ -577,6 +588,76 @@ async function excelUnbekannte(buf,find){
   }
   return [...raus];
 }
+// ---------- CSV (z. B. WebUntis-Export) ----------
+// Kodierung erkennen: UTF-8, UTF-16 (mit BOM) oder Windows-1252 („ANSI“, ältere Exporte)
+function textDekodieren(buf){
+  const b=new Uint8Array(buf);
+  if(b[0]===0xFF&&b[1]===0xFE)return new TextDecoder("utf-16le").decode(buf);
+  if(b[0]===0xFE&&b[1]===0xFF)return new TextDecoder("utf-16be").decode(buf);
+  try{return new TextDecoder("utf-8",{fatal:true}).decode(buf);}catch(e){return new TextDecoder("windows-1252").decode(buf);}
+}
+function csvTrenner(txt){
+  const z=txt.split(/\r?\n/).slice(0,5).join("\n").replace(/"[^"]*"/g,"");
+  const n=c=>z.split(c).length-1;
+  return [";","\t",","].sort((a,b)=>n(b)-n(a))[0];
+}
+function csvLesen(txt,sep){
+  const rows=[];let row=[],f="",q=false;
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i];
+    if(q){if(c==='"'){if(txt[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;continue;}
+    if(c==='"'&&f==="")q=true;
+    else if(c===sep){row.push(f);f="";}
+    else if(c==="\n"||c==="\r"){if(c==="\r"&&txt[i+1]==="\n")i++;row.push(f);rows.push(row);row=[];f="";}
+    else f+=c;
+  }
+  if(f!==""||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+function csvSchreiben(rows,sep){
+  return rows.map(r=>r.map(c=>/[";\t,\r\n]/.test(c)&&(c.includes(sep)||/["\r\n]/.test(c))?'"'+c.replace(/"/g,'""')+'"':c).join(sep)).join("\r\n")+"\r\n";
+}
+// ersetzt Zelle für Zelle; Vor- und Nachname in getrennten Spalten werden über die Zeile eindeutig
+function csvVerarbeiten(rows,find,volle){
+  const out=rows.map(r=>r.slice());let n=0;
+  rows.forEach((r,i)=>{const fertig=new Set();
+    for(let a=0;a<r.length;a++)for(let b=a+1;b<r.length;b++){
+      if(fertig.has(a)||fertig.has(b)||!r[a].trim()||!r[b].trim())continue;
+      const k=volle.get(normName(r[a]+" "+r[b]))||volle.get(normName(r[b]+" "+r[a]));
+      if(k){out[i][a]=k;out[i][b]=k;fertig.add(a);fertig.add(b);n+=2;}
+    }});
+  rows.forEach((r,i)=>r.forEach((c,j)=>{if(out[i][j]!==c)return;const m=find(c);if(m.length){out[i][j]=replaceText(c,find);n+=m.length;}}));
+  return {out,n};
+}
+// Zellen in Namensspalten, die nicht ersetzt wurden (Kind fehlt in der Kürzelliste?)
+function csvUnbekannte(rows,out){
+  const res=new Map(),breite=Math.max(...rows.map(r=>r.length));
+  for(let j=0;j<breite;j++){
+    const tr=[];rows.forEach((r,i)=>{if(r[j]!==undefined&&out[i][j]!==r[j])tr.push(i);});
+    if(tr.length<2)continue;
+    rows.forEach((r,i)=>{const z=(r[j]||"").trim();
+      if(i>tr[0]&&out[i][j]===r[j]&&z&&/^\p{Lu}[\p{L}'’.-]*(?:[ ,]+\p{L}[\p{L}'’.-]*){0,3}$/u.test(z)&&!res.has(z))res.set(z,i);});
+  }
+  return [...res];
+}
+function csvVorschau(rows,out,offen,nurMarkierte){
+  const MAX=400;let html="",gezeigt=0,markiert=0;
+  for(let i=0;i<rows.length;i++){
+    let zellen="",hat=false;
+    for(let j=0;j<Math.max(rows[i].length,out[i].length);j++){
+      const v=out[i][j]??"",alt=rows[i][j]??"";
+      let cls="",tip="";
+      if(offen.some(t=>t&&v.includes(t))){cls="m-offen";tip="bitte prüfen";hat=true;}
+      else if(v!==alt){cls="m-ersetzt";tip="vorher: "+alt;hat=true;}
+      zellen+=`<td class="${cls}" title="${esc(tip)}">${esc(v)}</td>`;
+    }
+    if(hat)markiert++;
+    if((nurMarkierte&&!hat&&i>0)||gezeigt>=MAX)continue;
+    html+=`<tr${i===0?' class="kopf"':""}><th>${i+1}</th>${zellen}</tr>`;gezeigt++;
+  }
+  return {html:`<div class="csvwrap"><table class="csv">${html}</table></div>`+(gezeigt>=MAX?`<p class="muted">Vorschau zeigt die ersten ${MAX} Zeilen. „Nur markierte Zeilen“ hilft bei langen Listen.</p>`:""),markiert};
+}
+
 // ---------- Reiter 2: Word & Text ----------
 dropzone($("#dropWord"),$("#fileWord"),async files=>{
   const out=$("#wordOut");
@@ -600,25 +681,54 @@ async function wordDatei(f,out){
         for(const [u,zeile] of unb){const i=text.indexOf(u);hits.unshift({art:"Name fehlt in Liste?",s:Math.max(0,i),e:Math.max(0,i)+u.length,txt:u,rep:"[unbekannt-"+nr.get(zeile)+"]",an:true});}
       }
     }
+    else if(e==="csv"){
+      orig=textDekodieren(buf);var sep=csvTrenner(orig);var csvRows=csvLesen(orig,sep);var volle=vollePaare();
+      const r=csvVerarbeiten(csvRows,find,volle);n=r.n;text=r.out.map(z=>z.join(" ; ")).join("\n");
+      // Datumsangaben in Exporten sind fast immer Fehlzeiten- oder Termindaten: nicht in die Prüfliste
+      hits=pruefen(text).filter(h=>h.art!=="Datum");
+      const unb=csvUnbekannte(csvRows,r.out);const nr=new Map();
+      for(const [,zeile] of unb)if(!nr.has(zeile))nr.set(zeile,nr.size+1);
+      for(const [u,zeile] of unb.reverse()){const i=text.indexOf(u);hits.unshift({art:"Name fehlt in Liste?",s:Math.max(0,i),e:Math.max(0,i)+u.length,txt:u,rep:"[unbekannt-"+nr.get(zeile)+"]",an:true});}
+      // gleiche Fundstelle nur einmal anzeigen
+      const g=new Set();hits=hits.filter(h=>{const k=h.art+"|"+h.txt;if(g.has(k))return false;g.add(k);return true;});
+    }
     else if(e==="xls"){throw new Error("Alte .xls-Dateien bitte in Excel als .xlsx speichern (Datei → Speichern unter → Excel-Arbeitsmappe).");}
-    else{orig=new TextDecoder().decode(buf);n=find(orig).length;text=replaceText(orig,find);hits=pruefen(text);}
+    else{orig=textDekodieren(buf);n=find(orig).length;text=replaceText(orig,find);hits=pruefen(text);}
     // mehrdeutige Teilnamen: Platzhalter „[I09 oder I15]“ zur Auswahl anbieten
     {const re=/\[([^\[\]]+? oder [^\[\]]+?)\]/g;let m;const schon=new Set();
      while(text&&(m=re.exec(text))){if(schon.has(m[0]))continue;schon.add(m[0]);hits.unshift({art:"Welches Kind?",s:m.index,e:m.index+m[0].length,txt:m[0],rep:m[1].split(" oder ")[0],an:false,auswahl:m[1].split(" oder ")});}}
 
     box.innerHTML=`<h2>${esc(f.name)}</h2>
       <div class="status ${n?"ok":"warn"}">${n} Stellen aus der Kürzelliste ersetzt.${n?"":" Stimmt die Liste?"} Neuer Dateiname: <b>${esc(neuerName)}</b></div>
-      ${hits.length?`<p><b>Prüfliste: ${hits.length} Stellen.</b> Angehakte Stellen werden durch den Text rechts ersetzt. Datumsangaben sind nicht angehakt, weil sie oft harmlos sind (Klausurdatum). Bei „Welches Kind?“ steht im Dokument nur ein Vor- oder Nachname, den mehrere Kinder tragen: Wähle das richtige Kürzel. Lässt du es offen, bleibt der Platzhalter mit beiden Kürzeln stehen; der Name ist trotzdem weg.</p>
+      ${hits.length?`<p><b>Prüfliste: ${hits.length} Stellen.</b> Angehakte Stellen werden durch den Text rechts ersetzt. ${e==="csv"?"Datumsangaben zeigt die Prüfliste bei Tabellen nicht an, weil es fast immer Fehlzeiten- oder Termindaten sind.":"Datumsangaben sind nicht angehakt, weil sie oft harmlos sind (Klausurdatum)."} Bei „Welches Kind?“ steht im Dokument nur ein Vor- oder Nachname, den mehrere Kinder tragen: Wähle das richtige Kürzel. Lässt du es offen, bleibt der Platzhalter mit beiden Kürzeln stehen; der Name ist trotzdem weg.</p>
       <table><thead><tr><th></th><th>Art</th><th>Fundstelle</th><th>ersetzen durch</th></tr></thead><tbody>${hits.map((h,i)=>`<tr>${h.nurHinweis?`<td></td><td><span class="pill warn">${esc(h.art)}</span></td><td class="ctx">Tabellenblatt „<b>${esc(h.txt)}</b>“ trägt einen Namen. Bitte in Excel selbst umbenennen.</td><td></td>`:`<td><input type="checkbox" data-i="${i}" ${h.an?"checked":""}></td><td><span class="pill warn">${esc(h.art)}</span></td><td class="ctx">${ctx(text,h.s,h.e)}</td><td>${h.auswahl?`<select data-r="${i}" onchange="this.closest('tr').querySelector('input[type=checkbox]').checked=true">${h.auswahl.map(k=>`<option>${esc(k)}</option>`).join("")}</select>`:`<input type="text" data-r="${i}" value="${esc(h.rep)}" style="width:150px">`}</td>`}</tr>`).join("")}</tbody></table>`
       :`<div class="status ok">Prüfliste: keine weiteren verdächtigen Stellen gefunden. Trotzdem einmal selbst drüberlesen.</div>`}
+      ${e==="csv"?`<h3 class="vorschau-titel">Vorschau der Tabelle</h3>
+      <p class="muted legende"><span class="m-ersetzt">grün</span> ersetzt (Maus drauf zeigt den alten Inhalt) · <span class="m-offen">orange</span> bitte prüfen, wird mit den aktuellen Häkchen noch nicht ersetzt · Trennzeichen „${sep==="\t"?"Tab":esc(sep)}“, ${csvRows.length} Zeilen</p>
+      <label class="muted"><input type="checkbox" class="nurMarkierte"> nur markierte Zeilen zeigen</label>
+      <div class="vorschau"></div>`:""}
       <div class="row"><button class="b">Pseudonymisierte Datei speichern</button></div>`;
-    box.querySelector("button.b").onclick=async()=>{
-      // gewählte Prüflisten-Treffer als zusätzliche Ersetzungen
+    // gewählte Prüflisten-Treffer als zusätzliche Ersetzungen
+    const auswahl=()=>{
       const extra=new Map(paare());
-      box.querySelectorAll("input[type=checkbox]").forEach(cb=>{if(!cb.checked)return;const i=+cb.dataset.i;
+      box.querySelectorAll("input[data-i]").forEach(cb=>{if(!cb.checked)return;const i=+cb.dataset.i;
         if(hits[i].auswahl){const wahl=box.querySelector(`[data-r="${i}"]`).value;for(const [k,v] of extra)if(v===hits[i].txt)extra.set(k,wahl);return;}
         if(!extra.has(hits[i].txt))extra.set(hits[i].txt,box.querySelector(`input[data-r="${i}"]`).value);});
+      return extra;
+    };
+    const csvFertig=()=>{
+      const r=csvVerarbeiten(csvRows,matcher(auswahl()),volle);
+      // orange: Prüflisten-Stellen ohne Häkchen und offene „[A oder B]“-Platzhalter
+      const offen=hits.filter((h,i)=>!h.nurHinweis&&!box.querySelector(`input[data-i="${i}"]`)?.checked).map(h=>h.txt);
+      for(const z of r.out)for(const c of z){const m=c.match(/\[[^\[\]]+? oder [^\[\]]+?\]/);if(m&&!offen.includes(m[0]))offen.push(m[0]);}
+      return {out:r.out,offen};
+    };
+    const zeigen=()=>{if(e!=="csv")return;const {out,offen}=csvFertig();const v=csvVorschau(csvRows,out,offen,box.querySelector(".nurMarkierte").checked);box.querySelector(".vorschau").innerHTML=v.html;};
+    if(e==="csv"){box.addEventListener("change",zeigen);box.addEventListener("input",zeigen);zeigen();}
+    box.querySelector("button.b").onclick=async()=>{
+      const extra=auswahl();
       const find2=matcher(extra);
+      if(e==="csv"){download("\uFEFF"+csvSchreiben(csvFertig().out,sep),replaceText(stem(f.name),find2)+"_pseudo.csv","text/csv;charset=utf-8");return;}
       if(OFFICE(e)){const r=await officeProcess(buf,find2,{volle:vollePaare()});download(await r.zip.generateAsync({type:"blob",mimeType:MIME[e]}),replaceText(stem(f.name),find2)+"_pseudo."+e);}
       else download(replaceText(orig,find2),replaceText(stem(f.name),find2)+"_pseudo."+e,"text/plain;charset=utf-8");
     };
@@ -634,7 +744,7 @@ dropzone($("#dropZurueck"),$("#fileZurueck"),async files=>{
     const e=ext(f.name);const name=stem(f.name).replace(/_pseudo$/,"")+"_klar."+e;
     try{
       if(OFFICE(e)){const r=await officeProcess(await f.arrayBuffer(),find);download(await r.zip.generateAsync({type:"blob",mimeType:MIME[e]}),name);out.innerHTML+=`<div class="status ok">${esc(f.name)}: ${r.n} Kürzel ersetzt, gespeichert als <b>${esc(name)}</b>.</div>`;}
-      else{const t=await f.text();download(replaceText(t,find),name,"text/plain;charset=utf-8");out.innerHTML+=`<div class="status ok">${esc(f.name)}: ${find(t).length} Kürzel ersetzt, gespeichert als <b>${esc(name)}</b>.</div>`;}
+      else{const t=textDekodieren(await f.arrayBuffer());download((e==="csv"?"\uFEFF":"")+replaceText(t,find),name,"text/plain;charset=utf-8");out.innerHTML+=`<div class="status ok">${esc(f.name)}: ${find(t).length} Kürzel ersetzt, gespeichert als <b>${esc(name)}</b>.</div>`;}
     }catch(err){out.innerHTML+=`<div class="status err">${esc(f.name)}: ${esc(err.message)}</div>`;}
   }
   out.innerHTML+=`<p class="muted">Die Datei mit Klarnamen liegt jetzt in deinem Download-Ordner. Nicht wieder hochladen.</p>`;
