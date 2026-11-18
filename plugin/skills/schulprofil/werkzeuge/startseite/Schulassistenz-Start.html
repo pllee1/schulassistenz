@@ -90,6 +90,9 @@ input.mono{font-family:var(--f-mono)}
 .fields{display:flex;flex-wrap:wrap;gap:10px}
 .fields label{display:grid;gap:4px;font-size:12.5px;color:var(--muted);flex:1 1 160px}
 .prompt{font-family:var(--f-mono);font-size:12.5px;background:var(--bg);border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;margin:0;max-height:320px;overflow:auto}
+textarea.prompt-edit{display:block;width:100%;box-sizing:border-box;max-height:420px;min-height:90px;resize:vertical;color:var(--ink);border:1px solid var(--line);line-height:1.45}
+textarea.prompt-edit:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.p-hinweis{margin:-4px 0 0}
 .guard{font-size:13px;color:var(--warn);background:var(--warn-soft);border-radius:8px;padding:6px 10px}
 .kn-datei{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center;font-size:13px;margin:6px 0}.kn-datei .path{overflow-wrap:anywhere}
 .kn-dateien summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top:8px}
@@ -527,7 +530,7 @@ const nameVerdacht=v=>/\b(von|für|mit|bei|an|Frau|Herr|Herrn)\s+[A-ZÄÖÜ][a-z
 /* ---------- Kopieren ---------- */
 function kopiere(text,toast,auswahlEl){
   const ok=()=>toast.textContent="Kopiert. In Claude mit Strg+V einfügen.";
-  const fallback=()=>{if(auswahlEl){const r=document.createRange();r.selectNodeContents(auswahlEl);const s=getSelection();s.removeAllRanges();s.addRange(r)}toast.textContent="Markiert. Mit Strg+C kopieren."};
+  const fallback=()=>{if(auswahlEl&&auswahlEl.tagName==="TEXTAREA"){auswahlEl.focus();auswahlEl.select()}else if(auswahlEl){const r=document.createRange();r.selectNodeContents(auswahlEl);const s=getSelection();s.removeAllRanges();s.addRange(r)}toast.textContent="Markiert. Mit Strg+C kopieren."};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(ok,fallback);else fallback();
 }
 
@@ -540,14 +543,25 @@ function oeffne(k,vor){
   const f=felder.map(n=>`<label>${LABEL[n]||n}<input id="f-${n}" ${n==="kuerzel"?'class="mono"':""} ${n==="gruppe"?'list="gruppen-liste"':""} placeholder="${PLATZ[n]||""}" value="${esc(vor[n]||(n==="gruppe"?store.get("letzte-gruppe",""):""))}"></label>`).join("");
   const kopierModus=E.claude==="kopieren";
   slot.innerHTML=`<div class="panel" role="region" aria-label="${esc(k.titel)}"><h4>${esc(k.titel)}</h4>${f?`<div class="fields">${f}</div>`:""}
-    <pre class="prompt" id="p-text"></pre><div class="guard" id="p-guard" hidden></div>
+    <textarea class="prompt prompt-edit" id="p-text" spellcheck="true" aria-label="Auftrag an Claude, frei bearbeitbar"></textarea>
+    <p class="note p-hinweis" id="p-hinweis">Du kannst den Auftrag hier direkt ergänzen oder umformulieren.</p><div class="guard" id="p-guard" hidden></div>
     <div class="actions">${kopierModus?`<button class="btn primary" id="p-copy">Auftrag kopieren</button>`:`<a class="btn primary" id="p-open" target="_blank" rel="noopener" href="#">In Claude öffnen</a><button class="btn ghost" id="p-copy">Nur kopieren</button>`}
     <button class="btn ghost" id="p-close">Schließen</button><span class="toast" id="p-toast" role="status"></span></div></div>`;
   const werte=()=>Object.fromEntries(felder.map(n=>[n,$("#f-"+n).value.trim()]));
-  let gesperrt=false;
-  const upd=()=>{
-    const w=werte();const txt=k.auftrag.replace(/\{(\w+)\}/g,(_,n)=>w[n]||"…");
-    $("#p-text").textContent=txt;
+  const ta=$("#p-text");let gesperrt=false,bearbeitet=false,alt=werte();
+  const erzeugt=()=>{const w=werte();return k.auftrag.replace(/\{(\w+)\}/g,(_,n)=>w[n]||"…")};
+  const hoehe=()=>{ta.style.height="auto";ta.style.height=Math.min(420,Math.max(90,ta.scrollHeight+4))+"px"};
+  const hinweis=()=>{const h=$("#p-hinweis");h.innerHTML=bearbeitet?`Eigene Änderungen bleiben erhalten. Änderst du oben ein Feld, wird nur dieser Wert im Text ausgetauscht. <button class="linkbtn" id="p-reset">Auftrag neu aus den Feldern erzeugen</button>`:"Du kannst den Auftrag hier direkt ergänzen oder umformulieren.";
+    const r=$("#p-reset");if(r)r.addEventListener("click",()=>{bearbeitet=false;ta.value=erzeugt();alt=werte();hinweis();pruefen()})};
+  // Feldänderung nach eigener Bearbeitung: alten Wert im Text durch den neuen ersetzen, Rest unverändert lassen
+  const feldGeaendert=()=>{const w=werte();
+    if(!bearbeitet){ta.value=erzeugt()}
+    else for(const n of felder){const a=alt[n]||"…",b=w[n]||"…";if(a===b)continue;
+      const anz=ta.value.split(a).length-1;if(anz>=1&&(a!=="…"||anz===1))ta.value=ta.value.split(a).join(b);
+      else{$("#p-hinweis").textContent=`„${LABEL[n]||n}“ steht so nicht mehr im Text. Bitte im Auftrag selbst anpassen.`}}
+    alt=w;pruefen()};
+  const pruefen=()=>{
+    const w=werte();const txt=ta.value;hoehe();
     let warn="";
     if(w.kuerzel&&!istKuerzel(w.kuerzel))warn="Das sieht nicht wie ein Kürzel aus. Bitte nur Kürzel wie K07 oder KV001 eintragen, keine Namen.";
     else if(nameVerdacht(txt))warn="Steht hier ein Name? Bitte durch das Kürzel ersetzen.";
@@ -555,10 +569,12 @@ function oeffne(k,vor){
     if($("#p-open")){$("#p-open").setAttribute("aria-disabled",warn?"true":"false");$("#p-open").href=claudeUrl(txt)}
     $("#p-copy").disabled=gesperrt;
   };
-  slot.querySelectorAll("input").forEach(i=>i.addEventListener("input",upd));upd();
+  slot.querySelectorAll(".fields input").forEach(i=>i.addEventListener("input",feldGeaendert));
+  ta.addEventListener("input",()=>{if(!bearbeitet){bearbeitet=true;hinweis()}pruefen()});
+  ta.value=erzeugt();pruefen();
   const fertig=()=>{merke(k);const g=$("#f-gruppe");if(g&&g.value.trim())store.set("letzte-gruppe",g.value.trim());setTimeout(render,50)};
   if($("#p-open"))$("#p-open").addEventListener("click",fertig);
-  $("#p-copy").addEventListener("click",()=>{if(gesperrt)return;fertig();kopiere($("#p-text").textContent,$("#p-toast"),$("#p-text"))});
+  $("#p-copy").addEventListener("click",()=>{if(gesperrt)return;fertig();kopiere(ta.value,$("#p-toast"),ta)});
   $("#p-close").addEventListener("click",()=>{slot.innerHTML=""});
   const erstes=slot.querySelector("input");(erstes||slot.querySelector(".btn")).focus({preventScroll:true});
   slot.scrollIntoView({block:"nearest",behavior:"smooth"});
