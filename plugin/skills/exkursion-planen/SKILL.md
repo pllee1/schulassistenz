@@ -82,7 +82,7 @@ Bei mehrtägigen Fahrten zusätzlich Anzahlungen, Stornobedingungen und Zahlungs
 
 ## 5. Genehmigung und Organisation
 
-Alle Texte als Entwurf, im Layout und Briefkopf des Profils.
+Alle Texte als Entwurf, im Layout und Briefkopf des Profils (Briefe und Anträge ohne eigenes Formular: Word-Vorlage `art: briefkopf` des Profils, gefüllt mit **schulprofil**, Abschnitt 4a; Formulare der Schule mit `art: antrag`, `anlass: schulfahrt` direkt füllen).
 
 1. **Antrag an die Schulleitung:** Vorlage der Schule aus dem Profil, sonst neutraler Antrag: Art, Lerngruppe, Datum und Uhrzeit, Ziel, pädagogisches Ziel und Lehrplanbezug, Programm, Verkehrsmittel, Begleitung (Rollen), Kosten je Kind, ausfallender Unterricht der Lehrkraft und der Begleitpersonen, Vorschlag zur Vertretung bzw. Aufgaben für Lerngruppen, die ausfallen. Antragsfrist aus dem Profil in die Aufgabenliste.
 2. **Reisekosten bzw. Dienstreise** der Lehrkräfte nach Landesregel (`reisekosten_lehrkraft`); Formular über **verwaltungsassistent** (Abschnitt 4) vorbefüllen.

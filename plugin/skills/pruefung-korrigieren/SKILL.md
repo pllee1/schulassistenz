@@ -9,7 +9,7 @@ Gegenstück zu **pruefung-entwerfen**: Was dort entworfen wurde, wird hier korri
 
 ## 0. Vorher
 
-- Profil über **schulprofil** lesen: Freigabe der Schulleitung, Notenskala und Notenschlüssel der Stufe, Rundungsregel, Schüler-Code (für welche Jahrgänge, Format), Layout, Ablage.
+- Profil über **schulprofil** lesen: Freigabe der Schulleitung, Notenskala und Notenschlüssel der Stufe, Rundungsregel, Unterschreitungsregel (`regeln.klassenarbeit_unterschreitung`, Abschnitt 10.3a), Schüler-Code (für welche Jahrgänge, Format), Layout, Ablage.
 - **Lerngruppe** aus `lerngruppen/<gruppe>/gruppe.md`: Fach, Jahrgang, Niveau, Anzahl und Kürzel. Daraus ergibt sich, wie viele Klausuren erwartet werden.
 - **Unterlagen aus pruefung-entwerfen** zuerst im Ablageordner der Einheit suchen (Blanko-Klausur, Erwartungshorizont mit Notenschlüssel). Nur was fehlt, hochladen lassen.
 - Ist die Freigabe für Schülerdaten „offen“ oder „nicht erteilt“: korrigieren geht (Scans geschwärzt, nur Codes), aber nichts in die Akte schreiben und das kurz sagen.
@@ -155,6 +155,16 @@ Erst wenn die Lehrkraft die Noten festgelegt hat (nach ihren Änderungen in der 
 
 Danach in einem Satz anbieten: Wiederholung oder Förderaufgaben zu den Schwerpunkten über **unterricht-planen** bzw. **material-gestalten**, oder individuelle Lernpläne je Kind aus den Lücken über **lernplan-erstellen**.
 
+### 10.3a Unterschreitungsregel prüfen (Antrag an die Schulleitung)
+
+Viele Länder und Schulen haben eine Regel für Arbeiten mit vielen schwachen Ergebnissen (z. B. Niedersachsen: Werden mehr als 30 % der Arbeiten einer Lerngruppe mit „mangelhaft“ oder „ungenügend“ bewertet, wird die Arbeit nicht gewertet, außer die Schulleitung stimmt zu; die Elternvertretung wird informiert). Die Regel steht im Profil unter `regeln.klassenarbeit_unterschreitung` (Schwelle in %, `vergleich` mehr_als | ab, betroffene Noten bzw. Punkte, wer ausgenommen ist, Folge, Ablauf, Vorlagen). **Nie eine Schwelle annehmen**, die nicht im Profil steht.
+
+1. **Prüfen**, sobald der Notenspiegel steht, und noch einmal mit den von der Lehrkraft festgelegten Noten: Anteil = Arbeiten mit den betroffenen Noten / gewertete Arbeiten (ohne die im Profil Ausgenommenen, z. B. zieldifferent Unterrichtete; Nachschreiber noch nicht mitzählen, im Hinweis nennen). Per Code rechnen.
+2. **Ergebnis in den Bericht**, auch knapp unter der Schwelle: „6 von 15 Arbeiten mit 5 oder 6 = 40 %, Schwelle mehr als 30 % überschritten“ bzw. „27 %, eine weitere Note 5 würde die Schwelle überschreiten“. Grenzfälle (⚑ auf der Grenze 4/5) gesondert nennen, ohne deshalb anders zu bewerten.
+3. **Ist die Schwelle überschritten:** Anbieten, den Antrag vorzubereiten. Vorlage aus dem Profil (`vorlagen` mit `art: antrag`, `anlass: unterschreitung`) über **schulprofil**, Abschnitt 4a, füllen: Kopfdaten der Arbeit, Klassenspiegel je Note, Durchschnitt, Anzahl, Anzahl und Anteil unter ausreichend, Datum. Die **Begründung** nie erfinden: die Musterbegründung der Vorlage als Vorschlag zeigen und die Lehrkraft fragen, was zutrifft und was konkret gemacht wurde (Ankündigung, Übungsaufgaben, Wiederholungsstunden, Hilfen). Ohne Schulvorlage: neutraler Antrag im Briefkopf des Profils mit denselben Angaben.
+4. **Nach der Entscheidung** der Schulleitung: bei Zustimmung das Anschreiben an die Elternvertretung (Vorlage `art: elternbrief` mit demselben Anlass) vorbefüllen, ohne Klassenspiegel und ohne Einzelergebnisse; bei Ablehnung in der Gruppen-Akte vermerken, dass die Arbeit nicht gewertet wird, und eine Ersatzarbeit über **pruefung-entwerfen** anbieten.
+5. Ablage wie die Ergebnisse (10.1, `ausgaben/<lerngruppe>/`), Dateinamen ohne Namen, z. B. `2026-11-20_10-ma-e_KA2_antrag-unterschreitung.docx`. Termin „Antrag an Schulleitung, Fachleitung informieren“ nach Bestätigung in `planung/aufgaben.md`.
+
 ### 10.4 Zeit für den Wochenplaner
 
 Beim Start schätzen, wie lange die Durchsicht durch die Lehrkraft dauert (Minuten je Klausur aus dem Profil `selbstmanagement`, sonst Schätzung mit `~`), und nach Bestätigung als Aufgabe in `planung/aufgaben.md` eintragen („Korrektur 10-ma-e Klausur 2 prüfen | bis <Rückgabetermin> | 120~ | pruefung-korrigieren“). Nach Abschluss den Status auf erledigt setzen.
@@ -169,6 +179,7 @@ Beim Start schätzen, wie lange die Durchsicht durch die Lehrkraft dauert (Minut
 - Summen und Noten per Code geprüft, nur der bestätigte Schlüssel verwendet, Lücken zugunsten der Schüler:innen aufgerundet?
 - Notengrenzfälle markiert?
 - Rückmeldeseiten: eine Seite pro Klausur, Punkte stimmen mit Excel überein?
+- Unterschreitungsregel aus dem Profil geprüft und im Bericht genannt (10.3a)?
 - Akten-Einträge nur für bestätigte Noten, nur mit gesicherter Code-Kürzel-Zuordnung, keine Namen?
 
 ## 12. Datenschutz und Verantwortung

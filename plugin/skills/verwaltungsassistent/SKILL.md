@@ -1,6 +1,6 @@
 ---
 name: "verwaltungsassistent"
-description: "Nimmt Lehrkräften Verwaltungsarbeit ab (schulassistenz): Listen aus Exporten der Schulsoftware, Fehlzeiten abgleichen und Erinnerungen entwerfen, Rücklauf- und Geldlisten, Schulformulare vorbefüllen."
+description: "Nimmt Lehrkräften Verwaltungsarbeit ab (schulassistenz): Listen aus Exporten der Schulsoftware, Fehlzeiten abgleichen und Erinnerungen entwerfen, Rücklauf- und Geldlisten, Schulformulare vorbefüllen, Briefe auf dem Briefkopf der Schule."
 ---
 
 # Verwaltungsassistent
@@ -52,7 +52,7 @@ Die Regeln stehen im Profil unter `regeln.fehlzeiten` (siehe **schulprofil**). F
 4. **Elternschwelle:** Gilt `schwelle_zaehlt_ab: letzte_benachrichtigung`, dann das Datum der letzten Benachrichtigung je Kürzel aus der lernstandsakte lesen (Bereich Termine, Eintrag „Eltern über Fehlzeiten informiert“). Gezählt werden nur unentschuldigte Stunden nach diesem Datum. Fehlt der Eintrag, die Lehrkraft einmal nach den Daten fragen („Datum oder noch nie“). Bis dahin ab Schuljahresbeginn zählen und das im Ergebnis sagen. Getrennt zeigen, wer die Schwelle schon gerissen hat und wer sie reißt, wenn die überfälligen offenen Stunden unentschuldigt bleiben. Ohne Regel im Profil nur sortieren, nicht bewerten.
 5. Ergebnis als Tabelle: Kürzel · Fehlstunden · entschuldigt · unentschuldigt (seit letzter Benachrichtigung) · offen (davon Frist abgelaufen) · nächster Schritt laut Schulregel. Rechnen per Code. Im Ergebnis die angewandten Regeln in einem Satz nennen.
 6. **Fällt die Schulsoftware selbst etwas aus?** Setzt sie offene Fälle nach einer festen Zeit selbst auf „nicht entschuldigt“ (erkennbar daran, dass „Erledigt“ immer gleich lange nach dem Fehltag liegt), darauf hinweisen. Ein so gesetzter Status ist keine geprüfte Ablehnung.
-7. Erst nach Rückfrage: **Erinnerungen** an Eltern bzw. volljährige Schülerinnen und Schüler als Entwurf: kurz, freundlich, sachlich, mit Datum und Frist, im Briefkopf des Profils. Namen nur als Serienbrief-Feld (`«Vorname»`, `«Anrede»`). Dazu die Serienbrief-Tabelle nach lernstandsakte, Abschnitt 6.
+7. Erst nach Rückfrage: **Erinnerungen** an Eltern bzw. volljährige Schülerinnen und Schüler als Entwurf: kurz, freundlich, sachlich, mit Datum und Frist, im Briefkopf des Profils (Word-Vorlage `art: briefkopf` des Profils, gefüllt mit **schulprofil**, Abschnitt 4a). Namen nur als Serienbrief-Feld (`«Vorname»`, `«Anrede»`). Dazu die Serienbrief-Tabelle nach lernstandsakte, Abschnitt 6.
 8. Fehlzeiten für das Zeugnis als Spalte bereitstellen (für den späteren Skill zeugnis-vorbereiten).
 
 Keine Gründe für Fehlzeiten erfassen oder vermuten (Gesundheit ist besondere Kategorie). Häufen sich Fehlzeiten so, dass Schulpflicht oder Kindeswohl berührt sein könnten: nur auf das Verfahren der Schule hinweisen, nichts selbst einordnen.
@@ -77,7 +77,7 @@ Ausgabe als Excel (.xlsx) mit Formeln statt fester Werte, wo sich etwas ändert;
 
 Für Formulare der Schule (Antrag Klassenfahrt oder Unterrichtsgang, Kostenaufstellung, Abrechnung, Bestellungen, Raum- und Gerätebuchung):
 
-1. Vorlage aus dem Profil nehmen; neue Formulare zuerst über **schulprofil** (Vorlage adaptieren) aufnehmen.
+1. Vorlage aus dem Profil nehmen; neue Formulare zuerst über **schulprofil** (Vorlage adaptieren) aufnehmen. Word-Formulare im Original füllen (**schulprofil**, Abschnitt 4a); Schreiben ohne eigenes Formular im Briefkopf der Schule (`art: briefkopf`).
 2. Felder füllen, die aus Profil, Planung oder Gespräch bekannt sind (Lerngruppe, Termin, Ziel, Begleitung als Rolle, Kosten aus der Geld-Liste).
 3. Felder mit Personenbezug (Name eines Kindes, Unterschrift) leer lassen oder als Serienbrief-Feld setzen.
 4. Unbekannte Pflichtfelder als `[ausfüllen]` markieren und am Ende auflisten.
@@ -86,6 +86,15 @@ Für Formulare der Schule (Antrag Klassenfahrt oder Unterrichtsgang, Kostenaufst
 Für die ganze Planung einer Exkursion oder Schulfahrt (Lernort, Anfahrt, Kosten, Antrag, Elternbrief) gibt es **exkursion-planen**; es übergibt Rücklauf-, Geldlisten und Abrechnung hierher.
 
 Nicht für Unfallmeldungen, Meldungen an Jugendamt oder Gesundheitsamt, Ordnungsmaßnahmen oder Kinderschutz: Dort nur auf das zuständige Verfahren und die Zuständigen der Schule verweisen.
+
+## 4a. Briefe auf dem Briefkopf der Schule
+
+Für Elternbriefe, Einladungen (Elternabend, Sprechtag), Informationen und Schreiben an Schulleitung oder Kollegium, die kein eigenes Formular haben:
+
+1. Briefkopf aus dem Profil (`vorlagen`, `art: briefkopf`) mit **schulprofil**, Abschnitt 4a, füllen (`vorlage.brief`): Kopf- und Fußzeile der Schule bleiben, der Text kommt in den Körper. Ohne Briefkopf neutral im Layout des Profils und einmal anbieten, ihn aufzunehmen.
+2. Aufbau nach der Feldbeschreibung des Briefkopfs, sonst: Empfänger · Ort und Datum rechts · fetter Betreff · Anrede · Text (kurz, klare Sprache, Termine und Fristen fett oder als Aufzählung) · Gruß · Unterschriftslinie mit Funktion · bei Bedarf Rückmeldeabschnitt zum Abtrennen.
+3. Ton der Schule aus vorhandenen Schreiben der Lehrkraft übernehmen; Du/Sie und Anrede („Liebe Eltern“, „Sehr geehrte …“) wie dort.
+4. Namen von Kindern nur als Serienbrief-Feld (lernstandsakte, Abschnitt 6) oder Brief ohne Namen zum Verteilen. Ausgabe als Word-Entwurf, auf Wunsch zusätzlich PDF.
 
 ## 5. Ausgabe
 

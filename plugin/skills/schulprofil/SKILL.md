@@ -1,6 +1,6 @@
 ---
 name: "schulprofil"
-description: "Legt das Schulprofil der Lehrkraft an, liest es und passt hochgeladene Schulvorlagen (ILE-Bogen, Zeugnisformular, Briefkopf, Notenschlüssel) an. Jeder schulassistenz-Skill fragt zuerst hier nach. Auch für die Datenschutz-Checkliste beim ersten Start."
+description: "Legt das Schulprofil der Lehrkraft an, liest es, passt hochgeladene Schulvorlagen (ILE-Bogen, Zeugnisformular, Briefkopf, Anträge, Sicherungsblätter) an und füllt sie als Word-Datei. Jeder schulassistenz-Skill fragt zuerst hier nach. Auch für die Datenschutz-Checkliste beim ersten Start."
 ---
 
 # Schulprofil
@@ -26,7 +26,8 @@ Das Profil liegt im Datenordner der Lehrkraft unter `profil/`:
   Schulassistenz-Start.html  Startseite mit Knöpfen für alle Aufgaben (Abschnitt 2b)
   profil/
     profil.md          Einstellungen (Aufbau siehe Abschnitt 5)
-    vorlagen/          Original-Vorlagen und ihre Feldbeschreibungen (*.felder.md)
+    vorlagen/          Platzhalter-Fassungen (*.docx), Feldbeschreibungen (*.felder.md)
+      original/        unveränderte Originale der Schule
     layout/            Logo, Schriften, Beispielseiten
   werkzeuge/
     pseudonymisierer/  lokales Werkzeug zum Pseudonymisieren und Schwärzen (Abschnitt 2a)
@@ -58,7 +59,7 @@ Runde 1, Rahmen: Bundesland, Schulform, Schulname (optional) und eigenes Kürzel
 
 Runde 2, Bewertung: Notenskala je Stufe, Notenschlüssel (Prozentgrenzen) je Fachgruppe, Rundungsregel, Gewichtung schriftlich zu mündlich, Operatorenliste, ob Klassenarbeiten mit Schüler-Code statt Namen geschrieben werden.
 
-Runde 3, Vorlagen und Layout: „Hast du Vorlagen deiner Schule, die das Plugin füllen soll? Zum Beispiel ILE-Bogen, Zeugnisformular, Förderplan, Protokollvorlage, Briefkopf.“ Jede hochgeladene Vorlage nach Abschnitt 4 verarbeiten. Dazu Logo, Schrift, Fachfarben, Sonderregeln (z. B. Grundschrift in der Primarstufe).
+Runde 3, Vorlagen und Layout: „Hast du Vorlagen deiner Schule, die das Plugin füllen soll? Zum Beispiel Briefkopf, ILE-Bogen, Zeugnisformular, Förderplan, Protokollvorlage, Anträge an die Schulleitung, ein Sicherungs- oder Lernblatt, das alle Klassen kennen.“ Jede hochgeladene Vorlage nach Abschnitt 4 verarbeiten. Dazu Logo, Schrift, Fachfarben, Sonderregeln (z. B. Grundschrift in der Primarstufe).
 
 Runde 4, Ablage und Werkzeuge: Datenordner, Ablagemuster für fertiges Material, Gruppenordner auf dem Schulserver (welche, wofür; Abschnitt 4b), Lernplattform, Schul-KI, Schulsoftware für Exporte.
 
@@ -121,9 +122,37 @@ stand: 2026-11-14
 
 5. **Bestätigen lassen:** Die erkannte Struktur kurz zeigen („Ich habe 4 Abschnitte, 18 Felder und die Skala sicher/teilweise/noch nicht erkannt“). Erst nach Bestätigung in `profil.md` unter `vorlagen` eintragen.
 
-Wo möglich, das Original-Dokument (Word, PDF-Formular) später direkt füllen statt es nachzubauen.
+Wo möglich, das Original-Dokument (Word, PDF-Formular) später direkt füllen statt es nachzubauen (Abschnitt 4a).
 
 Liegt die Vorlage in einem Gruppenordner auf dem Schulserver, das Original dort lassen: In `profil/vorlagen/` kommen die Feldbeschreibung und eine Kopie des Originals (zum Füllen), im Kopf `original: <Pfad auf dem Schulserver>` und `stand` (Änderungsdatum der Datei). Beim nächsten Gebrauch das Änderungsdatum vergleichen; ist das Original neuer, anbieten, die Beschreibung zu erneuern.
+
+## 4a. Word-Vorlagen der Schule füllen
+
+Werkzeug: `skripte/vorlage.py` in diesem Skill (python-docx). Es arbeitet im Original: Logo, Kopf- und Fußzeile, Tabellen, Textfelder, Schriften und Ränder bleiben, nur Text wird ersetzt, auch wenn Word ihn auf mehrere Formatierungen verteilt hat. Ergebnis ist ein Word-Entwurf, den die Lehrkraft noch ändern kann (ein Formularschutz der Vorlage wird dafür aufgehoben). Für eine Prüfansicht nach PDF umwandeln (LibreOffice) und die Seite als Bild ansehen.
+
+**Beim Aufnehmen einer Word-Vorlage (zu Abschnitt 4):**
+1. Original unverändert nach `profil/vorlagen/original/` legen.
+2. Art bestimmen und, wo nötig, eine **Platzhalter-Fassung** anlegen: Beispielwerte des Musters (Datum, Klasse, Zahlen, Anrede, Musterbegründung) mit `vorlage.ersetzen(original, ziel, {"Musterstadt, den 09.03.2026": "Musterstadt, den {{datum}}", …})` durch `{{name}}` ersetzen, Tabellenzellen einzeln. Feste Teile (Betreff, Rechtsgrundlage, Unterschriftsfelder, Ankreuzfelder) bleiben. Mit `vorlage.felder(ziel)` prüfen, ob alle Platzhalter da sind, und eine Probe füllen und ansehen.
+3. Ein Muster mit echten Personendaten (Schülernamen, Noten Einzelner) nie als Platzhalter-Fassung übernehmen, ohne diese Daten zu entfernen. Namen von Kolleginnen und Kollegen oder der Schulleitung (z. B. in der Anrede) als Standardwert in die Feldbeschreibung, nicht fest ins Dokument.
+4. Feldbeschreibung `*.felder.md` (Aufbau wie Abschnitt 4) mit Platzhaltern, Pflichtfeldern, festen Teilen, Sprache der Schule (Musterformulierungen als Vorschlag) und Ablauf (wer unterschreibt, wer informiert wird).
+5. Im Profil unter `vorlagen` eintragen: `art`, bei Bedarf `anlass` (wofür genau), `datei`, `beschreibung`.
+
+**Arten, die andere Skills suchen:**
+
+| art | wofür | wer nutzt sie |
+|---|---|---|
+| `briefkopf` | jedes Schreiben der Schule: Elternbriefe, Einladungen, Erinnerungen, Anträge ohne eigenes Formular, Bescheinigungen, Protokolle | elterngespraech-vorbereiten, exkursion-planen, verwaltungsassistent, zeugnis-vorbereiten, postfach-assistent (Briefe), pruefung-korrigieren |
+| `antrag` (+ `anlass`) | Formular an die Schulleitung, z. B. `anlass: unterschreitung` (Arbeit mit zu vielen schwachen Noten), `schulfahrt` | pruefung-korrigieren (10.3a), exkursion-planen |
+| `elternbrief` (+ `anlass`) | festes Schreiben der Schule zu einem Anlass | wie oben |
+| `sicherung` | Sicherungs- bzw. Lernblatt, das die Schule einheitlich nutzt (z. B. Grafiz, Lernlandkarte, Merkblatt-Raster) | unterricht-planen, material-gestalten |
+| `ile`, `foerderplan`, `zeugnis`, `protokoll`, `sap` | wie in den jeweiligen Skills | |
+
+**Füllen (für alle Skills):**
+- Formular mit Platzhaltern: `vorlage.fuellen(datei, ziel, werte)`. Steht ein Platzhalter allein im Absatz, wird eine Liste (z. B. Begründungssätze) zu mehreren Absätzen. Meldet das Werkzeug Platzhalter ohne Wert, nachfragen statt leer lassen.
+- Briefkopf: `vorlage.brief(datei, ziel, absaetze)` ersetzt den Textkörper und behält Kopf und Fuß der ersten Seite. Aufbau des Briefs nach der Feldbeschreibung (Empfänger, Ort und Datum rechts, fetter Betreff, Anrede, Text, Gruß, Unterschriftslinie).
+- Kommandozeile: `python vorlage.py felder|fuellen|brief …` (Hilfe im Kopf der Datei).
+- **Ohne Vorlage im Profil:** neutral im Layout des Profils (Abschnitt 7) und einmal anbieten, die Vorlage der Schule aufzunehmen.
+- **Namen:** Schülernamen nie einsetzen, nur Serienbrief-Felder (`«Vorname»`) nach lernstandsakte, Abschnitt 6. Ausgefüllte Vorlagen mit Schülerbezug nach `ausgaben/`.
 
 ## 4b. Gruppenordner auswerten (Schulserver)
 
@@ -160,6 +189,9 @@ bewertung:
 vorlagen:
   - {art: ile, datei: vorlagen/ile-bogen-5-6.felder.md}
   - {art: sap, fach: <Fach>, jahrgaenge: <z. B. 5-10>, datei: vorlagen/sap-<fach>.md, original: <Pfad auf dem Schulserver>}
+  - {art: briefkopf, datei: vorlagen/<schule>-briefkopf.docx, beschreibung: vorlagen/<schule>-briefkopf.felder.md}
+  - {art: antrag, anlass: unterschreitung, datei: vorlagen/<…>.docx, beschreibung: vorlagen/<…>.felder.md}
+  - {art: sicherung, name: <z. B. Grafiz>, datei: vorlagen/<…>.docx, beschreibung: vorlagen/<…>.felder.md}
 layout:
   standard: <Name des Layouts oder Verweis auf einen Layout-Skill>
 ablage:
@@ -183,6 +215,7 @@ regeln:
   loeschfrist_monate: 24
   ki_freigabe_schulleitung: offen | erteilt am <Datum> | nicht erteilt
   fehlzeiten: {frist: 3, frist_einheit: schultage, frist_ab: gesundung, zaehlt_als_entschuldigt: [<z. B. Eltern telefonisch>], eltern_ab_unentsch_std: 5, schwelle_zaehlt_ab: letzte_benachrichtigung, verspaetung_zaehlt: nein}   # Werte der Schule; schwelle_zaehlt_ab: letzte_benachrichtigung | halbjahr | schuljahr
+  klassenarbeit_unterschreitung: {schwelle_prozent: 30, vergleich: mehr_als, noten: [5, 6], ohne: zieldifferent, folge: <z. B. Arbeit wird nicht gewertet>, ausnahme: <z. B. Zustimmung der Schulleitung>, info_an: <z. B. Klassenelternvertretung>, quelle: <Erlass>, vorlagen: [antrag, elternbrief]}   # nur eintragen, was Land/Schule vorgeben (pruefung-korrigieren 10.3a)
   exkursionen: {erlass: <Landeserlass Schulfahrten>, antrag_frist_wochen: 4, begleitung: <Schlüssel>, kostengrenze: <…>, zahlweg: <…>, startort: <Adresse/Haltestelle>}   # Felder siehe exkursion-planen
 ---
 Freie Hinweise der Lehrkraft (z. B. Fachgruppenabsprachen).

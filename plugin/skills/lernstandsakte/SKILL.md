@@ -109,7 +109,7 @@ Braucht ein Ergebnis Namen (Elternbriefe, Gesprächsnotizen, Zeugnisbemerkungen,
 - Format: Excel (.xlsx), eine Zeile je Kind, erste Spalte `Kuerzel`, dann die Textfelder (z. B. `Bemerkung`, `Staerken`, `Vereinbarung`). In Texten steht der Platzhalter `«Vorname»` statt eines Namens; Pronomen neutral oder so, wie die Lehrkraft es vorgibt.
 - Ein zweites Blatt `Klassenliste` mit den Spalten `Kuerzel | Vorname | Nachname`, leer, mit dem Hinweis: „Hier deine Klassenliste einfügen. Nur lokal, nicht hochladen.“
 - Im ersten Blatt holen Formeln die Namen aus der Klassenliste (wie in pruefung-korrigieren: `=IFERROR(_xlfn.XLOOKUP(A2,Klassenliste!A:A,Klassenliste!B:B),"– Kürzel fehlt –")`).
-- Dazu eine Word-Vorlage (.docx) im Layout des Profils mit Seriendruckfeldern (`«Vorname»`, `«Bemerkung»` …), die auf diese Tabelle verweist.
+- Dazu eine Word-Vorlage (.docx) im Layout des Profils (Briefe an Eltern auf dem Briefkopf der Schule, `art: briefkopf`, schulprofil Abschnitt 4a) mit Seriendruckfeldern (`«Vorname»`, `«Bemerkung»` …), die auf diese Tabelle verweist.
 - Kurzanleitung für die Lehrkraft: Tabelle öffnen, Klassenliste einfügen, speichern; Word-Vorlage öffnen, „Sendungen → Fertigstellen und zusammenführen“.
 
 Die ausgefüllte Klassenliste nie anfordern oder verarbeiten.

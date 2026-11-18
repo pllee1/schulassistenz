@@ -79,7 +79,7 @@ Beispiele: Bericht für die Klassenkonferenz oder einen Förderausschuss, Stellu
 1. Zweck, Empfänger und Vorlage klären. Inhalte nur aus der Akte und aus dem, was die Lehrkraft nennt; jede Aussage belegbar, Quellen im Entwurf.
 2. Gliederung: Anlass, Ausgangslage (Leistungen je Fach, ASV), Entwicklung, bisherige Maßnahmen, Einschätzung der Lehrkraft (als ihr Teil markiert und von ihr formuliert oder bestätigt), Empfehlung.
 3. **Grenzen:** Keine Diagnosen, keine Aussagen zu Gesundheit, Familie oder Herkunft. Berichte an Stellen außerhalb der Schule (Jugendamt, Gericht, Ärzte, Polizei) und alles mit Kinderschutzbezug nicht entwerfen, sondern auf das Verfahren der Schule und die Schulleitung verweisen. Gutachten zu sonderpädagogischem Förderbedarf nur als Zuarbeit der Lehrkraft (Beobachtungen, Leistungsstand), nicht als Gutachten.
-4. Ausgabe: Word (.docx) im Layout des Profils, Name als `«Vorname» «Nachname»` für den Rückweg im Pseudonymisierer.
+4. Ausgabe: Word (.docx) im Layout des Profils, bei Berichten und Gutachten auf dem Briefkopf der Schule (Word-Vorlage `art: briefkopf` des Profils, gefüllt mit **schulprofil**, Abschnitt 4a), Name als `«Vorname» «Nachname»` für den Rückweg im Pseudonymisierer.
 
 ## 7. Freigabe und Speichern
 

@@ -65,7 +65,7 @@ Die Lehrkraft diktiert Stichworte oder füllt die Notiz aus. Daraus:
 
 ## 7. Ausgabe und Namen
 
-- Notiz, Leitfaden, Protokoll im Layout des Profils, abgelegt nach `ausgaben/`.
+- Notiz, Leitfaden, Protokoll im Layout des Profils, abgelegt nach `ausgaben/`. Einladungen und Schreiben an Eltern (z. B. Terminbestätigung, Protokoll zum Mitgeben) im Briefkopf der Schule (Word-Vorlage `art: briefkopf` des Profils, gefüllt mit **schulprofil**, Abschnitt 4a).
 - Überall nur Kürzel und `«Vorname»`. Dazu die **Serienbrief-Tabelle** nach lernstandsakte, Abschnitt 6, damit Word die Namen auf dem Gerät der Lehrkraft einsetzt.
 
 ## 8. Grundsätze
