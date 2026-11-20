@@ -16,9 +16,9 @@ const ARTEN=[
   {id:"mitarbeit",name:"Mitarbeitsnote (Quartal)",farbe:"warn",muster:/^Mitarbeitsnote( \d\. Quartal)? (vor den |bis zum )/,nurIntern:true},
   {id:"konf-zeugnis",name:"Zeugnis-/Klassenkonferenz",farbe:"warn",
    muster:/zeugniskonferenz|klassenkonferenz|p(ä|ae)d(agogische|\.)?\s*konf|notenkonferenz|versetzungskonferenz|\bzk\b/i},
-  {id:"notenschluss",name:"Notenschluss / Noteneingabe",farbe:"warn",
+  {id:"notenschluss",name:"Bewertungsstopp",farbe:"warn",
    muster:/notenschluss|bewertungs(stopp|schluss|ende)|notenstopp|noteneingabe|notenabgabe|zeugnisnoten|noten\s*(eintragen|abgeben)|leb[- ]?(schluss|abgabe|eingabe)/i},
-  {id:"zeugnisausgabe",name:"Zeugnisausgabe",farbe:"",muster:/zeugnisausgabe|zeugnisse\s*(ausgeben|ausgabe)|zeugnistag/i},
+  {id:"zeugnisausgabe",name:"Zeugnisausgabe",farbe:"",muster:/zeugnisausgabe|zeugnisse\s*(ausgeben|ausgabe)|zeugnistag|^\s*zeugnisse\b/i},
   {id:"pruefung",name:"Abschluss-/Abiturprüfung",farbe:"warn",
    muster:/abitur|abiprüfung|abschlussprüfung|mündliche\s*prüfung|präsentationsprüfung|prüfungstag|nachprüfung/i},
   {id:"klassenarbeit",name:"Klassenarbeit / Klausur",farbe:"warn",
@@ -32,9 +32,9 @@ const ARTEN=[
   {id:"ausflug",name:"Wandertag / Exkursion / Fahrt",farbe:"",
    muster:/wandertag|exkursion|ausflug|klassenfahrt|studienfahrt|kursfahrt|abschlussfahrt|skifahrt|schullandheim|museum|theaterbesuch|unterrichtsgang|lerngang|betriebsbesichtigung/i},
   {id:"projekt",name:"Projekttag / Sondertag",farbe:"",
-   muster:/projekttag|projektwoche|sportfest|bundesjugendspiele|sponsorenlauf|schulfest|tag der offenen tür|berufsorientierung|\bbo[- ]?tag|praktikum|girls.?day|boys.?day|zukunftstag|methodentag|bewerbungstraining/i},
+   muster:/projekttag|projektwoche|sportfest|bundesjugendspiele|sponsorenlauf|schulfest|tag der offenen tür|berufsorientierung|\bbo[- ]?tag|praktikum|girls.?day|boys.?day|zukunftstag|methodentag|bewerbungstraining|berufsberatung|berufsinformation|\bbiz\b/i},
   {id:"frei",name:"Unterrichtsfrei",farbe:"ok",
-   muster:/ferien|feiertag|brückentag|beweglicher\s*ferientag|unterrichtsfrei|studientag|schulfrei|pädagogischer\s*tag/i},
+   muster:/ferien|feiertag|brückentag|beweglicher\s*ferientag|unterrichtsfrei|studientag|schulfrei|pädagogischer\s*tag|neujahr|karfreitag|ostermontag|ostersonntag|pfingst|himmelfahrt|fronleichnam|tag der arbeit|maifeiertag|tag der deutschen einheit|reformationstag|allerheiligen|heiligabend|silvester/i},
   {id:"fortbildung",name:"Fortbildung",farbe:"",muster:/fortbildung|schilf|\bfobi\b|workshop|seminar|tagung/i},
   {id:"aufsicht",name:"Aufsicht / Vertretung",farbe:"",muster:/aufsicht|pausenaufsicht|vertretung|bereitschaft|präsenz/i},
   {id:"frist",name:"Frist / Abgabe",farbe:"",muster:/\bfrist\b|abgabe|deadline|einreichen|rückmeldung bis/i},
@@ -72,18 +72,20 @@ function gruppeErkennen(titel){
     if(!fach&&!(g.klasse&&klassen.includes(g.klasse)))continue;
     let p=fach?2:0;if(g.klasse&&klassen.includes(g.klasse))p+=2;if(g.jg&&zahlen.includes(g.jg))p+=1;
     p+=g.rest.filter(x=>ws.has(x)).length;
-    kand.push({g,p})}
+    kand.push({g,p,fach})}
   if(!kand.length)return null;
   kand.sort((a,b)=>b.p-a.p);
   if(kand.length>1&&kand[0].p===kand[1].p)return {mehrdeutig:kand.filter(k=>k.p===kand[0].p).map(k=>k.g.id)};
-  return {id:kand[0].g.id,oberstufe:kand[0].g.oberstufe};
+  return {id:kand[0].g.id,oberstufe:kand[0].g.oberstufe,nurKlasse:!kand[0].fach};
 }
-function bezugText(titel,gr){
-  if(gr&&gr.id)return gr.id;
+function bezugText(titel,gr,leistung){
+  if(gr&&gr.id)return gr.nurKlasse&&leistung?`Klasse ${(gr.id.match(/^\d{1,2}[a-f]/i)||[gr.id])[0]} (anderes Fach)`:gr.id;
   if(gr&&gr.mehrdeutig)return "unklar: "+gr.mehrdeutig.join(" / ");
   const jg=typeof kfJahrgaenge==="function"?[...kfJahrgaenge(titel)].sort((a,b)=>a-b):[];
   const kl=[...String(titel).matchAll(/(?<![\d])(5|6|7|8|9|10|11|12|13)\s?([a-f])(?![a-zäöüß])/gi)].map(m=>m[1]+m[2].toLowerCase());
   if(kl.length)return "Klasse "+[...new Set(kl)].join(", ");
+  const sp=String(titel).match(/(?<![\d.])\b(5|6|7|8|9|10|11|12)\s*[-–]\s*(6|7|8|9|10|11|12|13)\b(?![.:]\d)/);
+  if(sp&&+sp[1]<+sp[2])return `Jg. ${sp[1]}–${sp[2]}`;
   if(jg.length)return "Jg. "+jg.join(", ");
   return "";
 }
@@ -98,6 +100,9 @@ function akteZaehlen(gid,nr){
 function schritt(art,t,tage){
   const gid=t.gruppe&&t.gruppe.id,ob=t.gruppe&&t.gruppe.oberstufe;
   const S=(text,kachel,vor,leb)=>({text,kachel,vor:vor||(gid?{gruppe:gid}:{}),leb:leb&&gid&&!ob?leb:null});
+  switch(art){
+    case "klassenarbeit":case "test":if(t.gruppe&&t.gruppe.nurKlasse)return S("Anderes Fach in deiner Klasse. Nur zur Info (Belastung der Klasse)","",{});
+    }
   switch(art){
     case "klassenarbeit":{
       if(tage>14)return S("Klausur entwerfen (Erwartungshorizont, Notenschlüssel)","pruefung");
@@ -119,7 +124,7 @@ function schritt(art,t,tage){
     case "eltern":return tage>=0?S("Gespräche vorbereiten (Akte, Noten, Fehlzeiten)","eltern"):S("Gesprächsprotokolle schreiben","eltern-protokoll");
     case "ausflug":return tage>21?S("Exkursion planen (Ort, Anfahrt, Kosten)","exkursion"):tage>=0?S("Elternbrief und Rücklauf","exkursion-elternbrief"):S("Rücklauf und Geld abrechnen","exkursion-ruecklauf");
     case "projekt":return S(tage>=0?"Vormerken, Woche anpassen":"Vorbei",tage>=0?"woche":"",{});
-    case "frei":return S(tage>=0?"Stunden fallen aus. Woche/Einheit anpassen":"Vorbei",tage>=0?"woche":"",{});
+    case "frei":return S(tage>=0?"Unterrichtsfrei":"Vorbei","",{});
     case "fortbildung":return S(tage>=0?"Vertretung/Material für ausfallende Stunden klären":"Unterlagen ablegen",tage>=0?"woche":"",{});
     case "frist":return S(tage>=0?"Frist vormerken":"Abgelaufen. Erledigt?","",{});
     default:return S("","",{});
@@ -182,11 +187,11 @@ function mmAnlaesse(){
   [jetzt,jetzt-1].forEach(sj=>[true,false].forEach(h=>{const ns=notenschluss(sj,h);if(ns)out.push({tag:ns,grenze:plusT(ns,1),sj,titelEnde:h?"bis zum Bewertungsstopp (Halbjahr)":"bis zum Bewertungsstopp",quelle:"Erinnerung (Bewertungsstopp "+datumDE(ns)+")",vorher:plusT(ns,-70)})}));
   return out;
 }
-function ferienErinnerungen(von,bis){
+function ferienErinnerungen(von,bis,immer){
   const heute=isoTag(new Date()),out=[];
   for(const x of mmAnlaesse()){
     const tage=tageZw(heute,x.tag);
-    if(tage>21||tage<-2||new Date(x.tag+"T12:00")<von||new Date(x.tag+"T12:00")>bis)continue;
+    if((!immer&&(tage>21||tage<-2))||new Date(x.tag+"T12:00")<von||new Date(x.tag+"T12:00")>bis)continue;
     const q=quartale(x.sj);const qn=q?q.findIndex(r=>x.tag>=r[0]&&x.tag<=r[1])+1:0;
     const ab=q&&qn?q[qn-1][0]:x.vorher;
     for(const g of (ordner.gruppen||[])){
@@ -234,14 +239,20 @@ function zeigen(){
   const [zv,zn]=zr.split("-").map(Number);
   const von=new Date();von.setHours(0,0,0,0);von.setDate(von.getDate()-7*zv);
   const bis=new Date();bis.setHours(23,59,59,0);bis.setDate(bis.getDate()+7*zn);
-  const liste=[...termineSammeln(von,bis,gef),...ferienErinnerungen(von,bis)].sort((a,b)=>(a.iso+a.zeit).localeCompare(b.iso+b.zeit)).map(erkennen);
+  const roh=[...termineSammeln(von,bis,gef),...ferienErinnerungen(von,bis,true)].sort((a,b)=>(a.iso+a.zeit).localeCompare(b.iso+b.zeit)).map(erkennen);
+  // Mitarbeitsnote: eine Zeile für alle Lerngruppen
+  const liste=[],mmZ={};
+  for(const t of roh){if(!t._mm){liste.push(t);continue}
+    if(!mmZ[t.iso]){mmZ[t.iso]={...t,gruppen:[],gruppe:{id:"alle Lerngruppen"},nr:null};liste.push(mmZ[t.iso])}mmZ[t.iso].gruppen.push(t)}
+  Object.values(mmZ).forEach(z=>{const off=z.gruppen.filter(g=>g._mm.wenig);
+    z.schritt={text:off.length?`Lücken (weniger als 2 Mitarbeitseinträge): ${off.map(g=>`${g._gruppe.id} ${g._mm.wenig}`).join(", ")}. Note festsetzen, Mittelstufe dann nach LEB-online.`:"Alle Lerngruppen haben genug Einträge. Note festsetzen, Mittelstufe dann nach LEB-online.",kachel:"beob-note",vor:{},leb:null}});
   const kalZahl=kalListe().filter(k=>k.an&&(k.events||[]).length).length;
   const zaehl={};liste.forEach(t=>{const n=t.art?t.art.name:"nicht erkannt";zaehl[n]=(zaehl[n]||0)+1});
   const erkannt=liste.filter(t=>t.art).length;
   const zeilen=liste.filter(t=>alle||t.art).map((t,i)=>{
     const tagTxt=t.tage===0?"heute":t.tage>0?`in ${t.tage} T.`:`vor ${-t.tage} T.`;
     const k=t.schritt&&t.schritt.kachel?ALLE.find(x=>x.id===t.schritt.kachel):null;
-    const bez=bezugText(t.titel,t.gruppe)+(t.nr?` · Nr. ${t.nr}`:"");
+    const bez=bezugText(t.titel,t.gruppe,!!(t.art&&/^(klassenarbeit|test)$/.test(t.art.id)))+(t.nr?` · Nr. ${t.nr}`:"");
     return `<tr${t.art?"":' style="opacity:.6"'}${t.weg?' title="Vom Kalenderfilter ausgeblendet"':""}>
       <td style="white-space:nowrap">${esc(datumDE(t.iso))}${t.zeit?` ${esc(t.zeit)}`:""}<br><span class="note">${tagTxt}</span></td>
       <td>${esc(t.titel)}<br><span class="note">${esc(t.quelle)}${t.weg?" · gefiltert":""}</span></td>
