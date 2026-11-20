@@ -205,6 +205,7 @@ function oeffne(k,vor){
 function zeigeLokal(k){
   if(k.ziel==="aktion:neue-lerngruppe"){merke(k);setTimeout(render,50);return zeigeNeueGruppe()}
   if(k.ziel==="aktion:notenuebersicht"){merke(k);setTimeout(render,50);if(ordner.zustand!=="an"||!ordner.gruppen.length){const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Notenübersicht</h4><p>Dafür braucht die Seite deine Akten. Bitte rechts unter „Lerngruppen und Akten“ den Ordner verbinden bzw. „Akten anzeigen“ klicken.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}return zeigeNoten()}
+  if(/^werkzeug:/.test(k.ziel||"")){merke(k);setTimeout(render,50);return werkzeugOeffnen(k.ziel.slice(9))}
   if(k.ziel==="aktion:materiallager"){merke(k);setTimeout(render,50);return zeigeMaterial()}
   if(k.ziel==="aktion:fehlzeiten"){merke(k);setTimeout(render,50);if(window.saFehlzeiten)return window.saFehlzeiten.zeigen();const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Fehlzeiten-Ampel</h4><p>Es fehlt die Datei werkzeuge/startseite/fehlzeiten.js. Nach dem nächsten Update ist sie da.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
   if(k.ziel==="aktion:sicherung"){merke(k);setTimeout(render,50);if(window.saSicherung)return window.saSicherung.zeigen();const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Schülerdaten sichern</h4><p>Es fehlt die Datei werkzeuge/startseite/sicherung.js. Nach dem nächsten Update ist sie da (oder „jetzt-aktualisieren“ im Ordner werkzeuge/updater starten).</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
@@ -232,8 +233,17 @@ function liveLink(){
   const g=$("#live-gruppe").value.trim();
   $("#live-go").disabled=!g;
 }
-$("#live-gruppe").value=store.get("letzte-gruppe","");
-$("#live-gruppe").addEventListener("input",liveLink);
+/* Auswahlliste aller Lerngruppen mit Akten (Pauls Wunsch 20.11.): aus dem Akten-Ordner, sonst aus meine-einstellungen.js „lerngruppen“ */
+function liveGruppen(){const aus=ordner.gruppen.map(g=>g.id);return aus.length?aus:[...new Set(E.lerngruppen||[])]}
+function liveWahlFuellen(){
+  const sel=$("#live-gruppe"),alt=sel.value||store.get("letzte-gruppe",""),gs=liveGruppen();
+  sel.innerHTML=`<option value="">${gs.length?"Lerngruppe wählen …":"Noch keine Lerngruppen"}</option>`+gs.map(g=>{const n=(ordner.gruppen.find(x=>x.id===g)||{akten:[]}).akten.length;return `<option value="${esc(g)}">${esc(g)}${n?` (${n})`:""}</option>`}).join("");
+  sel.value=gs.includes(alt)?alt:"";liveLink();
+}
+liveWahlFuellen();
+$("#live-gruppe").addEventListener("change",()=>{liveLink();const g=$("#live-gruppe").value;if(g)store.set("letzte-gruppe",g)});
+/* Im laufenden Raster die Lerngruppe wechseln; der Entwurf der bisherigen Gruppe bleibt gespeichert */
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="r-gruppe"&&R&&e.target.value&&e.target.value!==R.gid){rasterSpeichernEntwurf();store.set("letzte-gruppe",e.target.value);$("#live-gruppe").value=e.target.value;rasterStarten(e.target.value,null)}});
 $("#live-go").addEventListener("click",()=>{
   const g=$("#live-gruppe").value.trim();if(!g)return;store.set("letzte-gruppe",g);rasterStarten(g,null);
 });
@@ -248,7 +258,31 @@ async function davAutoAnmelden(){
 /* Nach der IServ-Anmeldung im kleinen Fenster (Helfer) Akten und Schulserver sofort neu lesen */
 if(window.chrome&&chrome.runtime&&chrome.runtime.onMessage)chrome.runtime.onMessage.addListener(m=>{if(m&&m.cmd==="dav-angemeldet"){if(sdDav()&&sdZustand!=="an")sdOeffnen();$("#ordner-note").textContent=""}});
 
-/* Werkzeuge, die noch als HTML-Datei im Datenordner liegen (Pseudonymisierer, Abschluss-Check), öffnet der Helfer als Datei.
+/* Werkzeuge im Helfer (ab 0.10): Pseudonymisierer und Abschluss-Check laufen als eigene Seiten des Helfers (werkzeuge/…html).
+   Sie sind abgeschottet (kein Zugriff auf Speicher, Ordner oder Netz der Startseite). Der Abschluss-Check bekommt auf Nachfrage
+   das Schullogo aus dem Profil (layout „logo: profil/layout/logo.png“), sonst bleibt er ohne Logo. */
+const WERKZEUGE={pseudonymisierer:"werkzeuge/pseudonymisierer.html","abschluss-check":"werkzeuge/abschluss-check.html"};
+function werkzeugOeffnen(name){
+  const url=chrome.runtime.getURL(WERKZEUGE[name]||"");const w=window.open(url,"_blank");
+  if(!w)return chrome.runtime.sendMessage({cmd:"tab",url}).catch(()=>{});
+  if(name!=="abschluss-check")return;
+  const antwort=async e=>{
+    if(e.source!==w||!e.data||e.data.sa!=="logo-bitte")return;
+    removeEventListener("message",antwort);
+    try{const src=await profilLogo();if(src)w.postMessage({sa:"logo",src,alt:"Schullogo"},"*")}catch{}
+  };
+  addEventListener("message",antwort);setTimeout(()=>removeEventListener("message",antwort),60000);
+}
+async function profilLogo(){
+  const t=(ordner.profil&&ordner.profil.text)||"";const m=t.match(/^\s*logo:\s*["']?([^"'#\s]+)/m);
+  if(!m||!ordnerHandle||/\.\.|^[a-z]+:/i.test(m[1]))return "";
+  const teile=m[1].replace(/\\/g,"/").replace(/^\/+/,"").split("/").filter(Boolean);let d=ordnerHandle;
+  for(const x of teile.slice(0,-1))d=await d.getDirectoryHandle(x);
+  const f=await (await d.getFileHandle(teile[teile.length-1])).getFile();
+  if(!/^image\/(png|jpeg|gif|webp|svg\+xml)$/.test(f.type)||f.size>2e6)return "";
+  return await new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(String(r.result));r.onerror=()=>ok("");r.readAsDataURL(f)});
+}
+/* Eigene Knöpfe, die auf eine HTML-Datei im Datenordner zeigen, öffnet der Helfer als Datei.
    Braucht beim Helfer „Zugriff auf Datei-URLs zulassen“. Sonst: Pfad zum Kopieren. */
 async function dateiWerkzeug(k){
   const basis=window.saDateiOrdner?await window.saDateiOrdner():"";
@@ -368,6 +402,7 @@ function renderOrdner(){
   setTimeout(renderEinrichtung,0);if(window.saSicherung)setTimeout(window.saSicherung.erinnern,0);if(window.saFehlzeiten)setTimeout(window.saFehlzeiten.aktualisieren,0);
   const namen=[...new Set([...(E.lerngruppen||[]),...ordner.gruppen.map(g=>g.id)])];
   $("#gruppen-liste").innerHTML=namen.map(n=>`<option value="${esc(n)}">`).join("");
+  liveWahlFuellen();
   liveLink();
   const box=$("#groups"),note=$("#ordner-note"),act=$("#ordner-actions");box.innerHTML="";act.innerHTML="";
   const knopf=(text,fn,cls)=>{const b=document.createElement("button");b.className="btn small "+(cls||"ghost");b.textContent=text;b.addEventListener("click",fn);act.appendChild(b)};
@@ -1656,7 +1691,7 @@ function rasterZeichnen(){
   if(R.ende)return rasterUebersicht();
   const liste=R.ansicht==="liste"&&!R.anordnen;
   const hatNamen=Object.keys(R.namen).some(k=>R.namen[k].vor||R.namen[k].nach);
-  sec.innerHTML=`<div class="r-kopf"><h2>${esc(R.gid)}</h2><span class="uhr">${esc(R.fach)} · ${datumDE(R.heute)} · ${esc(R.zeit)} · ${R.eintraege.length} Einträge</span><span class="sp"></span>
+  sec.innerHTML=`<div class="r-kopf"><h2>${liveGruppen().length>1?`<select id="r-gruppe" class="r-wahl" aria-label="Lerngruppe wechseln">${liveGruppen().map(g=>`<option value="${esc(g)}"${g===R.gid?" selected":""}>${esc(g)}</option>`).join("")}</select>`:esc(R.gid)}</h2><span class="uhr">${esc(R.fach)} · ${datumDE(R.heute)} · ${esc(R.zeit)} · ${R.eintraege.length} Einträge</span><span class="sp"></span>
       ${hatNamen?`<button class="btn ghost small" id="r-namen">${R.namenZeigen?"Namen ausblenden":"Namen zeigen"}</button>`:""}
       ${hatNamen&&R.namenZeigen?`<button class="btn ghost small" id="r-tausch" title="Wenn Vor- und Nachname in deinen Kürzellisten in den falschen Spalten stehen. Gilt für alle Listen, nur auf diesem Rechner. Die Dateien bleiben unverändert." aria-pressed="${store.get("namen-tausch",false)}">Vor-/Nachname tauschen</button>`:""}
       <label class="r-skala">Mitarbeit als <select id="r-skala">${Object.entries(SKALEN).map(([k,v])=>`<option value="${k}"${R.skala===k?" selected":""}>${v.name}</option>`).join("")}</select></label>

@@ -45,6 +45,10 @@ h1{font-family:var(--f-display);font-weight:600;font-size:30px;margin:0;letter-s
 .live h2{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0}
 .live p{margin:0;color:var(--muted);font-size:13.5px}
 .live .row{display:flex;flex-wrap:wrap;gap:8px}
+.live-wahl{flex:1;min-width:160px;font:inherit;font-size:15px;padding:9px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.live-wahl:focus{border-color:var(--live);outline:none}
+.r-wahl{font-family:var(--f-display);font-weight:600;font-size:20px;padding:2px 8px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);max-width:100%}
+.r-wahl:focus{border-color:var(--live);outline:none}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:start}
 .col{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;min-width:0}
 .col>section{min-width:0}
@@ -354,7 +358,7 @@ button.kq{cursor:pointer} button.kq[aria-pressed="false"]{color:var(--muted);tex
       <p>Liste mit deinen Kürzeln und Namen: in der Zeile des Kindes ein Symbol antippen (oder als Sitzplan-Raster). Am Ende freigeben, dann landet alles in den Akten.</p>
       <p id="live-test" hidden>Solange die Schulleitung nicht zugestimmt hat, nur mit Testkürzeln.</p>
       <div class="row">
-        <input id="live-gruppe" list="gruppen-liste" placeholder="Lerngruppe, z. B. 10d-bio" aria-label="Lerngruppe">
+        <select id="live-gruppe" class="live-wahl" aria-label="Lerngruppe"><option value="">Lerngruppe wählen …</option></select>
         <button class="btn live-btn" id="live-go">Starten</button>
       </div>
     </section>

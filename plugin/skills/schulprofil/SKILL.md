@@ -70,9 +70,9 @@ Am Ende eine Zusammenfassung zeigen, Bestätigung einholen und erst dann `profil
 
 ## 2a. Pseudonymisierer bereitstellen
 
-Fester Bestandteil von schulassistenz. Der Ordner `werkzeuge/pseudonymisierer/` dieses Skills enthält `Pseudonymisierer.html` (läuft offline im Browser, nichts verlässt den Rechner), `Kuerzelliste-Vorlage.xlsx` und `Anleitung.md`.
+Fester Bestandteil von schulassistenz. Der Pseudonymisierer läuft offline im Browser, nichts verlässt den Rechner. Ab Helfer 0.10 öffnet ihn die Startseite als Seite des Schulassistenz-Helfers (Quelle: Skill postfach-assistent, `werkzeuge/iserv-helfer/werkzeuge/pseudonymisierer.html`); der Updater legt dieselbe Datei zusätzlich als `<Datenordner>/werkzeuge/pseudonymisierer/Pseudonymisierer.html` ab (Doppelklick geht weiter). Der Ordner `werkzeuge/pseudonymisierer/` dieses Skills enthält `Kuerzelliste-Vorlage.xlsx` und `Anleitung.md`.
 
-- Sobald der Datenordner feststeht (Runde 4), die drei Dateien nach `<Datenordner>/werkzeuge/pseudonymisierer/` kopieren und in zwei Sätzen erklären: Vor jedem Upload mit Schülerbezug Dokumente dort pseudonymisieren (Word, Text) oder schwärzen (Scans, Fotos, Handschrift); Ergebnisse mit Kürzeln dort im Reiter „Rückweg“ wieder mit Namen füllen. Die Kürzelliste legt die Lehrkraft aus der Vorlage an und lädt sie nie hoch.
+- Sobald der Datenordner feststeht (Runde 4), die Dateien (Pseudonymisierer.html aus dem Helfer-Ordner, Vorlage, Anleitung) nach `<Datenordner>/werkzeuge/pseudonymisierer/` kopieren und in zwei Sätzen erklären: Vor jedem Upload mit Schülerbezug Dokumente dort pseudonymisieren (Word, Text) oder schwärzen (Scans, Fotos, Handschrift); Ergebnisse mit Kürzeln dort im Reiter „Rückweg“ wieder mit Namen füllen. Die Kürzelliste legt die Lehrkraft aus der Vorlage an und lädt sie nie hoch.
 - Kann Claude nicht in den Datenordner schreiben, die drei Dateien zum Herunterladen ausgeben.
 - Auf Wunsch („Pseudonymisierer einrichten“) oder wenn der Ordner fehlt, erneut bereitstellen. Eine vorhandene, neuere Fassung nicht ungefragt überschreiben.
 - In die Datenschutz-Checkliste (Abschnitt 6) gehört der Hinweis, dass Dokumente vor dem Upload mit diesem Werkzeug pseudonymisiert werden.

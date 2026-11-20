@@ -18,7 +18,7 @@ Eine kleine Erweiterung für **Google Chrome** (läuft genauso in Microsoft Edge
 
 Chrome zeigt beim Start manchmal den Hinweis „Erweiterungen im Entwicklermodus deaktivieren“. Einfach auf **Behalten** bzw. das X klicken.
 
-6. **Startseite (ab 0.9):** Ein Klick auf das Helfer-Symbol öffnet die Schulassistenz-Startseite, sie wohnt jetzt im Helfer (Anleitung: `startseite/Anleitung.md`). Das Helfer-Fenster für Mails öffnest du per Rechtsklick auf das Symbol oder auf der Seite (siehe „Benutzen“). Optional: in `chrome://extensions` beim Helfer auf **Details** und **„Zugriff auf Datei-URLs zulassen“** einschalten, dann öffnen die Knöpfe Pseudonymisierer und Abschluss-Check die Dateien direkt.
+6. **Startseite (ab 0.9):** Ein Klick auf das Helfer-Symbol öffnet die Schulassistenz-Startseite, sie wohnt jetzt im Helfer (Anleitung: `startseite/Anleitung.md`). Das Helfer-Fenster für Mails öffnest du per Rechtsklick auf das Symbol oder auf der Seite (siehe „Benutzen“). Pseudonymisierer und Abschluss-Check gehören ab 0.10 ebenfalls zum Helfer. „Zugriff auf Datei-URLs zulassen“ braucht es nur noch, damit die alte Startseite-Datei einmal ihre Einstellungen übergibt, oder für eigene Knöpfe, die auf HTML-Dateien zeigen.
 
 Ändert sich deine Kürzelliste, einfach die neue Datei wieder hineinziehen.
 

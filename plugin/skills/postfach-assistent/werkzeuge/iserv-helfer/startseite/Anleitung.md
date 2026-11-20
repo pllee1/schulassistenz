@@ -32,7 +32,8 @@ Die frühere Datei `Schulassistenz-Start.html` im Datenordner wird nicht mehr ak
 - **Favoriten:** Stern ★ an einem Knopf. „Zuletzt benutzt“ füllt sich von selbst.
 - **Alle Werkzeuge:** in Reitern nach Arbeitsbereich. Reiter ohne Knöpfe sind ausgeblendet.
 - **Blau „mit Claude“:** öffnet ein Feld für Lerngruppe, Kürzel oder Thema, zeigt den Auftrag und öffnet Claude. Steht im Kürzelfeld etwas, das wie ein Name aussieht, bleibt der Knopf gesperrt.
-- **Grün „öffnet lokal“:** Pseudonymisierer und Abschluss-Check öffnen sich als Datei aus dem Datenordner (dafür beim Helfer „Zugriff auf Datei-URLs zulassen“; sonst zeigt die Seite den Pfad). Bei Ordnern zeigt die Seite den Pfad zum Kopieren (Explorer: Windows-Taste + E, Pfad einfügen).
+- **Grün „öffnet lokal“:** Pseudonymisierer und Abschluss-Check öffnen sich als eigene Seite des Helfers (ab 0.10). Sie sind abgeschottet: kein Netz, kein Zugriff auf andere Daten. Der Abschluss-Check zeigt das Schullogo aus dem Profil (`logo:` unter `layout`), wenn eins eingetragen ist. Eigene Knöpfe, die auf eine HTML-Datei im Datenordner zeigen, öffnen als Datei (dafür beim Helfer „Zugriff auf Datei-URLs zulassen“).
+- **Live-Beobachtung:** Lerngruppe aus der Liste wählen (alle Gruppen mit Akten, in Klammern die Zahl der Kürzel), dann „Starten“. Oben im laufenden Raster wechselst du über dieselbe Liste in eine andere Gruppe; was du schon eingetragen hast, bleibt als Entwurf gespeichert. Bei Ordnern zeigt die Seite den Pfad zum Kopieren (Explorer: Windows-Taste + E, Pfad einfügen).
 
 ## Live-Beobachtung im Raster
 

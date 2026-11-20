@@ -5,7 +5,8 @@
 # Nie aktualisiert werden: meine-einstellungen.js, Profil, Planung, Lerngruppen, Kürzellisten, Ausgaben.
 plugin/skills/schulprofil/werkzeuge/startseite/meine-einstellungen-vorlage.js => werkzeuge/startseite/meine-einstellungen-vorlage.js
 plugin/skills/schulprofil/werkzeuge/pseudonymisierer/                     =>  werkzeuge/pseudonymisierer/
-plugin/skills/schulprofil/werkzeuge/abschluss-check/                      =>  werkzeuge/abschluss-check/
+plugin/skills/postfach-assistent/werkzeuge/iserv-helfer/werkzeuge/pseudonymisierer.html => werkzeuge/pseudonymisierer/Pseudonymisierer.html
+plugin/skills/postfach-assistent/werkzeuge/iserv-helfer/werkzeuge/abschluss-check.html  => werkzeuge/abschluss-check/Abschluss-Check.html
 plugin/skills/postfach-assistent/werkzeuge/iserv-helfer/                  =>  werkzeuge/iserv-helfer/
 updater/schulassistenz-update.ps1                                         =>  werkzeuge/updater/schulassistenz-update.ps1
 updater/einrichten.cmd                                                    =>  werkzeuge/updater/einrichten.cmd

@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Abschluss-Check – Welchen Abschluss schaffe ich?</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#1d2733; --muted:#5d6b7a; --line:#dfe4ea; --bg:#f5f7f9; --card:#fff;
@@ -565,6 +563,18 @@ function update() {
 }
 
 buildForm(); muendlichOptions(); update();
+</script>
+<script>
+/* Schullogo: Öffnet die Schulassistenz-Startseite dieses Werkzeug, reicht sie das Logo aus dem Profil herüber (layout.logo). */
+(function(){
+  if(!window.opener||document.querySelector("header .logo"))return;
+  addEventListener("message",function(e){
+    var d=e.data;if(e.source!==window.opener||!d||d.sa!=="logo"||typeof d.src!=="string"||!/^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,/.test(d.src)||document.querySelector("header .logo"))return;
+    var w=document.querySelector("header .wrap");if(!w)return;
+    var div=document.createElement("div");div.className="logo";var img=document.createElement("img");img.src=d.src;img.alt=d.alt||"Schullogo";div.appendChild(img);w.insertBefore(div,w.firstChild);
+  });
+  try{window.opener.postMessage({sa:"logo-bitte"},"*")}catch(e){}
+})();
 </script>
 </body>
 </html>
