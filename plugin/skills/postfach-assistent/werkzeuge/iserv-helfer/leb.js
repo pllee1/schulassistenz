@@ -1,6 +1,6 @@
 /* Schulassistenz-Helfer – LEB-online (Noten PLUS)
    Füllt im Fenster „Bewerten“ die Noten aus dem bereitgelegten Paket der Startseite (Notenübersicht › „Nach LEB-online“)
-   und füllt „Anlegen“ vor. Klickt NIE „Speichern“ oder „Löschen“, ruft keine Adresse auf, überschreibt vorhandene Noten nur
+   und füllt „Anlegen“ vor. Speichert nur beim direkten Weg das Anlegen selbst (Pauls Freigabe 20.11.); Noten-„Speichern“ und „Löschen“ klickt er NIE, ruft keine Adresse auf, überschreibt vorhandene Noten nur
    nach Häkchen. Die Namen kommen aus deiner Kürzelliste und bleiben in diesem Browser. */
 (() => {
   if (window.__saLeb) return; window.__saLeb = true;
@@ -146,7 +146,23 @@
       $("#msg").innerHTML = `<div class="ok">${n} Felder ausgefüllt (gelb umrandet). Bitte prüfen und dann selbst „Speichern“ klicken. Danach „Bewerten“ öffnen.</div>`;
     });
     const bez = document.querySelector('input[name="bezeichnung"]');
-    if (window.name === "sa-anlegen" && bez && !bez.value.trim()) $("#fill").click();
+    if (window.name === "sa-anlegen" && bez && !bez.value.trim()) {
+      $("#fill").click();
+      // Direkter Weg (Pauls Freigabe 20.11.): Anlegen speichert der Helfer selbst, die Noten prüft und speichert Paul.
+      const merk = "saAngelegt" + p.zeit;
+      let schon = false; try { schon = sessionStorage.getItem(merk) === "1"; } catch { }
+      let gibtEs = false; try { gibtEs = !!window.opener && tabelleZeilen(window.opener.document).some(x => bezNorm(x.bezeichnung) === bezNorm(p.bezeichnung || p.titel)); } catch { }
+      const knopf = [...(bez.form || document).querySelectorAll('input[type="submit"],button,input[type="button"]')].find(b => /speichern/i.test(b.value || b.textContent || ""));
+      const voll = artSel.value === String(p.leistungsart) && bez.value === String(p.bezeichnung) && !!(document.querySelector('input[name="datum"]') || {}).value;
+      if (schon || gibtEs || !knopf || !voll) {
+        $("#msg").insertAdjacentHTML("beforeend", `<div class="info">${gibtEs ? "Diese Bezeichnung gibt es in der Liste schon, deshalb speichert der Helfer nicht selbst." : schon ? "Wurde schon einmal gespeichert, der Helfer speichert nicht noch einmal." : "Bitte prüfen und selbst „Speichern“ klicken."}</div>`);
+        return;
+      }
+      try { sessionStorage.setItem(merk, "1"); } catch { }
+      try { await chrome.storage.session.set({ saLebAngelegt: { zeit: Date.now(), bez: p.bezeichnung || p.titel, gruppe: p.gruppe } }); } catch { }
+      $("#msg").innerHTML = `<div class="ok">Angelegt wird gespeichert … Danach öffnet sich „Bewerten“ mit den Noten. Die Noten prüfst und speicherst du selbst.</div>`;
+      setTimeout(() => knopf.click(), 500);
+    }
   }
 
   // ---------- Bewerten ----------
@@ -356,6 +372,15 @@
     const treffer = tabelleZeilen(document).filter(x => bezNorm(x.bezeichnung) === bezNorm(p.bezeichnung || p.titel));
     const kopf = `<div class="was">Direkt nach LEB-online: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)} · ${esc(ART[p.leistungsart] || "")}${p.datum ? " · " + esc(datumDE(p.datum)) : ""}</div>`;
     const bewertUrl = id => `bewertungsform.php?sid=${encodeURIComponent(sid)}&${gParam(bereich)}=${encodeURIComponent(gid)}&${bereich === "kurse" ? "leistungen_kurse_id" : "leistungen_id"}=${encodeURIComponent(id)}`;
+    let frisch = null; try { frisch = (await chrome.storage.session.get("saLebAngelegt")).saLebAngelegt; } catch { }
+    const geradeAngelegt = frisch && Date.now() - frisch.zeit < 120000 && frisch.gruppe === p.gruppe && bezNorm(frisch.bez) === bezNorm(p.bezeichnung || p.titel);
+    if (treffer.length === 1 && geradeAngelegt && window.name === "sa-anlegen") {
+      // Das Anlegen-Fenster landet nach dem Speichern auf der Liste: gleich weiter zum Bewerten in diesem Fenster.
+      window.name = "sa-bewerten"; location.href = bewertUrl(treffer[0].id); return;
+    }
+    if (!treffer.length && !window.opener) try {
+      chrome.storage.onChanged.addListener((ch, bereichName) => { if (bereichName === "session" && ch.saLebAngelegt && ch.saLebAngelegt.newValue) setTimeout(() => location.reload(), 2500); });
+    } catch { }
     if (treffer.length === 1) {
       const t = treffer[0]; t.tr.style.outline = "3px solid #79b98a";
       zeigen(`${kopf}<div class="ok">„${esc(t.bezeichnung)}“${t.datum ? " vom " + esc(t.datum) : ""} ist angelegt.</div>
@@ -369,7 +394,7 @@
       const anlegenUrl = `form.php?sid=${encodeURIComponent(sid)}${j ? "&jahrgaenge_id=" + j : ""}&${gParam(bereich)}=${encodeURIComponent(gid)}`;
       zeigen(`${kopf}<p>„${esc(p.bezeichnung || p.titel)}“ ist hier noch nicht angelegt.</p>
         <div class="row"><button class="b" id="anl">Anlegen öffnen (vorausgefüllt)</button><button class="b b2" id="neu">Neu prüfen</button></div>
-        <p class="info">Im Anlegen-Fenster stehen Leistungsart, Datum und Bezeichnung schon drin. Gewichtung prüfen, selbst „Speichern“ klicken, dann hier „Neu prüfen“.</p>`);
+        <p class="info">Das Anlegen-Fenster füllt Leistungsart, Datum und Bezeichnung aus und speichert selbst (Gewichtung bleibt 1-fach). Danach öffnet sich dort „Bewerten“ mit den Noten: prüfen und selbst „Speichern“ klicken.</p>`);
       $("#anl").addEventListener("click", () => window.open(anlegenUrl, "sa-anlegen", POPUP));
     }
     if ($("#neu")) $("#neu").addEventListener("click", () => location.reload());
