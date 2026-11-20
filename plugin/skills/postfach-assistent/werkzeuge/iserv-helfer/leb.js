@@ -34,6 +34,23 @@
   const vorPasst = (a, b) => !!a && !!b && (a === b || b.startsWith(a + " ") || a.startsWith(b + " "));
   const streng = (e, n) => reihen(e).some(([na, vo]) => na === n.nach && vo === n.vor);
   const locker = (e, n) => reihen(e).some(([na, vo]) => na === n.nach && vorPasst(vo, n.vor));
+  // Tippfehler-Abstand (Einfügen, Löschen, Ersetzen, Vertauschen zweier Nachbarn)
+  function abstand(a, b) {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+    return d[a.length][b.length];
+  }
+  const fastGleich = (a, b) => !!a && !!b && abstand(a, b) <= (Math.max(a.length, b.length) >= 6 ? 2 : 1);
+  const teile = t => t.split(" ").filter(x => x.length >= 3);
+  // Vorname passt, wenn einer der Anfang des anderen ist oder ein Namensteil übereinstimmt (z. B. „Darius“ in „Ioan Darius“)
+  const vorKompatibel = (a, b) => vorPasst(a, b) || teile(a).some(x => teile(b).includes(x));
+  const aehnlich = (e, n) => reihen(e).some(([na, vo]) =>
+    (na === n.nach && (vorKompatibel(vo, n.vor) || fastGleich(vo, n.vor))) ||
+    (fastGleich(na, n.nach) && (vo === n.vor || vorKompatibel(vo, n.vor))));
   // erst exakt, dann gleicher Nachname + ein Vorname ist der Anfang des anderen (nur wenn in beide Richtungen eindeutig)
   function zuordnen(zeilen, eintraege) {
     const frei = new Set(eintraege.map((_, i) => i));
@@ -50,7 +67,17 @@
       if (zeilen.some((y, yi) => yi !== zi && erg[yi] == null && locker(e, y.n))) return;
       erg[zi] = t[0]; frei.delete(t[0]);
     });
-    return { erg, uebrig: [...frei] };
+    // 3. ähnliche Schreibweise (Tippfehler, fehlender/zusätzlicher Vorname) – nur als Vorschlag, Paul bestätigt
+    const vorschlag = new Map();
+    zeilen.forEach((z, zi) => {
+      if (erg[zi] != null) return;
+      const t = [...frei].filter(i => aehnlich(eintraege[i], z.n));
+      if (t.length !== 1) return;
+      const e = eintraege[t[0]];
+      if (zeilen.some((y, yi) => yi !== zi && erg[yi] == null && !vorschlag.has(yi) && aehnlich(e, y.n))) return;
+      vorschlag.set(zi, t[0]); frei.delete(t[0]);
+    });
+    return { erg, uebrig: [...frei], vorschlag };
   }
 
   // ---------- Oberfläche (Design „Graphit & Heft“) ----------
@@ -76,7 +103,7 @@
     ul{margin:4px 0 0;padding-left:18px}
     li{margin:2px 0}
     .tag{display:inline-block;min-width:14px;padding:0 6px;border-radius:9px;font-size:12px;font-weight:700;margin-right:4px}
-    .t-neu{background:#79b98a;color:#10200f}.t-gleich{background:#4a463f;color:#efe8da}.t-anders{background:#e0b45c;color:#2b1f05}.t-fehlt{background:#e9786a;color:#2a0f0b}
+    .t-neu{background:#79b98a;color:#10200f}.t-gleich{background:#4a463f;color:#efe8da}.t-anders{background:#e0b45c;color:#2b1f05}.t-fehlt{background:#e9786a;color:#2a0f0b}.t-aeh{background:#8fb3e8;color:#101a2b}
     label.ub{display:flex;gap:6px;align-items:center;margin:2px 0}
   </style><div class="bar" role="region" aria-label="Schulassistenz-Helfer für LEB-online"><h2><span>Schulassistenz · LEB-online</span><button class="x" id="mini" title="Ein-/ausklappen">–</button><button class="x" id="zu" title="Schließen">×</button></h2><div class="rest" id="inhalt">Lade …</div></div>`;
   document.documentElement.appendChild(host);
@@ -120,15 +147,16 @@
   const FARBE = { neu: "#79b98a", anders: "#e0b45c", fehlt: "#e9786a" };
 
   function vergleich(p) {
-    const { erg, uebrig } = zuordnen(zeilen, p.eintraege);
-    const r = { neu: [], gleich: [], anders: [], ohne: [], lebOhneAkte: [], nichtZu: [], uebrig: uebrig.map(i => p.eintraege[i]).filter(e => e.note != null) };
+    const { erg, uebrig, vorschlag } = zuordnen(zeilen, p.eintraege);
+    const r = { neu: [], gleich: [], anders: [], ohne: [], lebOhneAkte: [], nichtZu: [], aehnlich: [], uebrig: uebrig.map(i => p.eintraege[i]).filter(e => e.note != null) };
     zeilen.forEach((z, zi) => {
       const i = erg[zi]; const e = i == null ? null : p.eintraege[i]; const l = lebWert(z);
+      if (!e && vorschlag.has(zi)) { r.aehnlich.push({ z, e: p.eintraege[vorschlag.get(zi)], l }); return; }
       if (!e) { r.nichtZu.push({ z }); return; }
       if (e.note == null) { (l == null ? r.ohne : r.lebOhneAkte).push({ z, e, l }); return; }
       if (l == null) r.neu.push({ z, e }); else if (l === e.note) r.gleich.push({ z, e, l }); else r.anders.push({ z, e, l });
     });
-    r.quote = zeilen.length ? (zeilen.length - r.nichtZu.length) / zeilen.length : 0;
+    r.quote = zeilen.length ? (zeilen.length - r.nichtZu.length) / zeilen.length : 0;   // ähnliche zählen als Treffer für „Passt die Lerngruppe?“
     return r;
   }
 
@@ -197,24 +225,29 @@
       <div><span class="tag t-anders">${r.anders.length}</span>stehen in LEB-online anders (nur mit Häkchen überschreiben)</div>
       ${r.anders.length > 1 ? `<label class="ub"><input type="checkbox" id="alle-ueb">alle abweichenden mit der Akten-Note überschreiben</label>` : ""}
       ${liste(r.anders, (x, i) => `<li><label class="ub"><input type="checkbox" class="ueb" data-i="${i}">${esc(x.z.name)} (${esc(x.e.k)}): LEB ${x.l}, Akte ${x.e.note} · überschreiben</label></li>`)}
+      ${r.aehnlich.length && gruppeOk ? `<div><span class="tag t-aeh">${r.aehnlich.length}</span>ähnlich geschrieben, bitte bestätigen</div>
+      ${liste(r.aehnlich, (x, i) => `<li><label class="ub"><input type="checkbox" class="aeh" data-i="${i}">LEB „${esc(x.z.name)}“ = Kürzelliste „${esc([x.e.nach, x.e.vor].filter(Boolean).join(", "))}“ (${esc(x.e.k)}) · Akte ${x.e.note ?? "–"}${x.l != null ? ", LEB " + x.l : ""}</label></li>`)}
+      <div class="info">Tipp: Schreibweise in der Kürzelliste korrigieren (Startseite › Akten der Lerngruppe › „Kürzelliste bearbeiten“), dann klappt es künftig ohne Rückfrage.</div>` : ""}
       <div><span class="tag t-fehlt">${r.nichtZu.length + r.uebrig.length}</span>nicht zugeordnet</div>
       ${passt ? "" : `<div class="info">Liste ausgeblendet, weil fast nichts passt.</div>`}${!passt ? "" : liste(r.nichtZu, x => `<li>${esc(x.z.name)} (nicht in der Kürzelliste, bleibt leer)</li>`)}
       ${!passt ? "" : liste(r.uebrig, e => `<li>${esc(e.k)} (${esc([e.nach, e.vor].filter(Boolean).join(", "))}) steht nicht in diesem Fenster</li>`)}
       ${r.ohne.length + r.lebOhneAkte.length ? `<div class="info">${r.ohne.length + r.lebOhneAkte.length} ohne Note in der Akte (bleiben unverändert)${r.lebOhneAkte.length ? `, davon ${r.lebOhneAkte.length} mit Note in LEB-online` : ""}.</div>` : ""}
-      ${passt && (r.neu.length || r.anders.length) ? `<label class="ub"><input type="checkbox" id="bestaetigt"${bezGleich ? " checked" : ""}><b>${info && info.bezeichnung && !bezGleich ? `Trotzdem: „${esc(info.bezeichnung)}“ ist die richtige Leistung für „${esc(p.titel)}“.` : `Ja, dieses Fenster ist „${esc(p.titel)}“.`}</b></label>` : ""}
-      <div class="row"><button class="b" id="fill"${bezGleich && passt && (r.neu.length || r.anders.length) ? "" : " disabled"}>Noten eintragen</button><button class="b b2" id="neu">Neu prüfen</button></div>
+      ${passt && (r.neu.length || r.anders.length || r.aehnlich.length) ? `<label class="ub"><input type="checkbox" id="bestaetigt"${bezGleich ? " checked" : ""}><b>${info && info.bezeichnung && !bezGleich ? `Trotzdem: „${esc(info.bezeichnung)}“ ist die richtige Leistung für „${esc(p.titel)}“.` : `Ja, dieses Fenster ist „${esc(p.titel)}“.`}</b></label>` : ""}
+      <div class="row"><button class="b" id="fill"${bezGleich && passt && (r.neu.length || r.anders.length || r.aehnlich.length) ? "" : " disabled"}>Noten eintragen</button><button class="b b2" id="neu">Neu prüfen</button></div>
       <p class="info">Eingetragene Felder sind grün, abweichende gelb, nicht zugeordnete rot umrandet. Prüfen, dann selbst unten „Speichern“ klicken. Nach dem Speichern zeigt dieser Kasten den Abgleich.</p>`);
     // Zuordnung Lerngruppe → LEB-Klasse/Kurs lernen (nur Kennungen, keine Namen)
     if (r.quote >= 0.9 && bereich && U.searchParams.get(gParam(bereich))) try { chrome.runtime.sendMessage({ cmd: "leb-ziel", gruppe: p.gruppe, bereich, id: U.searchParams.get(gParam(bereich)) }).catch(() => { }); } catch { }
     r.nichtZu.forEach(x => markiere(x.z, FARBE.fehlt));
     r.anders.forEach(x => markiere(x.z, FARBE.anders));
+    if (gruppeOk) r.aehnlich.forEach(x => markiere(x.z, "#8fb3e8"));
     $("#neu").addEventListener("click", () => bewerten());
     if ($("#bestaetigt")) $("#bestaetigt").addEventListener("change", e => { $("#fill").disabled = !e.target.checked; });
     if ($("#alle-ueb")) $("#alle-ueb").addEventListener("change", e => root.querySelectorAll(".ueb").forEach(c => { c.checked = e.target.checked; }));
     $("#fill").addEventListener("click", () => {
       if (!passt || !$("#bestaetigt") || !$("#bestaetigt").checked) return;
       const ueb = new Set([...root.querySelectorAll(".ueb:checked")].map(c => +c.dataset.i));
-      const ziel = [...r.neu, ...r.anders.filter((_, i) => ueb.has(i))];
+      const aeh = new Set([...root.querySelectorAll(".aeh:checked")].map(c => +c.dataset.i));
+      const ziel = [...r.neu, ...r.anders.filter((_, i) => ueb.has(i)), ...r.aehnlich.filter((x, i) => aeh.has(i) && x.e.note != null)];
       let n = 0;
       for (const x of ziel) {
         const v = String(x.e.note); if (![...x.z.sel.options].some(o => o.value === v)) continue;
