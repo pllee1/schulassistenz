@@ -237,11 +237,14 @@ button.n-e{cursor:pointer;color:var(--ink)}button.n-e:hover{border-color:var(--a
 .guard.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ink)}
 @media print{body.druck-noten *{visibility:hidden}body.druck-noten #panel-slot,body.druck-noten #panel-slot *{visibility:visible}body.druck-noten #panel-slot{position:absolute;left:0;top:0;width:100%}body.druck-noten .n-steuer,body.druck-noten #n-close,body.druck-noten .n-edit,body.druck-noten .n-aend,body.druck-noten .n-plus,body.druck-noten #n-guard{display:none}}
 /* Woche */
-#naechstes{margin-bottom:18px}
+#naechstes{margin-bottom:18px;min-width:0;max-width:100%}
 .nx-kopf{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:8px}
 .nx-kopf h3{margin:0}.nx-kopf .sp,.nx-zeile .sp{flex:1}
 .nx-zahl{font-size:12px;font-weight:600;border-radius:99px;padding:1px 8px;background:var(--warn-soft);color:var(--warn)}
-.nx-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.nx-liste{width:100%;min-width:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,280px);gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:10px;scrollbar-width:thin;scrollbar-color:var(--muted) var(--surface)}
+.nx-liste>.nx-karte{scroll-snap-align:start}
+.nx-liste::-webkit-scrollbar{height:10px}.nx-liste::-webkit-scrollbar-track{background:var(--surface);border-radius:99px}.nx-liste::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px;border:2px solid var(--surface)}.nx-liste::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+.nx-hinweis{font-size:12px}
 .nx-karte{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:4px 10px 10px 4px;padding:10px 12px;display:grid;gap:4px;align-content:start;min-width:0}
 .nx-karte.dringend{border-left-color:var(--warn)}
 .nx-karte.vorbei{border-left-color:var(--live)}
