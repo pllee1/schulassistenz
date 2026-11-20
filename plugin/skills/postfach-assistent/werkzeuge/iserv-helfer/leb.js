@@ -122,16 +122,29 @@
     return r;
   }
 
+  // Leistungsart laut Seitenkopf (Text über dem Formular): 1 mündlich, 2 schriftlich, null unklar
+  function seitenArt() {
+    try {
+      const f = notenSel[0].form; if (!f) return null;
+      const r = document.createRange(); r.setStart(document.body, 0); r.setEndBefore(f);
+      const t = r.toString().toLowerCase(); const m = /m(ü|ue)ndlich/.test(t), sc = /schriftlich/.test(t);
+      return m && !sc ? 1 : sc && !m ? 2 : null;
+    } catch { return null; }
+  }
   async function bewerten(meldung = "") {
     const p = await paketHolen();
     if (!p) return zeigen(ohnePaket);
     const r = vergleich(p);
     zeilen.forEach(z => markiere(z, ""));
-    const passt = r.quote >= 0.5;
+    const sArt = seitenArt();
+    const artFalsch = sArt != null && p.leistungsart && +p.leistungsart !== sArt;
+    const gruppeOk = r.quote >= 0.5;
+    const passt = gruppeOk && !artFalsch;
     const liste = (a, f) => a.length ? `<ul>${a.map(f).join("")}</ul>` : "";
     zeigen(`<div class="was">Bereitgelegt: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)} · ${esc(ART[p.leistungsart] || "")}${p.datum ? " · " + esc(datumDE(p.datum)) : ""}</div>
       ${meldung}
-      ${passt ? "" : `<div class="warn"><b>Passt die Lerngruppe?</b> Nur ${zeilen.length - r.nichtZu.length} von ${zeilen.length} Namen in diesem Fenster stehen in der Kürzelliste von ${esc(p.gruppe)}. Eintragen ist gesperrt.</div>`}
+      ${artFalsch ? `<div class="warn"><b>Falsche Leistung?</b> Bereitgelegt ist „${esc(p.titel)}“ (${esc(ART[p.leistungsart])}), dieses Fenster gehört aber zu einer Leistungsüberprüfung „${esc(ART[sArt])}“. Eintragen ist gesperrt. Bitte in der Startseite die richtige Leistung bereitlegen.</div>` : ""}
+      ${gruppeOk ? "" : `<div class="warn"><b>Passt die Lerngruppe?</b> Nur ${zeilen.length - r.nichtZu.length} von ${zeilen.length} Namen in diesem Fenster stehen in der Kürzelliste von ${esc(p.gruppe)}. Eintragen ist gesperrt.</div>`}
       <div><span class="tag t-neu">${r.neu.length}</span>werden neu eingetragen</div>
       <div><span class="tag t-gleich">${r.gleich.length}</span>stehen schon so in LEB-online</div>
       <div><span class="tag t-anders">${r.anders.length}</span>stehen in LEB-online anders (nur mit Häkchen überschreiben)</div>
@@ -141,14 +154,16 @@
       ${passt ? "" : `<div class="info">Liste ausgeblendet, weil fast nichts passt.</div>`}${!passt ? "" : liste(r.nichtZu, x => `<li>${esc(x.z.name)} (nicht in der Kürzelliste, bleibt leer)</li>`)}
       ${!passt ? "" : liste(r.uebrig, e => `<li>${esc(e.k)} (${esc([e.nach, e.vor].filter(Boolean).join(", "))}) steht nicht in diesem Fenster</li>`)}
       ${r.ohne.length + r.lebOhneAkte.length ? `<div class="info">${r.ohne.length + r.lebOhneAkte.length} ohne Note in der Akte (bleiben unverändert)${r.lebOhneAkte.length ? `, davon ${r.lebOhneAkte.length} mit Note in LEB-online` : ""}.</div>` : ""}
-      <div class="row"><button class="b" id="fill"${passt && (r.neu.length || r.anders.length) ? "" : " disabled"}>Noten eintragen</button><button class="b b2" id="neu">Neu prüfen</button></div>
+      ${passt && (r.neu.length || r.anders.length) ? `<label class="ub"><input type="checkbox" id="bestaetigt"><b>Ja, dieses Fenster ist „${esc(p.titel)}“.</b></label>` : ""}
+      <div class="row"><button class="b" id="fill" disabled>Noten eintragen</button><button class="b b2" id="neu">Neu prüfen</button></div>
       <p class="info">Eingetragene Felder sind grün, abweichende gelb, nicht zugeordnete rot umrandet. Prüfen, dann selbst unten „Speichern“ klicken. Nach dem Speichern zeigt dieser Kasten den Abgleich.</p>`);
     r.nichtZu.forEach(x => markiere(x.z, FARBE.fehlt));
     r.anders.forEach(x => markiere(x.z, FARBE.anders));
     $("#neu").addEventListener("click", () => bewerten());
+    if ($("#bestaetigt")) $("#bestaetigt").addEventListener("change", e => { $("#fill").disabled = !e.target.checked; });
     if ($("#alle-ueb")) $("#alle-ueb").addEventListener("change", e => root.querySelectorAll(".ueb").forEach(c => { c.checked = e.target.checked; }));
     $("#fill").addEventListener("click", () => {
-      if (!passt) return;
+      if (!passt || !$("#bestaetigt") || !$("#bestaetigt").checked) return;
       const ueb = new Set([...root.querySelectorAll(".ueb:checked")].map(c => +c.dataset.i));
       const ziel = [...r.neu, ...r.anders.filter((_, i) => ueb.has(i))];
       let n = 0;
