@@ -15,7 +15,11 @@
   const istListeL = !istBewerten && !istAnlegen && /\/leistungen\/index\.php$/.test(location.pathname) && !!U.searchParams.get(gParam(bereich));
   const istListeG = !istBewerten && !istAnlegen && /\/lernstandskontrolle\/(kurse|klassen)\/index\.php$/.test(location.pathname);
   // Sitzung merken (nur in diesem Browser), damit die Startseite LEB-online direkt an der richtigen Stelle öffnen kann
-  if (sid) try { chrome.runtime.sendMessage({ cmd: "leb-sitzung", origin: location.origin, sid }).catch(() => { }); } catch { }
+  // Nur das Hauptfenster (kein Popup, kein Rahmen) meldet sich; die Startseite steuert später genau diesen Tab an.
+  const istHaupt = window.top === window && !window.opener;
+  if (sid && istHaupt) try { chrome.runtime.sendMessage({ cmd: "leb-sitzung", origin: location.origin, sid }).catch(() => { }); } catch { }
+  // Die Startseite fragt vor dem Wechsel nach der aktuellen Sitzung dieses Tabs (nie eine gespeicherte, alte).
+  if (istHaupt) try { chrome.runtime.onMessage.addListener((m, _s, antwort) => { if (m && m.cmd === "leb-sid-jetzt") { antwort({ origin: location.origin, sid: new URL(location.href).searchParams.get("sid") || null }); } }); } catch { }
   if (!istBewerten && !istAnlegen && !istListeL && !istListeG) return;
 
   // ---------- Namen vergleichen ----------
@@ -270,7 +274,11 @@
     const p = await paketHolen();
     if (!p || !p.direkt) return host.remove();
     const z = await zielHolen(p.gruppe);
-    if (z && sid) { zeigen(`<p>Öffne die Leistungsüberprüfungen von ${esc(p.gruppe)} …</p>`); location.href = listeUrl(z); return; }
+    // Nur einmal je Paket automatisch weiterleiten, sonst kommt man nie wieder in die Kursliste.
+    const merk = "saLebUm" + p.zeit;
+    let schon = false; try { schon = sessionStorage.getItem(merk) === "1"; sessionStorage.setItem(merk, "1"); } catch { }
+    if (z && sid && !schon) { zeigen(`<p>Öffne die Leistungsüberprüfungen von ${esc(p.gruppe)} …</p>`); location.href = listeUrl(z); return; }
+    if (z) return host.remove();
     const anders = bereich === "kurse" ? "klassen" : "kurse";
     zeigen(`<div class="was">Direkt nach LEB-online: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)}</div>
       <p>Einmalig: Welche Zeile ist <b>${esc(p.gruppe)}</b>? Bitte die Zeile anklicken, dann „Merken und weiter“. Danach geht es künftig direkt.</p>

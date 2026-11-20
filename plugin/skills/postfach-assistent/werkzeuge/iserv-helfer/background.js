@@ -373,7 +373,9 @@ async function lebZiele() {
 chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   if (m.cmd === "leb-sitzung") {
     if (/^https:\/\/[a-z0-9.-]+$/i.test(m.origin || "") && /^[\w-]{10,200}$/.test(m.sid || "")) {
-      chrome.storage.session.set({ saLebSitzung: { origin: m.origin, sid: m.sid, zeit: Date.now() } });
+      const t = sender && sender.tab;
+      if (!t || (sender.frameId && sender.frameId !== 0)) return;
+      chrome.storage.session.set({ saLebSitzung: { origin: m.origin, tabId: t.id, windowId: t.windowId, zeit: Date.now() } });
       chrome.storage.local.set({ saLebOrigin: m.origin });
     }
     return;
@@ -398,12 +400,21 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
       const origin = (saLebSitzung && saLebSitzung.origin) || saLebOrigin || adresse;
       if (!origin) return { ok: false, fehler: "Der Helfer kennt LEB-online noch nicht. Bitte LEB-online einmal öffnen, anmelden und Noten PLUS anklicken. Danach klappt der direkte Weg." };
       const ziel = ziele[m.gruppe];
-      const sid = saLebSitzung && saLebSitzung.origin === origin ? saLebSitzung.sid : null;
+      // Nie einen neuen Tab mit gespeicherter Sitzungsnummer öffnen: LEB-online meldet dann ab.
+      // Stattdessen den offenen LEB-Tab nach seiner aktuellen Sitzung fragen und genau diesen Tab weiterschalten.
+      let tab = null, sid = null;
+      if (saLebSitzung && saLebSitzung.tabId != null) {
+        try {
+          const r = await chrome.tabs.sendMessage(saLebSitzung.tabId, { cmd: "leb-sid-jetzt" }, { frameId: 0 });
+          if (r && r.origin === origin && r.sid && /^[\w-]{10,200}$/.test(r.sid)) { tab = saLebSitzung.tabId; sid = r.sid; }
+        } catch { }
+      }
+      if (!tab) return { ok: false, fehler: "Bitte LEB-online in einem Tab öffnen und anmelden (nur einmal, nicht in mehreren Fenstern). Dann hier noch einmal „Direkt in LEB-online“ klicken, der Helfer schaltet dann genau diesen Tab weiter. Alternativ in LEB Noten PLUS › Kurse bzw. Klassen anklicken, der Helfer macht von dort weiter." };
       let url, hinweis;
-      if (!sid) { url = origin + "/"; hinweis = "Bitte bei LEB-online anmelden und dann Noten PLUS › Kurse (bzw. Klassen) anklicken. Der Helfer macht von dort weiter."; }
-      else if (ziel) { url = `${origin}/lernstandskontrolle/${ziel.bereich}/leistungen/index.php?sid=${encodeURIComponent(sid)}&${ziel.bereich === "kurse" ? "kurse_id" : "zeug_klassen_faecher_id"}=${encodeURIComponent(ziel.id)}`; hinweis = "LEB-online ist geöffnet. Falls die Anmeldung abgelaufen ist: anmelden, dann Noten PLUS › Kurse bzw. Klassen anklicken."; }
+      if (ziel) { url = `${origin}/lernstandskontrolle/${ziel.bereich}/leistungen/index.php?sid=${encodeURIComponent(sid)}&${ziel.bereich === "kurse" ? "kurse_id" : "zeug_klassen_faecher_id"}=${encodeURIComponent(ziel.id)}`; hinweis = "Der LEB-Tab zeigt jetzt die Leistungsüberprüfungen."; }
       else { url = `${origin}/lernstandskontrolle/kurse/index.php?sid=${encodeURIComponent(sid)}`; hinweis = "Einmalig: In LEB-online die Zeile dieser Lerngruppe anklicken und „Merken und weiter“."; }
-      await chrome.tabs.create({ url });
+      await chrome.tabs.update(tab, { url, active: true });
+      try { if (saLebSitzung.windowId != null) await chrome.windows.update(saLebSitzung.windowId, { focused: true }); } catch { }
       return { ok: true, hinweis };
     })().then(antwort).catch(e => antwort({ ok: false, fehler: "Helfer-Fehler (" + String((e && e.message) || e) + ")." }));
     return true;
