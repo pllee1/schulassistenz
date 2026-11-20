@@ -41,15 +41,29 @@ const ARTEN=[
 ];
 
 /* ---------- Lerngruppe aus dem Titel erkennen ---------- */
-const FACH={ma:["ma","mathe","mathematik"],mathematik:["ma","mathe","mathematik"],
-  nawi:["nawi","nw","naturwissenschaften","naturwissenschaft"],nw:["nawi","nw","naturwissenschaften"],
-  inf:["inf","info","informatik","if"],informatik:["inf","info","informatik","if"],
-  bio:["bio","biologie","bi"],biologie:["bio","biologie","bi"],che:["che","ch","chemie"],chemie:["che","ch","chemie"],
-  phy:["phy","ph","physik"],physik:["phy","ph","physik"],de:["de","deu","deutsch"],deutsch:["de","deu","deutsch"],
-  en:["en","eng","englisch"],englisch:["en","eng","englisch"],ek:["ek","erdkunde","geo"],ge:["ge","geschichte"],
-  po:["po","politik","pw"],sp:["sp","sport"],mu:["mu","musik"],ku:["ku","kunst"],re:["re","rel","religion"],wn:["wn","werte"],
-  fr:["fr","franz","französisch"],la:["la","latein"],sn:["sn","spa","spanisch"],wpk:["wpk"]};
-const woerter=t=>String(t||"").toLowerCase().replace(/\b(\d{1,2})([a-f])\b/g,"$1 $2 $1$2").split(/[^a-zäöüß0-9]+/).filter(Boolean);
+/* Fächer mit üblichen Abkürzungen. Jede Zeile ist eine Gruppe gleichbedeutender Wörter. */
+const FACH_GRUPPEN=[
+  ["ma","mat","mathe","mathematik"],
+  ["nawi","nw","naturwissenschaft","naturwissenschaften","naturwiss"],
+  ["inf","info","informatik","if"],
+  ["bio","bi","biologie"],
+  ["che","ch","chem","chemie"],
+  ["phy","ph","physik"],
+  ["de","deu","deutsch"],
+  ["en","eng","englisch"],
+  ["ek","erdkunde","geo","geographie","geografie"],
+  ["ge","gesch","geschichte"],
+  ["po","pol","politik","pw","powi"],
+  ["gl","gesellschaftslehre"],
+  ["sp","spo","sport"],["mu","mus","musik"],["ku","kun","kunst"],
+  ["re","rel","reli","religion","ru","rk","ev"],["wn","wun","werte","werteundnormen"],
+  ["fr","frz","franz","französisch"],["la","lat","latein"],["sn","spa","spanisch"],
+  ["wi","wirt","wirtschaft"],["tc","tech","technik"],["ast","astronomie"],
+  ["wpk"]];
+const FACH={};FACH_GRUPPEN.forEach(g=>g.forEach(w=>{FACH[w]=g}));
+const LEIST_ENDE=/^(.{2,}?)(klassenarbeit|arbeit|klausur|test|lernkontrolle|kontrolle|lzk|ka)$/;
+const woerter=t=>{const w=String(t||"").toLowerCase().replace(/\b(\d{1,2})([a-f])\b/g,"$1 $2 $1$2").split(/[^a-zäöüß0-9]+/).filter(Boolean);
+  const plus=[];w.forEach(x=>{const m=x.match(LEIST_ENDE);if(m&&FACH[m[1]])plus.push(m[1],m[2])});return w.concat(plus)};
 function gruppeInfo(g){
   const t=g.gruppeText||"";const feld=n=>((t.match(new RegExp("^"+n+":\\s*(.+)$","mi"))||[])[1]||"").trim();
   const teile=g.id.toLowerCase().split(/[-_ ]+/);
@@ -226,7 +240,11 @@ function termineSammeln(von,bis,auchGefiltert){
     .sort((a,b)=>(a.iso+a.zeit).localeCompare(b.iso+b.zeit));
 }
 function erkennen(t){
-  const art=t._mm?ARTEN.find(a=>a.id==="mitarbeit"):ARTEN.find(a=>!a.nurIntern&&a.muster.test(t.titel));
+  let art=t._mm?ARTEN.find(a=>a.id==="mitarbeit"):ARTEN.find(a=>!a.nurIntern&&a.muster.test(t.titel));
+  // Zusammengesetzte Wörter wie „Mathearbeit“, „Bioklausur“, „Info-LK 2“
+  if(!art||["konferenz","frist","projekt"].includes(art.id)){const w=woerter(t.titel);
+    if(w.some(x=>{const m=x.match(LEIST_ENDE);return m&&FACH[m[1]]&&/arbeit|klausur|ka|kontrolle|lzk/.test(m[2])})||/\blk\s*\d/i.test(t.titel))art=ARTEN.find(a=>a.id==="klassenarbeit");
+    else if(w.some(x=>{const m=x.match(LEIST_ENDE);return m&&FACH[m[1]]&&m[2]==="test"}))art=ARTEN.find(a=>a.id==="test")}
   t.art=art||null;t.gruppe=t._gruppe||gruppeErkennen(t.titel);t.nr=art&&art.id==="klassenarbeit"?nummer(t.titel):null;
   const heute=new Date();heute.setHours(0,0,0,0);
   t.tage=Math.round((new Date(t.iso+"T00:00")-heute)/864e5);
@@ -251,22 +269,28 @@ function zeigen(){
   const kalZahl=kalListe().filter(k=>k.an&&(k.events||[]).length).length;
   const zaehl={};liste.forEach(t=>{const n=t.art?t.art.name:"nicht erkannt";zaehl[n]=(zaehl[n]||0)+1});
   const erkannt=liste.filter(t=>t.art).length;
-  const zeilen=liste.filter(t=>alle||t.art).map((t,i)=>{
+  const filt=store.get("erk-filter","alle");
+  const meine=t=>!!(t.gruppe&&(t.gruppe.mehrdeutig||(t.gruppe.id&&!t.gruppe.nurKlasse&&t.gruppe.id!=="alle Lerngruppen")));
+  const leistung=t=>!!(t.art&&/^(klassenarbeit|test)$/.test(t.art.id));
+  const passt=t=>(alle||t.art)&&(filt==="alle"||(filt==="meine"&&(meine(t)||t._mm||t.gruppe&&t.gruppe.id==="alle Lerngruppen"))||(filt==="klausuren"&&leistung(t)&&meine(t)));
+  const zeilen=liste.filter(passt).map((t,i)=>{
+    const mein=leistung(t)&&meine(t);
     const tagTxt=t.tage===0?"heute":t.tage>0?`in ${t.tage} T.`:`vor ${-t.tage} T.`;
     const k=t.schritt&&t.schritt.kachel?ALLE.find(x=>x.id===t.schritt.kachel):null;
     const bez=bezugText(t.titel,t.gruppe,!!(t.art&&/^(klassenarbeit|test)$/.test(t.art.id)))+(t.nr?` · Nr. ${t.nr}`:"");
-    return `<tr${t.art?"":' style="opacity:.6"'}${t.weg?' title="Vom Kalenderfilter ausgeblendet"':""}>
+    return `<tr${t.art?"":' style="opacity:.6"'}${mein?' class="erk-mein"':""}${t.weg?' title="Vom Kalenderfilter ausgeblendet"':""}>
       <td style="white-space:nowrap">${esc(datumDE(t.iso))}${t.zeit?` ${esc(t.zeit)}`:""}<br><span class="note">${tagTxt}</span></td>
       <td>${esc(t.titel)}<br><span class="note">${esc(t.quelle)}${t.weg?" · gefiltert":""}</span></td>
-      <td>${t.art?`<span class="chip ${t.art.farbe}" style="white-space:nowrap">${esc(t.art.name)}</span>`:'<span class="note">nicht erkannt</span>'}</td>
+      <td>${mein?`<span class="chip erk-meine" style="white-space:nowrap">Meine</span> `:""}${t.art?`<span class="chip ${t.art.farbe}" style="white-space:nowrap">${esc(t.art.name)}</span>`:'<span class="note">nicht erkannt</span>'}</td>
       <td>${bez?esc(bez):'<span class="note">–</span>'}</td>
       <td>${t.schritt&&t.schritt.text?esc(t.schritt.text):""}${k?`<br><button class="btn ghost small" data-erk="${i}">${esc(k.titel)}</button>`:""}${t.schritt&&t.schritt.leb&&typeof window.saLebOeffnen==="function"?` <button class="btn ghost small" data-erk-leb="${i}">Nach LEB-online</button>`:""}</td></tr>`});
-  const sichtbar=liste.filter(t=>alle||t.art);
+  const sichtbar=liste.filter(passt);
   slot.innerHTML=`<div class="panel"><h4>Termine erkennen (Probe)</h4>
     <p class="note">Nur Ansicht: Termine aus den eingeschalteten Kalendern${(ordner.aufgaben||[]).length?" und aus aufgaben.md":""} werden einer Art zugeordnet, mit deiner Lerngruppe verknüpft und bekommen einen Vorschlag für den nächsten Schritt. Gespeichert oder an Claude geschickt wird nichts.</p>
     <div class="fields">
       <label style="flex:0 1 340px">Zeitraum<select id="erk-zr">
         ${[["2-8","2 Wochen zurück bis 8 Wochen voraus"],["0-4","nächste 4 Wochen"],["4-12","4 Wochen zurück bis 12 Wochen voraus"],["20-40","ganzes Schuljahr (soweit geladen)"]].map(([v,l])=>`<option value="${v}"${v===zr?" selected":""}>${l}</option>`).join("")}</select></label>
+      <label style="flex:0 1 260px">Anzeigen<select id="erk-filter">${[["alle","alle Termine"],["meine","nur meine Lerngruppen"],["klausuren","nur meine Klausuren und Tests"]].map(([v,l])=>`<option value="${v}"${v===filt?" selected":""}>${l}</option>`).join("")}</select></label>
     </div>
     <p class="note" style="display:flex;gap:18px;flex-wrap:wrap;margin-top:6px"><span style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="erk-alle"${alle?" checked":""}><label for="erk-alle">auch nicht erkannte zeigen</label></span><span style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="erk-gef"${gef?" checked":""}><label for="erk-gef">auch vom Kalenderfilter ausgeblendete</label></span></p>
     <p class="note" style="margin:8px 0">${liste.length} Termine aus ${kalZahl} Kalender${kalZahl===1?"":"n"}, davon ${erkannt} erkannt. ${Object.entries(zaehl).sort((a,b)=>b[1]-a[1]).map(([n,z])=>`<span class="chip"><b>${z}</b> ${esc(n)}</span>`).join(" ")}</p>
@@ -276,6 +300,7 @@ function zeigen(){
     <div class="actions"><button class="btn ghost" id="erk-zu">Schließen</button></div></div>`;
   $("#erk-zr").addEventListener("change",e=>{store.set("erk-zeitraum",e.target.value);zeigen();nxBald()});
   $("#erk-alle").addEventListener("change",e=>{store.set("erk-alle",e.target.checked);zeigen()});
+  $("#erk-filter").addEventListener("change",e=>{store.set("erk-filter",e.target.value);zeigen()});
   $("#erk-gef").addEventListener("change",e=>{store.set("erk-gefiltert",e.target.checked);zeigen()});
   $("#erk-zu").addEventListener("click",()=>slot.innerHTML="");
   const tab=$("#erk-tab");if(tab&&window.ResizeObserver){let tm=null;new ResizeObserver(()=>{clearTimeout(tm);tm=setTimeout(()=>{if(tab.isConnected&&tab.offsetHeight>0)store.set("erk-hoehe",tab.offsetHeight)},300)}).observe(tab)}
