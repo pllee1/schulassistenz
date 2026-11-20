@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Schulassistenz-Helfer",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Öffnet die Schulassistenz-Startseite, gibt Mails und Messenger-Nachrichten aus IServ (oder markierten Text von jeder Seite) mit Kürzeln statt Namen an Claude, setzt die Namen in der Antwort wieder ein und holt für die Startseite Stundenplan, Kalender und den Fehlzeiten-Export aus WebUntis. Die Kürzelliste bleibt auf diesem Rechner.",
   "permissions": [
     "storage",
@@ -69,5 +69,17 @@
   },
   "content_security_policy": {
     "sandbox": "sandbox allow-scripts allow-forms allow-popups allow-modals allow-downloads; default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icon48.png",
+        "schriften/*.ttf"
+      ],
+      "matches": [
+        "https://*/*",
+        "http://*/*"
+      ]
+    }
+  ]
 }

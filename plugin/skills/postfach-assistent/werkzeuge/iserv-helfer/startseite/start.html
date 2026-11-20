@@ -15,23 +15,32 @@
 /* schulassistenz · Startseite. Läuft offline, lädt nichts aus dem Internet.
    Layout: Suchfeld als Haupteingang, darunter Live-Beobachtung und Favoriten; alle Werkzeuge in Reitern; rechts Lerngruppen und Akten. */
 :root{
-  --bg:#11161e; --surface:#19212c; --ink:#e6ebf2; --muted:#9aa5b5; --line:#2a3544;
-  --accent:#7fb0f0; --accent-soft:#1d2c42; --live:#ff8a50; --live-soft:#3a2219; --on-live:#1b0f09;
-  --ok:#6fcf97; --ok-soft:#173226; --warn:#f2b45a; --warn-soft:#352a17; --err:#ff8a80; --err-soft:#3a1a18;
-  --f-display:"Bahnschrift","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
-  --f-body:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+  /* Design „Graphit & Heft“ (Paul, 20.11.2026): warmes Graphit, Heftlinien, roter Rand, Lora für Überschriften */
+  --bg:#191816; --surface:#22201d; --surface2:#2a2724; --ink:#efe8da; --muted:#aaa196; --line:#38342f;
+  --accent:#8fb3e8; --accent-soft:#232c3a; --live:#e9786a; --live-soft:#3a2420; --on-live:#1f0d0a;
+  --ok:#8fcf9f; --ok-soft:#1f3326; --warn:#e9b65f; --warn-soft:#362b1a; --err:#f28b7d; --err-soft:#3a1d1a;
+  --rand:rgba(233,120,106,.45); --heftlinie:rgba(143,179,232,.05);
+  --f-display:"SA Lora","Lora",Georgia,"Cambria",serif;
+  --f-body:"SA Work Sans","Work Sans","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
   --f-mono:"Cascadia Mono",Consolas,ui-monospace,monospace;
   color-scheme:dark;
 }
+@font-face{font-family:"SA Lora";src:url("../schriften/Lora-Regular.ttf");font-weight:400}
+@font-face{font-family:"SA Lora";src:url("../schriften/Lora-Bold.ttf");font-weight:600 700}
+@font-face{font-family:"SA Work Sans";src:url("../schriften/WorkSans-Regular.ttf");font-weight:400 500}
+@font-face{font-family:"SA Work Sans";src:url("../schriften/WorkSans-Bold.ttf");font-weight:600 700}
 /* Immer dunkles Design (Paul, 18.11.2026), wie Pseudonymisierer und Helfer. */
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body{background:repeating-linear-gradient(0deg,transparent 0 31px,var(--heftlinie) 31px 32px),var(--bg);background-attachment:fixed;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;top:0;bottom:0;left:max(14px,calc(50% - 612px));width:2px;background:var(--rand);pointer-events:none}
 .wrap{max-width:1160px;margin:0 auto;padding:20px 20px 48px;display:grid;gap:20px}
 .banner{border-radius:8px;padding:8px 12px;font-size:13.5px}
 .banner.err{background:var(--err-soft);color:var(--err)}
 header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between}
-h1{font-family:var(--f-display);font-weight:600;font-size:30px;margin:0;letter-spacing:-.01em}
+h1{font-family:var(--f-display);font-weight:700;font-size:32px;margin:0;letter-spacing:0;display:flex;align-items:center;gap:12px}
+h1::after{content:".";margin-left:-12px;color:var(--live)}
+h1 img{width:40px;height:40px}
 .status{display:flex;flex-wrap:wrap;gap:8px}
 .chip{font-size:12.5px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 10px;color:var(--muted)}
 .chip b{color:var(--ink);font-weight:600}
@@ -41,8 +50,8 @@ h1{font-family:var(--f-display);font-weight:600;font-size:30px;margin:0;letter-s
 .search input:focus{border-color:var(--accent);outline:none}
 .hint{font-size:12.5px;color:var(--muted);margin:6px 2px 0}
 .top{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,2fr);gap:14px}
-.live{background:var(--live-soft);border-radius:14px;padding:16px;display:grid;gap:10px;align-content:start}
-.live h2{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0}
+.live{background:var(--live-soft);border-radius:6px;border-left:4px solid var(--live);padding:16px;display:grid;gap:10px;align-content:start}
+.live h2{font-family:var(--f-display);font-weight:700;font-size:21px;margin:0;color:var(--live)}
 .live p{margin:0;color:var(--muted);font-size:13.5px}
 .live .row{display:flex;flex-wrap:wrap;gap:8px}
 .live-wahl{flex:1;min-width:160px;font:inherit;font-size:15px;padding:9px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
@@ -52,10 +61,11 @@ h1{font-family:var(--f-display);font-weight:600;font-size:30px;margin:0;letter-s
 .main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:start}
 .col{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;min-width:0}
 .col>section{min-width:0}
-h3{font-family:var(--f-display);font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:500}
+h3{font-family:var(--f-display);font-size:16px;font-style:italic;color:var(--ink);margin:0 0 8px;font-weight:400}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:10px}
-.tile{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;display:grid;min-height:78px;transition:border-color .12s}
+.tile{position:relative;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:4px 10px 10px 4px;display:grid;min-height:78px;transition:border-color .12s}
 .tile:hover{border-color:var(--accent)}
+.tile:hover,.tile:focus-within{border-left-color:var(--live)}
 .tile .go{all:unset;box-sizing:border-box;cursor:pointer;padding:11px 36px 11px 13px;display:grid;gap:2px;align-content:start;border-radius:10px;color:var(--ink)}
 .tile strong{font-weight:600;font-size:14.5px}
 .tile .d{font-size:12.5px;color:var(--muted)}
@@ -85,7 +95,7 @@ h3{font-family:var(--f-display);font-size:13px;text-transform:uppercase;letter-s
 select,input{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
 input.mono{font-family:var(--f-mono)}
 .btn{font:inherit;font-weight:600;font-size:14px;border-radius:8px;padding:8px 14px;border:1px solid transparent;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-.btn.primary{background:var(--accent);color:var(--surface)}
+.btn.primary{background:var(--accent);color:#101a2b}
 .btn.live-btn{background:var(--live);color:var(--on-live)}
 .btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
 .btn.small{font-size:13px;padding:5px 10px}
@@ -328,7 +338,7 @@ button.kq{cursor:pointer} button.kq[aria-pressed="false"]{color:var(--muted);tex
 .m-check{display:flex;gap:6px;align-items:center}
 .m-hinweis{margin-top:8px}
 /* Tooltips (Paul, 20.11.2026): kurzer Hinweis beim Überfahren oder Antabben eines Knopfs, dunkles Design */
-#tipp{position:fixed;z-index:9999;max-width:300px;padding:7px 10px;border-radius:8px;background:#0b0f15;color:var(--ink);border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.45);font:13px/1.45 var(--f-body);pointer-events:none;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s}
+#tipp{position:fixed;z-index:9999;max-width:300px;padding:7px 10px;border-radius:8px;background:#12110f;color:var(--ink);border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.45);font:13px/1.45 var(--f-body);pointer-events:none;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s}
 #tipp.an{opacity:1;transform:none}
 #tipp b{color:var(--accent);font-weight:600}
 </style>
@@ -338,7 +348,7 @@ button.kq{cursor:pointer} button.kq[aria-pressed="false"]{color:var(--muted);tex
   <div id="banner" class="banner err" hidden></div>
 
   <header>
-    <h1>Schulassistenz</h1>
+    <h1><img src="../icon48.png" alt="">Schulassistenz</h1>
     <div class="status" id="status"></div>
   </header>
 

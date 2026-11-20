@@ -1,19 +1,26 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><title>Schulassistenz-Helfer · Einstellungen</title>
 <style>
- body{font-family:system-ui,"Segoe UI",sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#1d2321;background:#f7f9f8}
- h1{font-size:22px;color:#2f5d50} h2{font-size:16px;margin-top:28px}
- .karte{background:#fff;border:1px solid #d5dedb;border-radius:12px;padding:16px;margin:12px 0}
- .drop{border:2px dashed #9cb8ad;border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#fbfdfc}
- .drop.over{background:#e6f3ee}
- input[type=text]{padding:7px;border:1px solid #c9d3cf;border-radius:8px;width:280px}
- button{padding:8px 12px;border-radius:8px;border:1px solid #2f5d50;background:#2f5d50;color:#fff;cursor:pointer}
- button.b2{background:#fff;color:#2f5d50}
- table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px} td,th{border-bottom:1px solid #eee;padding:4px 6px;text-align:left}
- .info{font-size:13px;color:#4a5552} .ok{color:#1f7a55} .err{color:#a33}
- .test{width:100%;min-height:90px;font-family:Consolas,monospace;font-size:12px}
+ /* Design „Graphit & Heft“ (Paul, 20.11.2026) */
+ @font-face{font-family:"SA Lora";src:url("schriften/Lora-Bold.ttf");font-weight:700}
+ @font-face{font-family:"SA Work Sans";src:url("schriften/WorkSans-Regular.ttf");font-weight:400}
+ @font-face{font-family:"SA Work Sans";src:url("schriften/WorkSans-Bold.ttf");font-weight:700}
+ :root{color-scheme:dark}
+ body{font-family:"SA Work Sans","Segoe UI",system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#efe8da;background:#191816}
+ h1{font-family:"SA Lora",Georgia,serif;font-size:26px;color:#efe8da;display:flex;align-items:center;gap:12px} h1 img{width:36px;height:36px}
+ h2{font-family:"SA Lora",Georgia,serif;font-size:17px;margin-top:28px}
+ a{color:#8fb3e8}
+ .karte{background:#22201d;border:1px solid #38342f;border-left:4px solid #e9786a;border-radius:4px 12px 12px 4px;padding:16px;margin:12px 0}
+ .drop{border:2px dashed #4a453e;border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#1d1c1a}
+ .drop.over{background:#232c3a;border-color:#8fb3e8}
+ input[type=text]{padding:7px;border:1px solid #38342f;border-radius:8px;width:280px;background:#191816;color:#efe8da}
+ button{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid #8fb3e8;background:#8fb3e8;color:#101a2b;font-weight:700;cursor:pointer}
+ button.b2{background:transparent;color:#efe8da;border-color:#38342f;font-weight:400}
+ table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px} td,th{border-bottom:1px solid #38342f;padding:4px 6px;text-align:left}
+ .info{font-size:13px;color:#aaa196} .ok{color:#8fcf9f} .err{color:#f28b7d}
+ .test{width:100%;min-height:90px;font-family:Consolas,monospace;font-size:12px;background:#22201d;color:#efe8da;border:1px solid #38342f;border-radius:8px}
 </style></head><body>
-<h1>Schulassistenz-Helfer</h1>
+<h1><img src="icon48.png" alt="">Schulassistenz-Helfer</h1>
 <p class="info">Die Erweiterung holt Mails und Messenger-Nachrichten aus IServ (oder markierten Text von jeder Webseite), ersetzt Namen durch Kürzel und gibt nur das Ergebnis an Claude. Die Kürzelliste wird nur in diesem Browser gespeichert und nie verschickt.</p>
 <p class="info"><b>Neu ab 0.9:</b> Die Schulassistenz-Startseite wohnt im Helfer. <a href="startseite/start.html" target="_blank">Startseite öffnen</a> oder einfach auf das Helfer-Symbol klicken. Das Helfer-Fenster für Mails öffnest du per Rechtsklick auf das Symbol oder auf der Seite.</p>
 

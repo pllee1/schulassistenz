@@ -204,51 +204,47 @@
   setInterval(feldBeobachten, 2000);
 
   // ---- Oberfläche im Shadow-DOM (unabhängig vom IServ-Layout)
+  try { [["SA Lora", "Lora-Bold.ttf", "700"], ["SA Work Sans", "WorkSans-Regular.ttf", "400"], ["SA Work Sans", "WorkSans-Bold.ttf", "700"]].forEach(([n, f, w]) => {
+    const ff = new FontFace(n, `url(${chrome.runtime.getURL("schriften/" + f)})`, { weight: w }); ff.load().then(x => document.fonts.add(x)).catch(() => {}); }); } catch (e) {}
   const host = document.createElement("div"); host.id = "sa-helfer-host";
   const root = host.attachShadow({ mode: "open" });
   root.innerHTML = `<style>
-    :host{all:initial;color-scheme:light}
-    *{box-sizing:border-box;font-family:system-ui,"Segoe UI",sans-serif}
-    .fab{position:fixed;right:18px;bottom:18px;z-index:2147483646;background:#2f5d50;color:#fff;border:0;border-radius:22px;padding:10px 14px;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer}
-    .fab:hover{background:#244a40}
-    .panel{color-scheme:light;position:fixed;right:18px;bottom:70px;z-index:2147483647;width:min(460px,calc(100vw - 36px));max-height:calc(100vh - 100px);overflow:auto;background:#fff;color:#1d2321;border:1px solid #c9d3cf;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.25);padding:14px;font-size:14px;display:none}
+    :host{all:initial;color-scheme:dark}
+    /* Design „Graphit & Heft“ (Paul, 20.11.2026): immer dunkel, wie Startseite und Pseudonymisierer */
+    *{box-sizing:border-box;font-family:"SA Work Sans","Segoe UI",system-ui,sans-serif}
+    .fab{position:fixed;right:18px;bottom:18px;z-index:2147483646;display:flex;align-items:center;gap:8px;background:#8fb3e8;color:#101a2b;border:0;border-radius:22px;padding:8px 16px 8px 9px;font-size:14px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.35);cursor:pointer}
+    .fab img{width:24px;height:24px;border-radius:6px}
+    .fab:hover{background:#a6c3ee}
+    .panel{color-scheme:dark;position:fixed;right:18px;bottom:70px;z-index:2147483647;width:min(460px,calc(100vw - 36px));max-height:calc(100vh - 100px);overflow:auto;background:#191816;color:#efe8da;border:1px solid #38342f;border-top:4px solid #e9786a;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.5);padding:14px 16px;font-size:14px;display:none}
     .panel.offen{display:block}
-    h2{font-size:16px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}
-    .x{background:none;border:0;font-size:20px;cursor:pointer;color:#555}
-    .tabs{display:flex;gap:4px;margin-bottom:10px}
-    .tabs button{flex:1;padding:7px;border:1px solid #c9d3cf;background:#f3f6f5;color:#1d2321;border-radius:8px;cursor:pointer;font-size:13px}
-    .tabs button.an{background:#2f5d50;color:#fff;border-color:#2f5d50}
-    label{display:block;font-size:12px;color:#4a5552;margin:8px 0 3px}
-    select,textarea{width:100%;color:#1d2321;background:#fff;font-size:13px;border:1px solid #c9d3cf;border-radius:8px;padding:6px}
-    textarea{min-height:150px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+    h2{font-family:"SA Lora",Georgia,serif;font-size:17px;font-weight:700;margin:0 0 10px;padding-bottom:10px;border-bottom:1px solid #38342f;display:flex;gap:10px;justify-content:space-between;align-items:center}
+    h2 .t{font-family:inherit;display:flex;align-items:center;gap:10px} h2 img{width:24px;height:24px;border-radius:6px}
+    .x{background:none;border:0;font-size:20px;cursor:pointer;color:#aaa196}
+    .tabs{display:flex;gap:4px;margin-bottom:10px;background:#22201d;border-radius:10px;padding:4px}
+    .tabs button{flex:1;padding:6px;border:0;background:transparent;color:#aaa196;border-radius:7px;cursor:pointer;font-size:13px}
+    .tabs button.an{background:#8fb3e8;color:#101a2b;font-weight:700}
+    label{display:block;font-size:12px;color:#aaa196;margin:8px 0 3px}
+    select,textarea{width:100%;color:#efe8da;background:#22201d;font-size:13px;border:1px solid #38342f;border-radius:8px;padding:6px}
+    textarea{min-height:150px;font-family:"Cascadia Mono",Consolas,ui-monospace,monospace;font-size:12px;line-height:1.5}
+    select:focus,textarea:focus{outline:2px solid #8fb3e8;outline-offset:1px}
     .zeile{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-    .b{padding:8px 12px;border-radius:8px;border:1px solid #2f5d50;background:#2f5d50;color:#fff;cursor:pointer;font-size:13px}
-    .b2{background:#fff;color:#2f5d50}
-    .info{font-size:12px;color:#4a5552;margin-top:6px}
-    .warn{background:#fff4e0;border:1px solid #f0c27a;border-radius:8px;padding:8px;font-size:12px;margin-top:6px}
-    .ok{background:#e6f3ee;border:1px solid #9cc9b8;border-radius:8px;padding:8px;font-size:12px;margin-top:6px}
-    .verdacht{max-height:140px;overflow:auto;border:1px solid #eee;border-radius:8px;padding:4px 6px;margin-top:4px}
-    .verdacht label{display:flex;gap:6px;align-items:flex-start;margin:3px 0;color:#1d2321;font-size:12px}
-    .verdacht b{background:#ffe1a8}
-    a{color:#2f5d50}
+    .b{padding:8px 13px;border-radius:8px;border:1px solid #8fb3e8;background:#8fb3e8;color:#101a2b;font-weight:700;cursor:pointer;font-size:13px}
+    .b2{background:transparent;color:#efe8da;border-color:#38342f;font-weight:400}
+    .b2:hover{border-color:#8fb3e8}
+    .info{font-size:12px;color:#aaa196;margin-top:6px}
+    .warn{background:#362b1a;border:1px solid #6b5426;color:#f3e3c3;border-radius:8px;padding:8px;font-size:12px;margin-top:6px}
+    .ok{background:#1f3326;border:1px solid #2f5a3d;color:#cfeedd;border-radius:8px;padding:8px;font-size:12px;margin-top:6px}
+    .verdacht{max-height:140px;overflow:auto;border:1px solid #38342f;border-radius:8px;padding:4px 6px;margin-top:4px}
+    .verdacht label{display:flex;gap:6px;align-items:flex-start;margin:3px 0;color:#efe8da;font-size:12px}
+    .verdacht b{background:#5a4520;color:#fff}
+    a{color:#8fb3e8}
     .ver{display:none}
-    /* Dunkles Design passend zu IServ im Dark-Theme (und zu Chromes automatischem Dunkelmodus) */
-    .panel.dunkel{color-scheme:dark;background:#1f2423;color:#e8eeec;border-color:#3a4442}
-    .dunkel label,.dunkel .info{color:#b9c6c2}
-    .dunkel .tabs button{background:#2a302f;color:#e8eeec;border-color:#3a4442}
-    .dunkel .tabs button.an{background:#3d7a68;border-color:#3d7a68;color:#fff}
-    .dunkel select,.dunkel textarea{background:#2a302f;color:#e8eeec;border-color:#3a4442}
-    .dunkel .hilfe{background:#2a302f} .dunkel .hilfe b{color:#8fd1bb}
-    .dunkel .verdacht{border-color:#3a4442} .dunkel .verdacht label{color:#e8eeec} .dunkel .verdacht b{background:#6b5520;color:#fff}
-    .dunkel .b{background:#3d7a68;border-color:#3d7a68;color:#fff} .dunkel .b2{background:transparent;color:#8fd1bb;border-color:#8fd1bb}
-    .dunkel .warn{background:#4a3a1c;border-color:#8a6a2a;color:#f3e3c3} .dunkel .ok{background:#1f3d33;border-color:#3d7a68;color:#d6efe6}
-    .dunkel a{color:#8fd1bb} .dunkel .x{color:#b9c6c2}
-    .hilfe{background:#f3f6f5;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;line-height:1.45}
-    .hilfe div{margin:2px 0} .hilfe b{color:#2f5d50;display:inline-block;min-width:92px}
+    .hilfe{background:#22201d;border-left:3px solid #e9786a;border-radius:4px 8px 8px 4px;padding:8px 10px;margin-top:6px;font-size:12px;line-height:1.45}
+    .hilfe div{margin:2px 0} .hilfe b{color:#8fb3e8;display:inline-block;min-width:92px}
   </style>
-  <button class="fab" title="Schulassistenz-Helfer">✉ An Claude</button>
+  <button class="fab" title="Schulassistenz-Helfer"><img src="${chrome.runtime.getURL("icon48.png")}" alt="">An Claude</button>
   <div class="panel" role="dialog" aria-label="Schulassistenz-Helfer">
-    <h2>Schulassistenz-Helfer <button class="x" title="Schließen">×</button></h2>
+    <h2><span class="t"><img src="${chrome.runtime.getURL("icon48.png")}" alt="">Schulassistenz-Helfer</span> <button class="x" title="Schließen">×</button></h2>
     <div class="tabs"><button data-t="hin" class="an">An Claude</button><button data-t="rueck">Antwort einsetzen</button></div>
     <div data-s="hin">
       <div class="keineListe warn" style="display:none">Noch keine Kürzelliste geladen. Ohne Liste werden nur Mailadressen und Verdachtsstellen ersetzt. <a href="#" class="zuEinst">Kürzelliste laden</a></div>
