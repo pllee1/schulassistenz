@@ -275,6 +275,86 @@ function zeigen(){
   slot.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
+/* ---------- „Als Nächstes“: kompakter Kasten über der Wochenansicht ----------
+   Zeigt nur Termine mit einem konkreten nächsten Schritt, höchstens 4 Karten, Überfälliges zuerst.
+   Mitarbeitsnoten aller Lerngruppen werden zu einer Karte zusammengefasst. „Erledigt“ und „Später“ merkt sich der Browser. */
+const NX_ARTEN=new Set(["klassenarbeit","test","mitarbeit","konf-zeugnis","notenschluss","eltern","ausflug","pruefung"]);
+const NX_KURZ={klassenarbeit:"Klassenarbeit",test:"Test/Referat",mitarbeit:"Mitarbeitsnote","konf-zeugnis":"Konferenz",notenschluss:"Bewertungsstopp",eltern:"Eltern",ausflug:"Ausflug",pruefung:"Prüfung"};
+const nxWeg=()=>store.get("nx-weg",{})||{};
+const nxKey=t=>t.iso+"|"+(t._mm?"mitarbeit":t.titel.toLowerCase().trim());
+function nxAusgeblendet(t){const w=nxWeg()[nxKey(t)];if(!w)return false;if(w==="erledigt")return true;return isoTag(new Date())<w}
+function nxSetzen(key,wert){const w=nxWeg();
+  const heute=isoTag(new Date());for(const k in w)if(w[k]!=="erledigt"&&w[k]<=heute||k.slice(0,10)<plusT(heute,-120))delete w[k];  // aufräumen
+  w[key]=wert;store.set("nx-weg",w)}
+function nxKarten(){
+  const von=new Date();von.setHours(0,0,0,0);von.setDate(von.getDate()-42);
+  const bis=new Date();bis.setHours(23,59,59,0);bis.setDate(bis.getDate()+21);
+  const liste=[...termineSammeln(von,bis,false),...ferienErinnerungen(von,bis)].map(erkennen).filter(t=>{
+    if(!t.art||!NX_ARTEN.has(t.art.id)||!t.schritt||!(t.schritt.kachel||t.schritt.leb))return false;
+    if(t.art.id==="test"&&t.tage>0)return false;               // angesagt, noch nichts zu tun
+    if(t.tage>(t.art.id==="ausflug"||t.art.id==="mitarbeit"?21:14))return false;
+    if(t.tage<(t.art.id==="klassenarbeit"?-42:-14))return false;
+    return !nxAusgeblendet(t)});
+  // Mitarbeitsnoten je Termin zusammenfassen
+  const karten=[],mm={};
+  for(const t of liste){
+    if(t._mm){const k=t.iso;if(!mm[k]){mm[k]={...t,gruppen:[]};karten.push(mm[k])}mm[k].gruppen.push(t);continue}
+    karten.push(t)}
+  karten.sort((a,b)=>{const ua=a.tage<0?0:1,ub=b.tage<0?0:1;return ua-ub||(ua===0?a.tage-b.tage:a.tage-b.tage)});
+  return karten;
+}
+function nxTag(t){return t.tage===0?"heute":t.tage===1?"morgen":t.tage>0?`in ${t.tage} Tagen`:t.tage===-1?"gestern":`vor ${-t.tage} Tagen`}
+function naechstes(){
+  const sec=$("#naechstes");if(!sec)return;
+  if(ordner.zustand!=="an"&&!kalListe().some(k=>(k.events||[]).length)){sec.hidden=true;return}
+  sec.hidden=false;
+  const zu=store.get("nx-zu",false);
+  const alle=nxKarten(),karten=alle.slice(0,4),mehr=alle.length-karten.length;
+  const kopf=`<div class="nx-kopf"><h3 id="nx-h">Als Nächstes</h3>${alle.length?`<span class="nx-zahl">${alle.length}</span>`:""}<span class="sp"></span>
+    <button class="linkbtn" id="nx-alle">Alle Termine ansehen</button>
+    <button class="btn ghost small" id="nx-zu" aria-expanded="${!zu}">${zu?"Einblenden":"Ausblenden"}</button></div>`;
+  if(zu){sec.innerHTML=kopf;nxVerdrahten(sec,[]);return}
+  const karte=(t,i)=>{
+    const dringend=t.tage<=3;
+    const kopfz=`${esc(NX_KURZ[t.art.id]||t.art.name)} · ${nxTag(t)}`;
+    let titel,text,knoepfe="";
+    if(t._mm){
+      titel=esc(t.titel.replace(/^Mitarbeitsnote\s*/,"").replace(/^(\d\. Quartal)\s*/,"$1, "));
+      const offen=t.gruppen.filter(g=>g._mm.wenig).length;
+      text=offen?`${offen} von ${t.gruppen.length} Lerngruppen mit Lücken (weniger als 2 Einträge)`:"Alle Lerngruppen haben genug Einträge";
+      knoepfe=`<div class="nx-gruppen">${t.gruppen.map((g,j)=>`<button class="nx-gr${g._mm.wenig?" offen":""}" data-nx-mm="${i}|${j}" title="${g._mm.wenig?`${g._mm.wenig} von ${g._mm.alle} mit weniger als 2 Einträgen`:"genug Einträge"}">${esc(g._gruppe.id)}${g._mm.wenig?` · ${g._mm.wenig}`:""}</button>`).join("")}</div>`;
+    }else{
+      titel=esc(t.titel)+(t.gruppe&&t.gruppe.id&&!t.titel.toLowerCase().includes(t.gruppe.id)?` <span class="nx-bez">${esc(t.gruppe.id)}</span>`:"");
+      text=esc(t.schritt.text);
+      const k=t.schritt.kachel?ALLE.find(x=>x.id===t.schritt.kachel):null;
+      knoepfe=`<div class="nx-knoepfe">${k?`<button class="btn primary small" data-nx="${i}">${esc(k.titel)}</button>`:""}${t.schritt.leb&&typeof window.saLebOeffnen==="function"?`<button class="btn ghost small" data-nx-leb="${i}">Nach LEB-online</button>`:""}</div>`;
+    }
+    return `<article class="nx-karte${dringend?" dringend":""}${t.tage<0?" vorbei":""}">
+      <div class="nx-zeile"><span class="nx-art">${kopfz}</span><span class="sp"></span>
+        <button class="nx-mini" data-nx-spaeter="${i}" title="Eine Woche ausblenden">Später</button>
+        <button class="nx-mini" data-nx-fertig="${i}" title="Erledigt, nicht mehr zeigen">✓</button></div>
+      <div class="nx-titel">${titel}</div><div class="nx-text">${text}</div>${knoepfe}</article>`};
+  sec.innerHTML=kopf+(karten.length?`<div class="nx-liste">${karten.map(karte).join("")}</div>`:`<p class="note">Nichts Dringendes in den nächsten zwei Wochen.</p>`)
+    +(mehr>0?`<button class="linkbtn nx-mehr" id="nx-mehr">${mehr} weitere</button>`:"");
+  nxVerdrahten(sec,karten);
+}
+function nxVerdrahten(sec,karten){
+  const q=(sel,f)=>sec.querySelectorAll(sel).forEach(b=>b.addEventListener("click",()=>f(b)));
+  q("#nx-alle",()=>zeigen());q("#nx-mehr",()=>zeigen());
+  q("#nx-zu",()=>{store.set("nx-zu",!store.get("nx-zu",false));naechstes()});
+  q("[data-nx]",b=>{const t=karten[+b.dataset.nx];const k=ALLE.find(x=>x.id===t.schritt.kachel);if(!k)return;
+    const vor={...t.schritt.vor};if(k.typ==="claude"&&(k.felder||[]).includes("thema")&&!vor.thema)vor.thema=`${typeof titelSicher==="function"?titelSicher(t.titel):t.art.name} am ${datumDE(t.iso)}`;
+    oeffne(k,vor);$("#panel-slot").scrollIntoView({behavior:"smooth",block:"start"})});
+  q("[data-nx-leb]",b=>{const t=karten[+b.dataset.nxLeb];if(typeof window.saLebOeffnen==="function")window.saLebOeffnen(t.gruppe.id,t.schritt.leb)});
+  q("[data-nx-mm]",b=>{const [i,j]=b.dataset.nxMm.split("|").map(Number);const g=karten[i].gruppen[j];
+    const k=ALLE.find(x=>x.id==="beob-note");if(k){oeffne(k,{gruppe:g._gruppe.id});$("#panel-slot").scrollIntoView({behavior:"smooth",block:"start"})}});
+  q("[data-nx-spaeter]",b=>{nxSetzen(nxKey(karten[+b.dataset.nxSpaeter]),plusT(isoTag(new Date()),7));naechstes()});
+  q("[data-nx-fertig]",b=>{nxSetzen(nxKey(karten[+b.dataset.nxFertig]),"erledigt");naechstes()});
+}
+// neu zeichnen, wann immer die Wochenansicht neu gezeichnet wird (Kalender geladen, Ordner verbunden …)
+let nxT=null;const nxBald=()=>{clearTimeout(nxT);nxT=setTimeout(()=>{try{naechstes()}catch(e){console.warn("Als Nächstes:",e)}},150)};
+if(typeof renderWoche==="function"){const alt=renderWoche;window.renderWoche=renderWoche=function(){const r=alt.apply(this,arguments);nxBald();return r}}
+nxBald();
 const knopf=$("#w-erkennen");if(knopf)knopf.addEventListener("click",zeigen);
-window.saErkennung={zeigen,quartale,notenschluss,_test:{mmAnlaesse,ferienListe,ferienErinnerungen,ARTEN,gruppeErkennen,gruppeInfo,nummer,erkennen,schritt,woerter}};
+window.saErkennung={zeigen,naechstes,quartale,notenschluss,_test:{mmAnlaesse,ferienListe,ferienErinnerungen,ARTEN,gruppeErkennen,gruppeInfo,nummer,erkennen,schritt,woerter}};
 })();
