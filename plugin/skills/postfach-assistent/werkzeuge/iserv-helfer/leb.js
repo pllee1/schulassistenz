@@ -135,7 +135,7 @@
       <div><span class="tag t-neu">${r.neu.length}</span>werden neu eingetragen</div>
       <div><span class="tag t-gleich">${r.gleich.length}</span>stehen schon so in LEB-online</div>
       <div><span class="tag t-anders">${r.anders.length}</span>stehen in LEB-online anders (werden nicht überschrieben)</div>
-      ${liste(r.anders, (x, i) => `<li><label class="ub"><input type="checkbox" class="ueb" data-i="${i}">${esc(x.z.name)}: LEB ${x.l}, Akte ${x.e.note} · überschreiben</label></li>`)}
+      ${liste(r.anders, (x, i) => `<li><label class="ub"><input type="checkbox" class="ueb" data-i="${i}">${esc(x.z.name)} (${esc(x.e.k)}): LEB ${x.l}, Akte ${x.e.note} · überschreiben</label></li>`)}
       <div><span class="tag t-fehlt">${r.nichtZu.length + r.uebrig.length}</span>nicht zugeordnet</div>
       ${passt ? "" : `<div class="info">Liste ausgeblendet, weil fast nichts passt.</div>`}${!passt ? "" : liste(r.nichtZu, x => `<li>${esc(x.z.name)} (nicht in der Kürzelliste, bleibt leer)</li>`)}
       ${!passt ? "" : liste(r.uebrig, e => `<li>${esc(e.k)} (${esc([e.nach, e.vor].filter(Boolean).join(", "))}) steht nicht in diesem Fenster</li>`)}
