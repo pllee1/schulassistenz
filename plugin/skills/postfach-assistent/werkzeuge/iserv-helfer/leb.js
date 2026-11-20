@@ -134,7 +134,8 @@
       ${passt ? "" : `<div class="warn"><b>Passt die Lerngruppe?</b> Nur ${zeilen.length - r.nichtZu.length} von ${zeilen.length} Namen in diesem Fenster stehen in der Kürzelliste von ${esc(p.gruppe)}. Eintragen ist gesperrt.</div>`}
       <div><span class="tag t-neu">${r.neu.length}</span>werden neu eingetragen</div>
       <div><span class="tag t-gleich">${r.gleich.length}</span>stehen schon so in LEB-online</div>
-      <div><span class="tag t-anders">${r.anders.length}</span>stehen in LEB-online anders (werden nicht überschrieben)</div>
+      <div><span class="tag t-anders">${r.anders.length}</span>stehen in LEB-online anders (nur mit Häkchen überschreiben)</div>
+      ${r.anders.length > 1 ? `<label class="ub"><input type="checkbox" id="alle-ueb">alle abweichenden mit der Akten-Note überschreiben</label>` : ""}
       ${liste(r.anders, (x, i) => `<li><label class="ub"><input type="checkbox" class="ueb" data-i="${i}">${esc(x.z.name)} (${esc(x.e.k)}): LEB ${x.l}, Akte ${x.e.note} · überschreiben</label></li>`)}
       <div><span class="tag t-fehlt">${r.nichtZu.length + r.uebrig.length}</span>nicht zugeordnet</div>
       ${passt ? "" : `<div class="info">Liste ausgeblendet, weil fast nichts passt.</div>`}${!passt ? "" : liste(r.nichtZu, x => `<li>${esc(x.z.name)} (nicht in der Kürzelliste, bleibt leer)</li>`)}
@@ -145,6 +146,7 @@
     r.nichtZu.forEach(x => markiere(x.z, FARBE.fehlt));
     r.anders.forEach(x => markiere(x.z, FARBE.anders));
     $("#neu").addEventListener("click", () => bewerten());
+    if ($("#alle-ueb")) $("#alle-ueb").addEventListener("change", e => root.querySelectorAll(".ueb").forEach(c => { c.checked = e.target.checked; }));
     $("#fill").addEventListener("click", () => {
       if (!passt) return;
       const ueb = new Set([...root.querySelectorAll(".ueb:checked")].map(c => +c.dataset.i));
