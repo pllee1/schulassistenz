@@ -2023,7 +2023,7 @@ function notenWert(was){
 }
 const SONST_RE=/^(test|abfrage|referat|vortrag|präsentation|hausaufgabe|protokoll|sonstige leistung)/i;
 function notenAusAkte(text){
-  const r={mm:[],test:[],ka:[]};
+  const r={mm:[],test:[],ka:[],mq:[]};
   for(const z of text.split("\n")){
     const t=z.match(/^\s*-\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|(.*)$/);if(!t)continue;
     const [,d,art,was,rest]=t;if(/\|\s*(offen|verworfen)\s*$/i.test(rest)||/^vorschlag$/i.test(art))continue;
@@ -2031,6 +2031,7 @@ function notenAusAkte(text){
     // ersetzt/gestrichen: bleibt sichtbar (durchgestrichen), zählt aber nicht mehr
     const alt=/\|\s*(ersetzt|gestrichen)\b[^|]*$/i.test(rest);
     const e={d,v:w.v,was,roh:w.roh,z,art,alt,status:(rest.match(/\|\s*([^|]*)$/)||[])[1]||""};
+    if(/^quartalsnote\b/i.test(was)){e.typ="mq";r.mq.push(e);continue}
     if(/^(klausur|klassenarbeit)/i.test(art)||/^(klausur|klassenarbeit)/i.test(was)){const n=was.match(/(?:Nr\.?\s*|Klausur\s+|Klassenarbeit\s+)(\d+)/i);e.nr=n?+n[1]:null;e.typ="ka";r.ka.push(e)}
     else if(/^test/i.test(art)||SONST_RE.test(was)){e.typ="te";r.test.push(e)}
     else if(/^(mitarbeit|mm\b|mündlich)/i.test(was)){e.typ="mm";r.mm.push(e)}
@@ -2074,6 +2075,8 @@ function lebWerte(q,daten,ed){const w={};const ganz=v=>Math.min(6,Math.max(1,Mat
     if(q.typ==="ka")es=gilt(d.ka).filter(e=>e.key===q.key);
     else if(q.typ==="te")es=gilt(d.te).filter(e=>e.d===q.d&&(e.was.split(":")[0]||"Test").trim()===q.lab);
     else es=gilt(d.mmAlle||[]).filter(e=>(!ed.von||e.d>=ed.von)&&(!ed.bis||e.d<=ed.bis));
+    if(q.typ==="mm"){const fq=gilt(d.mq||[]).filter(e=>(!ed.von||e.d>=ed.von)&&(!ed.bis||e.d<=ed.bis));
+      if(fq.length){const e=fq[fq.length-1];w[d.k]={note:ganz(e.v),info:"Quartalsnote festgelegt"};return}}
     if(!es.length)return;
     if(q.typ==="mm"){const m=mittel(es.map(e=>e.v));w[d.k]={note:ganz(m),info:`Ø ${komma(m,2)} aus ${es.length} ${es.length===1?"Note":"Noten"}`}}
     else{const e=es[es.length-1];w[d.k]={note:ganz(e.v),info:e.was}}});
@@ -2090,6 +2093,12 @@ async function zeigeNoten(gidStart,opt){
   const opsK=()=>"noten-aend-"+gid;const ops=()=>store.get(opsK(),[])||[];const opsSetzen=l=>store.set(opsK(),l.length?l:null);
   const zeichnen=async()=>{
     const g=ordner.gruppen.find(x=>x.id===gid);store.set("noten-gruppe",gid);
+    try{if(window.chrome&&chrome.storage&&chrome.storage.local){const {saLebInAkte}=await chrome.storage.local.get("saLebInAkte");const u=(saLebInAkte||[]).filter(x=>x.gruppe===gid);
+      if(u.length){const l=ops();let n=0;u.forEach(x=>x.liste.forEach(e=>{if(!/^[\w-]{1,20}$/.test(e.k)||!(e.note>=1&&e.note<=6))return;
+          const zeile=`- ${x.datum} | Beobachtung | Quartalsnote (${ohnePipe(x.bez)}): Note ${e.note} | Quelle: aus LEB-online übernommen ${heuteDE()} | bestätigt`;
+          if(!l.some(o=>o.typ==="neu"&&o.k===e.k&&o.zeile===zeile)){l.push({typ:"neu",k:e.k,zeile});n++}}));
+        opsSetzen(l);await chrome.storage.local.set({saLebInAkte:(saLebInAkte||[]).filter(x=>x.gruppe!==gid)});
+        if(n)meldung=`${n} bessere ${n===1?"Note":"Noten"} aus LEB-online als Quartalsnote vorgemerkt. Bitte prüfen und „In Akten speichern“ klicken.`}}}catch{}
     const modus=store.get("noten-modus","einzeln"),sort=store.get("noten-sort","kuerzel"),zr=store.get("noten-zeitraum","sj"),zeigN=store.get("akten-namen",false);
     if((zeigN||bearb||sort==="nachname"||sort==="vorname")&&!Object.keys(namen).length)namen=await namenLesen(gid);
     const np=skalaStandard(gid,g.gruppeText)==="np";
@@ -2104,7 +2113,7 @@ async function zeigeNoten(gidStart,opt){
       const r=notenAusAkte(ap.t);const f=x=>x.filter(e=>imZr(e.d)).sort((p,q)=>p.d.localeCompare(q.d));
       const mm=f(r.mm),te=f(r.test),ka=f(r.ka);let n=0;ka.forEach(e=>{if(!e.alt)n++;e.key="Nr. "+(e.nr||(e.alt?n+1:n))});
       const gilt=x=>x.filter(e=>!e.alt);const mu=mittel([...gilt(mm),...gilt(te)].map(e=>e.v)),sc=mittel(gilt(ka).map(e=>e.v));
-      const z=mu!=null&&sc!=null?(W.mu*mu+W.sc*sc)/(W.mu+W.sc):mu??sc;return {k:a.kuerzel,mm,te,ka,mu,sc,z,mmAlle:r.mm}});
+      const z=mu!=null&&sc!=null?(W.mu*mu+W.sc*sc)/(W.mu+W.sc):mu??sc;return {k:a.kuerzel,mm,te,ka,mu,sc,z,mmAlle:r.mm,mq:r.mq}});
     // Klausur-Spalten: nach Nr., sonst nach Reihenfolge
     const kaSp=[];daten.forEach(d=>d.ka.forEach(e=>{if(!kaSp.includes(e.key))kaSp.push(e.key)}));
     kaSp.sort((a,b)=>a.localeCompare(b,"de",{numeric:true}));
@@ -2208,7 +2217,7 @@ async function zeigeNoten(gidStart,opt){
       if(!(window.chrome&&chrome.storage&&chrome.storage.session))return fehler("Das geht nur in der Startseite im Helfer (Klick auf das Helfer-Symbol).");
       const werte=lebWerte(q,daten,ed);
       const paket={gruppe:gid,titel:bez||q.titel,bezeichnung:bez||q.titel,leistungsart:+ed.art||q.art,datum:q.id==="mm"?(ed.bis&&ed.bis<heuteISO()?ed.bis:heuteISO()):q.datum,
-        eintraege:reihe.map(k=>({k,vor:(namen[k]||{}).vor||"",nach:(namen[k]||{}).nach||"",note:werte[k]&&werte[k].note!=null?werte[k].note:null})),zeit:Date.now(),direkt:!!direkt};
+        eintraege:reihe.map(k=>({k,vor:(namen[k]||{}).vor||"",nach:(namen[k]||{}).nach||"",note:werte[k]&&werte[k].note!=null?werte[k].note:null})),zeit:Date.now(),direkt:!!direkt,quelle:q.id,von:ed.von||null,bis:ed.bis||null};
       await chrome.storage.session.set({saLeb:paket});
       const n=paket.eintraege.filter(e=>e.note!=null).length;
       ed=null;await zeichnen();const g=$("#n-guard");g.hidden=false;g.classList.add("ok");

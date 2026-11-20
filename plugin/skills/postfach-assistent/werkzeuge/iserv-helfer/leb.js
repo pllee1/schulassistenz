@@ -228,6 +228,7 @@
     const gruppeOk = r.quote >= 0.5;
     const passt = gruppeOk && !artFalsch;
     const liste = (a, f) => a.length ? `<ul>${a.map(f).join("")}</ul>` : "";
+    const besser = (p.quelle === "mm" || (!p.quelle && /^mündlich/i.test(p.bezeichnung || p.titel || ""))) && passt ? r.anders.filter(x => x.l < x.e.note) : [];
     zeigen(`<div class="was">Bereitgelegt: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)} · ${esc(ART[p.leistungsart] || "")}${p.datum ? " · " + esc(datumDE(p.datum)) : ""}</div>
       ${meldung}
       ${info && info.bezeichnung ? (bezGleich ? `<div class="ok">Passt: Dieses Fenster ist „${esc(info.bezeichnung)}“${info.datum ? " vom " + esc(info.datum) : ""}.</div>` : `<div class="warn"><b>Andere Leistung?</b> Dieses Fenster ist „${esc(info.bezeichnung)}“${info.datum ? " vom " + esc(info.datum) : ""}, bereitgelegt ist „${esc(p.bezeichnung || p.titel)}“.</div>`) : ""}
@@ -238,6 +239,7 @@
       <div><span class="tag t-anders">${r.anders.length}</span>stehen in LEB-online anders (nur mit Häkchen überschreiben)</div>
       ${r.anders.length > 1 ? `<label class="ub"><input type="checkbox" id="alle-ueb">alle abweichenden mit der Akten-Note überschreiben</label>` : ""}
       ${liste(r.anders, (x, i) => `<li><label class="ub"><input type="checkbox" class="ueb" data-i="${i}">${esc(x.z.name)} (${esc(x.e.k)}): LEB ${x.l}, Akte ${x.e.note} · überschreiben</label></li>`)}
+      ${besser.length ? `<div class="row"><button class="b b2" id="inakte">Bessere LEB-${besser.length === 1 ? "Note" : "Noten"} in die Akte (${besser.length})</button></div><div class="info">Bei ${esc(besser.map(x => x.e.k).join(", "))} ist LEB-online besser als die Akte. Der Knopf merkt die LEB-Note als Quartalsnote vor, gespeichert wird sie erst in der Notenübersicht („In Akten speichern“).</div>` : ""}
       ${r.aehnlich.length && gruppeOk ? `<div><span class="tag t-aeh">${r.aehnlich.length}</span>ähnlich geschrieben, bitte bestätigen</div>
       ${liste(r.aehnlich, (x, i) => `<li><label class="ub"><input type="checkbox" class="aeh" data-i="${i}">LEB „${esc(x.z.name)}“ = Kürzelliste „${esc([x.e.nach, x.e.vor].filter(Boolean).join(", "))}“ (${esc(x.e.k)}) · Akte ${x.e.note ?? "–"}${x.l != null ? ", LEB " + x.l : ""}</label></li>`)}
       <div class="info">Tipp: Schreibweise in der Kürzelliste korrigieren (Startseite › Akten der Lerngruppe › „Kürzelliste bearbeiten“), dann klappt es künftig ohne Rückfrage.</div>` : ""}
@@ -255,6 +257,18 @@
     if (gruppeOk) r.aehnlich.forEach(x => markiere(x.z, "#8fb3e8"));
     $("#neu").addEventListener("click", () => bewerten());
     if ($("#bestaetigt")) $("#bestaetigt").addEventListener("change", e => { $("#fill").disabled = !e.target.checked; });
+    if ($("#inakte")) $("#inakte").addEventListener("click", async () => {
+      const heute = new Date().toISOString().slice(0, 10);
+      const datum = p.bis && p.bis < heute ? p.bis : p.datum;
+      try {
+        const { saLebInAkte } = await chrome.storage.local.get("saLebInAkte");
+        const l = (saLebInAkte || []).filter(x => !(x.gruppe === p.gruppe && x.bez === (p.bezeichnung || p.titel)));
+        l.push({ gruppe: p.gruppe, bez: p.bezeichnung || p.titel, datum, liste: besser.map(x => ({ k: x.e.k, note: x.l })) });
+        await chrome.storage.local.set({ saLebInAkte: l });
+        $("#inakte").disabled = true; $("#inakte").textContent = "Vorgemerkt";
+        $("#inakte").closest(".row").insertAdjacentHTML("afterend", `<div class="ok">Vorgemerkt. Öffne in der Startseite die Notenübersicht von ${esc(p.gruppe)} und klick „In Akten speichern“.</div>`);
+      } catch { $("#inakte").textContent = "Ging nicht, bitte Seite neu laden"; }
+    });
     if ($("#alle-ueb")) $("#alle-ueb").addEventListener("change", e => root.querySelectorAll(".ueb").forEach(c => { c.checked = e.target.checked; }));
     $("#fill").addEventListener("click", () => {
       if (!passt || !$("#bestaetigt") || !$("#bestaetigt").checked) return;

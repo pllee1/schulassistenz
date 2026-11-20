@@ -160,6 +160,8 @@ Für Schulen mit LEB-online (Noten PLUS). Der Helfer füllt dort Formulare aus, 
 
 **Direkt in LEB-online (ab Helfer 0.15):** Statt „Nur bereitlegen“ den Knopf **Direkt in LEB-online** nehmen. Dafür muss LEB-online in **einem** Tab geöffnet und angemeldet sein (seit Helfer 0.18.3): Der Helfer schaltet genau diesen Tab zur richtigen Klasse bzw. zum richtigen Kurs und öffnet keinen weiteren Tab. Bitte LEB-online nie in mehreren Tabs oder Fenstern gleichzeitig anmelden, sonst wirft LEB-online dich auf die Anmeldung zurück. Ist die Leistungsüberprüfung noch nicht angelegt, öffnet „Anlegen öffnen“ das Formular schon ausgefüllt: Gewichtung prüfen, Speichern, dann „Neu prüfen“. Ist sie angelegt, öffnet „Bewerten öffnen“ das Fenster und trägt die Noten sofort ein (nur leere Felder, nur bei gleicher Bezeichnung): prüfen, Speichern. Beim allerersten Mal je Lerngruppe klickst du in LEB-online einmal die passende Zeile an („Merken und weiter“). Ist die LEB-Anmeldung abgelaufen: anmelden, dann Noten PLUS › Kurse bzw. Klassen anklicken, der Helfer macht weiter.
 
+**Bessere LEB-Note in die Akte (ab Helfer 0.19):** Steht bei einer mündlichen Quartalsnote in LEB-online eine bessere Note als in der Akte, bietet der Kasten „Bessere LEB-Noten in die Akte“ an. Der Helfer merkt sie als „Quartalsnote“ vor; in der Notenübersicht der Lerngruppe erscheint sie als ungespeicherte Änderung, „In Akten speichern“ schreibt sie in die Akte. Eine Quartalsnote legt die mündliche Note für dieses Quartal fest (statt des Durchschnitts) und zählt nicht zusätzlich in den Durchschnitt.
+
 Claude sieht dabei nichts: Die Zuordnung Name ↔ Kürzel passiert nur im Helfer in deinem Browser.
 
 ## Skala im Live-Raster
