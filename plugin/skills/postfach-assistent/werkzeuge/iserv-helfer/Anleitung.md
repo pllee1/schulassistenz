@@ -20,6 +20,7 @@ Chrome zeigt beim Start manchmal den Hinweis „Erweiterungen im Entwicklermodus
 
 6. **Startseite (ab 0.9):** Ein Klick auf das Helfer-Symbol öffnet die Schulassistenz-Startseite, sie wohnt jetzt im Helfer (Anleitung: `startseite/Anleitung.md`). Das Helfer-Fenster für Mails öffnest du per Rechtsklick auf das Symbol oder auf der Seite (siehe „Benutzen“). Pseudonymisierer und Abschluss-Check gehören ab 0.10 ebenfalls zum Helfer. „Zugriff auf Datei-URLs zulassen“ braucht es nur noch, damit die alte Startseite-Datei einmal ihre Einstellungen übergibt, oder für eigene Knöpfe, die auf HTML-Dateien zeigen.
 7. **Design (ab 0.11):** Startseite, Mail-Fenster, Einstellungen, Pseudonymisierer und Abschluss-Check haben das Design „Graphit & Heft“ (dunkles Graphit, Heftlinien, roter Rand) und ein neues Symbol (Heft mit Häkchen). Die Schriften Lora und Work Sans liegen im Ordner `schriften/` (freie OFL-Lizenz, Lizenztexte daneben).
+8. **LEB-online (ab 0.12):** In LEB-online (Noten PLUS) erscheint beim Anlegen und Bewerten einer Leistungsüberprüfung oben rechts ein Helfer-Kasten. Er füllt Noten ein, die du in der Notenübersicht der Startseite mit „Nach LEB-online“ bereitgelegt hast. Speichern klickst du selbst (Anleitung: `startseite/Anleitung.md`, Abschnitt „Nach LEB-online übertragen“).
 
 Ändert sich deine Kürzelliste, einfach die neue Datei wieder hineinziehen.
 

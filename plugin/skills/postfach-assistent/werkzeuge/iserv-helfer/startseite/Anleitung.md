@@ -134,6 +134,19 @@ Rechts unter „Lerngruppen und Akten“ öffnet „Kürzel nachschlagen“ eine
 - **Für alle eintragen:** eine Spalte für die ganze Gruppe, z. B. Klausur 2. Werte eintippen, Enter springt zum nächsten Kind, leere Felder werden übersprungen.
 - Alle Änderungen sind erst ein Entwurf (orange, bleibt in diesem Browser). Erst **In Akten speichern** schreibt sie, nur mit Kürzeln. Einzelne Änderungen nimmst du mit ✕ zurück.
 
+## Nach LEB-online übertragen
+
+Für Schulen mit LEB-online (Noten PLUS). Der Helfer füllt dort Formulare aus, **„Speichern“ klickst du immer selbst**. Er klickt nie „Löschen“ und überschreibt keine vorhandene Note ohne dein Häkchen.
+
+1. Notenübersicht › Lerngruppe wählen › **Nach LEB-online**.
+2. Unter „Was“ wählen: eine Klassenarbeit, einen Test oder ein Referat (je Datum) oder **Mündliche Note (Quartal)**. Bei der mündlichen Note wird der Durchschnitt der Mitarbeitsnoten im gewählten Quartal auf eine ganze Note gerundet. Leistungsart und Bezeichnung lassen sich ändern.
+3. Vorschau prüfen, dann **Für LEB-online bereitlegen**. Die Noten liegen zusammen mit den Namen aus deiner Kürzelliste nur in diesem Browser und höchstens 12 Stunden (bis Chrome geschlossen wird).
+4. In LEB-online: Noten PLUS › Klassen oder Kurse › Leistungsüberprüfungen › **Anlegen**. Oben rechts erscheint der Helfer-Kasten, „Formular vorausfüllen“ setzt Leistungsart, Datum und Bezeichnung. Gewichtung prüfen, selbst speichern.
+5. Die neue Leistungsüberprüfung markieren › **Bewerten**. Der Kasten zeigt, wie viele Noten neu sind, schon stimmen oder abweichen. **Noten eintragen** füllt die leeren Felder (grün). Abweichende (gelb) bleiben, außer du setzt das Häkchen „überschreiben“. Namen, die nicht in der Kürzelliste stehen, sind rot und bleiben leer. Passen weniger als die Hälfte der Namen, ist Eintragen gesperrt (falsche Lerngruppe?).
+6. Prüfen und unten selbst **Speichern** klicken. Öffnest du „Bewerten“ danach erneut, zeigt der Kasten den Abgleich.
+
+Claude sieht dabei nichts: Die Zuordnung Name ↔ Kürzel passiert nur im Helfer in deinem Browser.
+
 ## Skala im Live-Raster
 
 Oben im Raster wählst du unter „Mitarbeit als“ zwischen Symbolen (++ bis --), Noten 1–6 und Punkten 0–15. Die Wahl gilt je Lerngruppe und bleibt in diesem Browser gespeichert. Voreingestellt sind Punkte ab Jahrgang 11, sonst Symbole. Wer es dauerhaft festlegen will, trägt in meine-einstellungen.js z. B. `live_skala: { "13-che-ea": "np", "10d-inf": "note" }` ein. In den Akten steht dann `MM ++`, `MM Note 2` oder `MM 12 NP`.

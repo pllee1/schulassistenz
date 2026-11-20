@@ -349,3 +349,14 @@ async function wuHolen(m) {
 }
 // Alte, nicht mehr gültige Lern-Adressen (0.6) entfernen
 chrome.storage.local.remove(["saWuExport", "saWuExportBlob"]);
+
+// LEB-online: bereitgelegtes Notenpaket (aus der Notenübersicht der Startseite) an das Fenster „Bewerten“/„Anlegen“ geben.
+// Liegt nur in chrome.storage.session (verschwindet beim Schließen von Chrome) und gilt höchstens 12 Stunden.
+chrome.runtime.onMessage.addListener((m, sender, antwort) => {
+  if (m.cmd !== "leb-paket") return;
+  chrome.storage.session.get("saLeb").then(({ saLeb }) => {
+    if (!saLeb || !saLeb.zeit || Date.now() - saLeb.zeit > 12 * 3600 * 1000) return antwort({ paket: null });
+    antwort({ paket: saLeb });
+  }).catch(() => antwort({ paket: null }));
+  return true;
+});
