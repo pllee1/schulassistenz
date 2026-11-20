@@ -21,26 +21,26 @@
     return i < 0 ? { nach: norm(s), vor: "" } : { nach: norm(s.slice(0, i)), vor: norm(s.slice(i + 1)) };
   }
   // streng: gleicher Nachname und gleicher Vorname; sonst gleicher Nachname und ein Vorname ist der Anfang des anderen (nur wenn eindeutig)
+  // Die Kürzelliste kann Vor- und Nachname vertauscht haben; deshalb zählen beide Reihenfolgen.
+  const reihen = e => { const a = norm(e.nach), b = norm(e.vor); return a === b ? [[a, b]] : [[a, b], [b, a]]; };
+  const vorPasst = (a, b) => !!a && !!b && (a === b || b.startsWith(a + " ") || a.startsWith(b + " "));
+  const streng = (e, n) => reihen(e).some(([na, vo]) => na === n.nach && vo === n.vor);
+  const locker = (e, n) => reihen(e).some(([na, vo]) => na === n.nach && vorPasst(vo, n.vor));
+  // erst exakt, dann gleicher Nachname + ein Vorname ist der Anfang des anderen (nur wenn in beide Richtungen eindeutig)
   function zuordnen(zeilen, eintraege) {
     const frei = new Set(eintraege.map((_, i) => i));
     const erg = zeilen.map(() => null);
     zeilen.forEach((z, zi) => {
-      const t = eintraege.map((e, i) => [e, i]).filter(([e, i]) => frei.has(i) && norm(e.nach) === z.n.nach && norm(e.vor) === z.n.vor);
-      if (t.length === 1) { erg[zi] = t[0][1]; frei.delete(t[0][1]); }
+      const t = [...frei].filter(i => streng(eintraege[i], z.n));
+      if (t.length === 1) { erg[zi] = t[0]; frei.delete(t[0]); }
     });
     zeilen.forEach((z, zi) => {
       if (erg[zi] != null) return;
-      const t = eintraege.map((e, i) => [e, i]).filter(([e, i]) => {
-        if (!frei.has(i) || norm(e.nach) !== z.n.nach) return false;
-        const a = norm(e.vor), b = z.n.vor; if (!a || !b) return false;
-        return a === b || b.startsWith(a + " ") || a.startsWith(b + " ");
-      });
-      // eindeutig in beide Richtungen?
-      if (t.length === 1) {
-        const i = t[0][1]; const e = eintraege[i];
-        const andere = zeilen.filter((y, yi) => yi !== zi && erg[yi] == null && y.n.nach === z.n.nach);
-        if (!andere.some(y => { const a = norm(e.vor), b = y.n.vor; return a === b || b.startsWith(a + " ") || a.startsWith(b + " "); })) { erg[zi] = i; frei.delete(i); }
-      }
+      const t = [...frei].filter(i => locker(eintraege[i], z.n));
+      if (t.length !== 1) return;
+      const e = eintraege[t[0]];
+      if (zeilen.some((y, yi) => yi !== zi && erg[yi] == null && locker(e, y.n))) return;
+      erg[zi] = t[0]; frei.delete(t[0]);
     });
     return { erg, uebrig: [...frei] };
   }
@@ -137,8 +137,8 @@
       <div><span class="tag t-anders">${r.anders.length}</span>stehen in LEB-online anders (werden nicht überschrieben)</div>
       ${liste(r.anders, (x, i) => `<li><label class="ub"><input type="checkbox" class="ueb" data-i="${i}">${esc(x.z.name)}: LEB ${x.l}, Akte ${x.e.note} · überschreiben</label></li>`)}
       <div><span class="tag t-fehlt">${r.nichtZu.length + r.uebrig.length}</span>nicht zugeordnet</div>
-      ${liste(r.nichtZu, x => `<li>${esc(x.z.name)} (nicht in der Kürzelliste, bleibt leer)</li>`)}
-      ${liste(r.uebrig, e => `<li>${esc(e.k)} (${esc([e.nach, e.vor].filter(Boolean).join(", "))}) steht nicht in diesem Fenster</li>`)}
+      ${passt ? "" : `<div class="info">Liste ausgeblendet, weil fast nichts passt.</div>`}${!passt ? "" : liste(r.nichtZu, x => `<li>${esc(x.z.name)} (nicht in der Kürzelliste, bleibt leer)</li>`)}
+      ${!passt ? "" : liste(r.uebrig, e => `<li>${esc(e.k)} (${esc([e.nach, e.vor].filter(Boolean).join(", "))}) steht nicht in diesem Fenster</li>`)}
       ${r.ohne.length + r.lebOhneAkte.length ? `<div class="info">${r.ohne.length + r.lebOhneAkte.length} ohne Note in der Akte (bleiben unverändert)${r.lebOhneAkte.length ? `, davon ${r.lebOhneAkte.length} mit Note in LEB-online` : ""}.</div>` : ""}
       <div class="row"><button class="b" id="fill"${passt && (r.neu.length || r.anders.length) ? "" : " disabled"}>Noten eintragen</button><button class="b b2" id="neu">Neu prüfen</button></div>
       <p class="info">Eingetragene Felder sind grün, abweichende gelb, nicht zugeordnete rot umrandet. Prüfen, dann selbst unten „Speichern“ klicken. Nach dem Speichern zeigt dieser Kasten den Abgleich.</p>`);
