@@ -13,6 +13,7 @@ if(typeof kalListe!=="function")return;
 /* ---------- Arten von Terminen ---------- */
 /* Reihenfolge zählt: die erste passende Art gewinnt. */
 const ARTEN=[
+  {id:"mitarbeit",name:"Mitarbeitsnote (Ferien)",farbe:"warn",muster:/^Mitarbeitsnote vor den /,nurIntern:true},
   {id:"konf-zeugnis",name:"Zeugnis-/Klassenkonferenz",farbe:"warn",
    muster:/zeugniskonferenz|klassenkonferenz|p(ä|ae)d(agogische|\.)?\s*konf|notenkonferenz|versetzungskonferenz|\bzk\b/i},
   {id:"notenschluss",name:"Notenschluss / Noteneingabe",farbe:"warn",
@@ -105,6 +106,10 @@ function schritt(art,t,tage){
       if(!z||!z.mit)return S(`Korrigieren${t.nr?` (Klausur ${t.nr})`:""}`,"korrektur");
       if(z.mit<z.alle)return S(`Noten in den Akten: ${z.mit} von ${z.alle}. Fehlende nachtragen`,"notenuebersicht");
       return ob?S("Noten vollständig in den Akten (Oberstufe, nicht in LEB)",""):S(`Noten vollständig in den Akten → nach LEB-online übertragen`,"notenuebersicht")}
+    case "mitarbeit":{const m=t._mm;if(!m)return S("","");
+      const seit=`seit ${datumDE(m.ab)}`;
+      const vor=m.wenig?`${m.wenig} von ${m.alle} mit weniger als 2 Mitarbeitseinträgen ${seit}${m.ohne?` (${m.ohne} ohne)`:""}. `:`Alle haben mindestens 2 Einträge ${seit}. `;
+      return S(vor+(ob?"Note festsetzen.":"Note festsetzen, dann nach LEB-online."),"beob-note")}
     case "test":return tage>0?S("Angesagt. Danach Noten eintragen",""):S("Noten eintragen (Live-Beobachtung oder Notenübersicht)","notenuebersicht");
     case "konf-zeugnis":return tage>21?S("Vormerken. Ab 3 Wochen vorher Zeugnisnoten vorbereiten",""):tage>=0?S("Zeugnisnoten und Tischvorlage vorbereiten","konferenz"):S("Beschlüsse in die Akten übernehmen","dokument");
     case "notenschluss":return tage>=0?S("Zeugnisnoten vorbereiten und eintragen","zeugnis-noten"):S("Vorbei. Noten vollständig?","notenuebersicht");
@@ -119,6 +124,42 @@ function schritt(art,t,tage){
     case "frist":return S(tage>=0?"Frist vormerken":"Abgelaufen. Erledigt?","",{});
     default:return S("","",{});
   }
+}
+
+
+/* ---------- Mündliche Mitarbeitsnote vor den Ferien ---------- */
+/* Ferien aus meine-einstellungen.js (ferien) und aus Kalenderterminen mit „Ferien“ im Titel.
+   Je Ferienbeginn in den nächsten 3 Wochen: eine Erinnerung je Lerngruppe, Zeitraum seit den letzten Ferien. */
+const plusT=(iso,n)=>{const d=new Date(iso+"T12:00");d.setDate(d.getDate()+n);return isoTag(d)};
+function ferienListe(){
+  const l=[];
+  (Array.isArray(E.ferien)?E.ferien:[]).forEach(x=>{const [a,b]=Array.isArray(x)?[x[0],x[1]||x[0]]:[x,x];if(/^\d{4}-\d{2}-\d{2}$/.test(a))l.push({von:a,bis:b,name:"Ferien"})});
+  for(const k of kalListe()){if(!k.an)continue;for(const e of (k.events||[])){
+    if(!e.start||!/ferien/i.test(e.titel||"")||/feiertag|beweglich/i.test(e.titel||""))continue;
+    let bis=e.ende?new Date(e.ende):new Date(e.start);if(e.ganz&&e.ende)bis.setDate(bis.getDate()-1);
+    l.push({von:isoTag(e.start),bis:isoTag(bis<e.start?e.start:bis),name:(e.titel||"Ferien").trim()})}}
+  // gleiche oder überlappende Ferien zusammenfassen, Kalendername bevorzugen
+  l.sort((a,b)=>a.von.localeCompare(b.von));const out=[];
+  for(const f of l){const o=out.find(x=>f.von<=plusT(x.bis,3)&&f.bis>=plusT(x.von,-3));
+    if(o){if(f.bis>o.bis)o.bis=f.bis;if(f.von<o.von)o.von=f.von;if(o.name==="Ferien")o.name=f.name}else out.push({...f})}
+  return out;
+}
+function letzterSchultag(iso){let d=plusT(iso,-1);for(let i=0;i<4;i++){const w=new Date(d+"T12:00").getDay();if(w!==0&&w!==6)break;d=plusT(d,-1)}return d}
+function ferienErinnerungen(von,bis){
+  const fl=ferienListe(),heute=isoTag(new Date()),out=[];
+  fl.forEach((f,i)=>{
+    const tag=letzterSchultag(f.von);
+    const tage=Math.round((new Date(tag+"T00:00")-new Date(heute+"T00:00"))/864e5);
+    if(tage>21||tage<-2||new Date(tag+"T12:00")<von||new Date(tag+"T12:00")>bis)return;
+    const ab=i>0?plusT(fl[i-1].bis,1):plusT(f.von,-70);
+    const name=/ferien/i.test(f.name)?f.name.replace(/^\s*(die\s+)?/i,""):"Ferien";
+    for(const g of (ordner.gruppen||[])){
+      const info=gruppeInfo(g);let wenig=0,ohne=0;
+      g.akten.forEach(a=>{const n=(typeof notenAusAkte==="function"?notenAusAkte(a.text).mm:[]).filter(e=>!e.alt&&e.d>=ab&&e.d<f.von).length;if(n<2)wenig++;if(!n)ohne++});
+      out.push({iso:tag,zeit:"",titel:`Mitarbeitsnote vor den ${name}`,quelle:"Erinnerung (Ferienbeginn "+datumDE(f.von)+")",weg:false,
+        _mm:{ab,ferien:f.von,wenig,ohne,alle:g.akten.length},_gruppe:{id:g.id,oberstufe:info.oberstufe}})}
+  });
+  return out;
 }
 
 /* ---------- Termine sammeln ---------- */
@@ -142,8 +183,8 @@ function termineSammeln(von,bis,auchGefiltert){
     .sort((a,b)=>(a.iso+a.zeit).localeCompare(b.iso+b.zeit));
 }
 function erkennen(t){
-  const art=ARTEN.find(a=>a.muster.test(t.titel));
-  t.art=art||null;t.gruppe=gruppeErkennen(t.titel);t.nr=art&&art.id==="klassenarbeit"?nummer(t.titel):null;
+  const art=t._mm?ARTEN.find(a=>a.id==="mitarbeit"):ARTEN.find(a=>!a.nurIntern&&a.muster.test(t.titel));
+  t.art=art||null;t.gruppe=t._gruppe||gruppeErkennen(t.titel);t.nr=art&&art.id==="klassenarbeit"?nummer(t.titel):null;
   const heute=new Date();heute.setHours(0,0,0,0);
   t.tage=Math.round((new Date(t.iso+"T00:00")-heute)/864e5);
   t.schritt=art?schritt(art.id,t,t.tage):null;
@@ -157,7 +198,7 @@ function zeigen(){
   const [zv,zn]=zr.split("-").map(Number);
   const von=new Date();von.setHours(0,0,0,0);von.setDate(von.getDate()-7*zv);
   const bis=new Date();bis.setHours(23,59,59,0);bis.setDate(bis.getDate()+7*zn);
-  const liste=termineSammeln(von,bis,gef).map(erkennen);
+  const liste=[...termineSammeln(von,bis,gef),...ferienErinnerungen(von,bis)].sort((a,b)=>(a.iso+a.zeit).localeCompare(b.iso+b.zeit)).map(erkennen);
   const kalZahl=kalListe().filter(k=>k.an&&(k.events||[]).length).length;
   const zaehl={};liste.forEach(t=>{const n=t.art?t.art.name:"nicht erkannt";zaehl[n]=(zaehl[n]||0)+1});
   const erkannt=liste.filter(t=>t.art).length;
@@ -197,5 +238,5 @@ function zeigen(){
 }
 
 const knopf=$("#w-erkennen");if(knopf)knopf.addEventListener("click",zeigen);
-window.saErkennung={zeigen,_test:{ARTEN,gruppeErkennen,gruppeInfo,nummer,erkennen,schritt,woerter}};
+window.saErkennung={zeigen,_test:{ferienListe,ferienErinnerungen,ARTEN,gruppeErkennen,gruppeInfo,nummer,erkennen,schritt,woerter}};
 })();
