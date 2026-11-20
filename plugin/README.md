@@ -30,7 +30,6 @@ Claude fragt in vier kurzen Runden nach Schule und Rahmen (Bundesland, Schulform
 Claude legt dabei in deinem Datenordner an:
 ```
 <Datenordner>/
-  Schulassistenz-Start.html   Startseite (Doppelklick)
   profil/profil.md            dein Schulprofil
   werkzeuge/startseite/       Knöpfe und deine Einstellungen
   werkzeuge/pseudonymisierer/ Pseudonymisierer + Kürzelliste-Vorlage
@@ -39,7 +38,7 @@ Claude legt dabei in deinem Datenordner an:
 
 ## 4. Startseite öffnen und Einrichtungs-Checkliste abarbeiten
 
-`Schulassistenz-Start.html` in **Chrome oder Edge** öffnen (andere Browser können den Datenordner nicht lesen). Oben steht die Checkliste **„Einrichtung auf diesem PC“**. Sie zeigt, was noch fehlt, und verschwindet, wenn alles erledigt ist. Unten holt „Einrichtung prüfen“ sie zurück.
+Den Schulassistenz-Helfer in **Chrome oder Edge** laden (siehe `werkzeuge/iserv-helfer/Anleitung.md`) und auf sein Symbol klicken: Das öffnet die Startseite. Oben steht die Checkliste **„Einrichtung auf diesem PC“**. Sie zeigt, was noch fehlt, und verschwindet, wenn alles erledigt ist. Unten holt „Einrichtung prüfen“ sie zurück.
 
 Pflicht:
 1. **Browser:** Chrome oder Edge.

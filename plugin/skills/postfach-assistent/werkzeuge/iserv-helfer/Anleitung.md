@@ -18,7 +18,7 @@ Eine kleine Erweiterung für **Google Chrome** (läuft genauso in Microsoft Edge
 
 Chrome zeigt beim Start manchmal den Hinweis „Erweiterungen im Entwicklermodus deaktivieren“. Einfach auf **Behalten** bzw. das X klicken.
 
-6. Für den Stundenplan auf der Startseite: in `chrome://extensions` beim Schulassistenz-Helfer auf **Details** und **„Zugriff auf Datei-URLs zulassen“** einschalten. Dann kann die Startseite deinen WebUntis-Stundenplan über den Helfer abholen.
+6. **Startseite (ab 0.9):** Ein Klick auf das Helfer-Symbol öffnet die Schulassistenz-Startseite, sie wohnt jetzt im Helfer (Anleitung: `startseite/Anleitung.md`). Das Helfer-Fenster für Mails öffnest du per Rechtsklick auf das Symbol oder auf der Seite (siehe „Benutzen“). Optional: in `chrome://extensions` beim Helfer auf **Details** und **„Zugriff auf Datei-URLs zulassen“** einschalten, dann öffnen die Knöpfe Pseudonymisierer und Abschluss-Check die Dateien direkt.
 
 Ändert sich deine Kürzelliste, einfach die neue Datei wieder hineinziehen.
 
@@ -44,7 +44,7 @@ Chrome zeigt beim Start manchmal den Hinweis „Erweiterungen im Entwicklermodus
 
 **Nur einen Teil schicken:** Text markieren, dann „✉ An Claude“. Dann geht nur die Markierung.
 
-**Andere Seiten (Outlook im Browser, Moodle, WebUntis-Nachrichten …):** Text markieren, Rechtsklick → **„Markierten Text pseudonymisiert an Claude“**, oder auf das Symbol der Erweiterung klicken.
+**Andere Seiten (Outlook im Browser, Moodle, WebUntis-Nachrichten …):** Text markieren, Rechtsklick → **„Markierten Text pseudonymisiert an Claude“**, oder Rechtsklick auf das Symbol der Erweiterung › „Helfer-Fenster auf dieser Seite öffnen“.
 
 ## Schülerdaten-Ordner für die Startseite (ab 0.4)
 

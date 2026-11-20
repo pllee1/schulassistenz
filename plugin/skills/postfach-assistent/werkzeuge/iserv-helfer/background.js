@@ -5,7 +5,8 @@ chrome.runtime.onInstalled.addListener(async d => {
     chrome.contextMenus.create({ id: "sa-auswahl", title: "Markierten Text pseudonymisiert an Claude", contexts: ["selection"] });
     chrome.contextMenus.create({ id: "sa-seite", title: "Diese Seite pseudonymisiert an Claude", contexts: ["page", "frame"] });
     chrome.contextMenus.create({ id: "sa-rueck", title: "Claudes Antwort: Namen wieder einsetzen", contexts: ["page", "frame", "editable"] });
-    chrome.contextMenus.create({ id: "sa-probe", title: "Startseite (Probe) öffnen", contexts: ["action"] });
+    chrome.contextMenus.create({ id: "sa-fenster", title: "Helfer-Fenster auf dieser Seite öffnen", contexts: ["action"] });
+    chrome.contextMenus.create({ id: "sa-start", title: "Startseite öffnen", contexts: ["action"] });
   });
   // Schon offene IServ-Tabs sofort ausstatten (sonst erst nach Neuladen)
   try {
@@ -13,11 +14,12 @@ chrome.runtime.onInstalled.addListener(async d => {
     for (const t of tabs) chrome.scripting.executeScript({ target: { tabId: t.id }, files: DATEIEN }).catch(() => {});
   } catch (e) {}
   if (d.reason === "install") chrome.runtime.openOptionsPage();
+  else if (d.reason === "update" && !(await chrome.storage.local.get("saStartGezeigt")).saStartGezeigt) { await chrome.storage.local.set({ saStartGezeigt: Date.now() }); startseiteOeffnen(); }
 });
 function hinweis(text) {
   chrome.action.setBadgeText({ text: "!" }); chrome.action.setBadgeBackgroundColor({ color: "#b5562a" });
   chrome.action.setTitle({ title: "Schulassistenz-Helfer: " + text });
-  setTimeout(() => { chrome.action.setBadgeText({ text: "" }); chrome.action.setTitle({ title: "Schulassistenz-Helfer öffnen" }); }, 6000);
+  setTimeout(() => { chrome.action.setBadgeText({ text: "" }); chrome.action.setTitle({ title: "Schulassistenz-Startseite öffnen (Rechtsklick: Helfer-Fenster)" }); }, 6000);
 }
 async function senden(tab, msg) {
   if (!tab || !tab.id) return;
@@ -31,12 +33,51 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "sa-auswahl") senden(tab, { cmd: "oeffnen", auswahl: info.selectionText });
   if (info.menuItemId === "sa-seite") senden(tab, { cmd: "oeffnen" });
   if (info.menuItemId === "sa-rueck") senden(tab, { cmd: "rueck" });
-  if (info.menuItemId === "sa-probe") chrome.tabs.create({ url: chrome.runtime.getURL("probe.html") });
+  if (info.menuItemId === "sa-fenster") senden(tab, { cmd: "oeffnen" });
+  if (info.menuItemId === "sa-start") startseiteOeffnen();
 });
-chrome.action.onClicked.addListener(tab => senden(tab, { cmd: "oeffnen" }));
+/* Klick auf das Symbol öffnet die Startseite (ab 0.9). Ist sie schon offen, wird ihr Tab nach vorn geholt.
+   Das Helfer-Fenster für Mails gibt es per Rechtsklick auf das Symbol oder auf der Seite. */
+const START_URL = chrome.runtime.getURL("startseite/start.html");
+async function startseiteOeffnen() {
+  try {
+    const offen = chrome.runtime.getContexts ? await chrome.runtime.getContexts({ contextTypes: ["TAB"], documentUrls: [START_URL] }) : [];
+    const t = offen.find(c => c.tabId >= 0);
+    if (t) { const tab = await chrome.tabs.update(t.tabId, { active: true }); if (tab && tab.windowId) chrome.windows.update(tab.windowId, { focused: true }); return; }
+  } catch (e) {}
+  chrome.tabs.create({ url: START_URL });
+}
+chrome.action.onClicked.addListener(() => startseiteOeffnen());
+chrome.action.setTitle({ title: "Schulassistenz-Startseite öffnen (Rechtsklick: Helfer-Fenster)" });
 chrome.runtime.onMessage.addListener(m => {
   if (m.cmd === "tab") chrome.tabs.create({ url: m.url });
   if (m.cmd === "einstellungen") chrome.runtime.openOptionsPage();
+  if (m.cmd === "startseite") startseiteOeffnen();
+});
+/* Umzug von der alten Startseite (Datei) und Werkzeuge, die noch als Datei im Datenordner liegen */
+chrome.runtime.onMessage.addListener((m, sender, antwort) => {
+  if (m.cmd === "umzug") {
+    // Nur von der alten Startseite-Datei: Browserdaten (Schlüssel sa-…) und Ordner-Adresse dieses Geräts merken
+    const url = (sender && sender.url) || "";
+    if (!/^file:\/\/\/.*Schulassistenz-Start\.html/i.test(url)) { antwort({ ok: false }); return; }
+    const daten = {};
+    for (const [k, v] of Object.entries(m.daten || {})) if (/^sa-/.test(k) && typeof v === "string") daten[k] = v;
+    chrome.storage.local.get(["saUmzugFertig"]).then(async d => {
+      const ordnerUrl = url.split(/[?#]/)[0].replace(/[^/]*$/, "");
+      await chrome.storage.local.set(d.saUmzugFertig ? { saDateiOrdner: ordnerUrl } : { saUmzug: { daten, zeit: Date.now() }, saDateiOrdner: ordnerUrl });
+      antwort({ ok: true, schonUebernommen: !!d.saUmzugFertig });
+    });
+    return true;
+  }
+  if (m.cmd === "datei-oeffnen") {
+    const url = String(m.url || "");
+    if (!/^file:\/\/\/[^?#]+\.html?$/i.test(url) || !sender || !String(sender.url || "").startsWith(chrome.runtime.getURL(""))) { antwort({ ok: false }); return; }
+    chrome.extension.isAllowedFileSchemeAccess(erlaubt => {
+      if (!erlaubt) { antwort({ ok: false, datei: false }); return; }
+      chrome.tabs.create({ url }); antwort({ ok: true });
+    });
+    return true;
+  }
 });
 
 /* Kalender für die Schulassistenz-Startseite:
@@ -100,11 +141,33 @@ function davListe(xml, basisUrl) {
   }
   return out;
 }
+/* IServ-Anmeldung für den Dateizugriff (WebDAV): IServ fragt per Browser-Anmeldefenster, das Chrome nur bis zum Beenden behält.
+   Der Helfer öffnet dafür ein kleines Fenster, erkennt die erfolgreiche Anmeldung, schließt es selbst und sagt der Startseite Bescheid.
+   Benutzername und Passwort gibt die Lehrkraft nur in das Fenster von Chrome ein; der Helfer sieht und speichert sie nicht. */
+let davFenster = null;
+function davAnmelden(url) {
+  if (davFenster) { chrome.windows.update(davFenster.fensterId, { focused: true }).catch(() => {}); return; }
+  chrome.windows.create({ url, type: "popup", width: 520, height: 420, focused: true }).then(w => {
+    const tabId = w.tabs && w.tabs[0] && w.tabs[0].id;
+    const fertig = d => {
+      if (d.tabId !== tabId || d.type !== "main_frame") return;
+      if (d.statusCode >= 200 && d.statusCode < 400) {
+        chrome.webRequest.onCompleted.removeListener(fertig);
+        chrome.windows.remove(w.id).catch(() => {});
+        davFenster = null;
+        chrome.runtime.sendMessage({ cmd: "dav-angemeldet" }).catch(() => {});
+      }
+    };
+    davFenster = { fensterId: w.id, fertig };
+    chrome.webRequest.onCompleted.addListener(fertig, { urls: ["https://*/webdav/*"], tabId });
+    chrome.windows.onRemoved.addListener(function weg(id) { if (id === w.id) { chrome.webRequest.onCompleted.removeListener(fertig); davFenster = null; chrome.windows.onRemoved.removeListener(weg); } });
+  }).catch(() => chrome.tabs.create({ url }));
+}
 async function dav(m) {
   const url = String(m.url || "");
   if (!DAV_RE.test(url)) return { ok: false, fehler: "Der Helfer greift nur auf IServ „Eigene“ (…/webdav/Files/…) und Gruppenordner (…/webdav/Groups/…) zu." };
   if (DAV_GRUPPEN_RE.test(url) && !["liste", "lesen", "anmelden"].includes(m.op)) return { ok: false, fehler: "Gruppenordner auf dem Schulserver liest der Helfer nur, er ändert dort nichts." };
-  if (m.op === "anmelden") { chrome.tabs.create({ url: url.replace(/(\/webdav\/(Files|Groups)).*$/, "$1/") }); return { ok: true }; }
+  if (m.op === "anmelden") { davAnmelden(url.replace(/(\/webdav\/(Files|Groups)).*$/, "$1/")); return { ok: true, fenster: true }; }
   const opt = { credentials: "include", cache: "no-store" };
   let r;
   if (m.op === "liste") r = await fetch(url.replace(/\/?$/, "/"), { ...opt, method: "PROPFIND", headers: { "Depth": "1", "Content-Type": "application/xml; charset=utf-8" },

@@ -1,12 +1,8 @@
 # Welche Dateien aus GitHub wohin im Datenordner kommen.
 # Format: Quelle im Repository  =>  Ziel im Datenordner (relativ)
 # Ein Pfad mit / am Ende ist ein ganzer Ordner (mit Unterordnern).
+# Die Startseite liegt ab Helfer 0.9 im Helfer-Ordner (werkzeuge/iserv-helfer/startseite/). Die alte Datei Schulassistenz-Start.html wird nicht mehr aktualisiert.
 # Nie aktualisiert werden: meine-einstellungen.js, Profil, Planung, Lerngruppen, Kürzellisten, Ausgaben.
-plugin/skills/schulprofil/werkzeuge/startseite/Schulassistenz-Start.html  =>  Schulassistenz-Start.html
-plugin/skills/schulprofil/werkzeuge/startseite/kacheln.js                 =>  werkzeuge/startseite/kacheln.js
-plugin/skills/schulprofil/werkzeuge/startseite/sicherung.js               =>  werkzeuge/startseite/sicherung.js
-plugin/skills/schulprofil/werkzeuge/startseite/fehlzeiten.js              =>  werkzeuge/startseite/fehlzeiten.js
-plugin/skills/schulprofil/werkzeuge/startseite/Anleitung.md               =>  werkzeuge/startseite/Anleitung.md
 plugin/skills/schulprofil/werkzeuge/startseite/meine-einstellungen-vorlage.js => werkzeuge/startseite/meine-einstellungen-vorlage.js
 plugin/skills/schulprofil/werkzeuge/pseudonymisierer/                     =>  werkzeuge/pseudonymisierer/
 plugin/skills/schulprofil/werkzeuge/abschluss-check/                      =>  werkzeuge/abschluss-check/

@@ -1,19 +1,29 @@
 # Startseite von schulassistenz
 
-Eine Seite mit Knöpfen für alle Aufgaben des Plugins. Sie läuft offline im Browser, lädt nichts aus dem Internet und schickt nichts weg. Erst wenn du auf „In Claude öffnen“ klickst, öffnet sich Claude mit dem fertigen Auftrag.
+Eine Seite mit Knöpfen für alle Aufgaben des Plugins. Sie läuft im Browser, lädt nichts aus dem Internet nach und schickt nichts weg. Erst wenn du auf „In Claude öffnen“ klickst, öffnet sich Claude mit dem fertigen Auftrag.
+
+## Öffnen
+
+Ab Schulassistenz-Helfer 0.9 wohnt die Startseite im Helfer: **Klick auf das Helfer-Symbol** oben rechts in Chrome (Edge). Ist sie schon offen, holt der Klick ihren Tab nach vorn. Das Helfer-Fenster für Mails öffnest du per Rechtsklick auf das Symbol („Helfer-Fenster auf dieser Seite öffnen“) oder per Rechtsklick auf der Seite.
+
+Tipp: Das Helfer-Symbol anheften (Puzzle-Symbol › Stecknadel), dann ist es immer sichtbar.
+
+Beim ersten Öffnen einmal den Datenordner wählen (dein Ordner `schulassistenz`, meist im OneDrive unter `#Schule`, nicht Z: oder I:) und „Bei jedem Besuch erlauben“ anklicken. Die Freigabe bleibt dann auch nach einem Neustart von Chrome.
+
+Liegen Akten und Kürzellisten auf IServ, fragt IServ nach jedem Chrome-Start einmal nach der Anmeldung. Die Startseite öffnet dafür von selbst ein kleines Anmeldefenster, das sich danach wieder schließt. „Passwort speichern“ in Chrome erspart das Tippen.
 
 ## Wo die Dateien liegen
 
 ```
+werkzeuge/iserv-helfer/startseite/   die Startseite (gehört zum Helfer, wird bei Updates ersetzt)
 <Datenordner>/
-  Schulassistenz-Start.html        die Startseite (Doppelklick)
   werkzeuge/startseite/
-    kacheln.js                     Knöpfe des Plugins (wird bei Updates ersetzt)
     meine-einstellungen.js         deine Einstellungen und eigenen Knöpfe (gehört dir)
-    Anleitung.md                   diese Anleitung
 ```
 
-Tipp: Rechtsklick auf `Schulassistenz-Start.html` → „Senden an“ → „Desktop (Verknüpfung erstellen)“. Oder die Seite im Browser als Lesezeichen speichern.
+Die Startseite liest `meine-einstellungen.js` als Text, sie führt die Datei nicht aus. Ohne Zugriff auf den Datenordner gilt die zuletzt gelesene Fassung.
+
+Die frühere Datei `Schulassistenz-Start.html` im Datenordner wird nicht mehr aktualisiert. Beim letzten Öffnen übergibt sie ihre gespeicherten Einstellungen (Kalender, Stundenplan-Link, Favoriten, Entwürfe) an den Helfer und zeigt oben einen Hinweis auf die neue Startseite. Danach kann sie gelöscht werden.
 
 ## Bedienen
 
@@ -22,7 +32,7 @@ Tipp: Rechtsklick auf `Schulassistenz-Start.html` → „Senden an“ → „Des
 - **Favoriten:** Stern ★ an einem Knopf. „Zuletzt benutzt“ füllt sich von selbst.
 - **Alle Werkzeuge:** in Reitern nach Arbeitsbereich. Reiter ohne Knöpfe sind ausgeblendet.
 - **Blau „mit Claude“:** öffnet ein Feld für Lerngruppe, Kürzel oder Thema, zeigt den Auftrag und öffnet Claude. Steht im Kürzelfeld etwas, das wie ein Name aussieht, bleibt der Knopf gesperrt.
-- **Grün „öffnet lokal“:** Pseudonymisierer öffnet sich direkt. Bei Ordnern zeigt die Seite den Pfad zum Kopieren (Explorer: Windows-Taste + E, Pfad einfügen).
+- **Grün „öffnet lokal“:** Pseudonymisierer und Abschluss-Check öffnen sich als Datei aus dem Datenordner (dafür beim Helfer „Zugriff auf Datei-URLs zulassen“; sonst zeigt die Seite den Pfad). Bei Ordnern zeigt die Seite den Pfad zum Kopieren (Explorer: Windows-Taste + E, Pfad einfügen).
 
 ## Live-Beobachtung im Raster
 

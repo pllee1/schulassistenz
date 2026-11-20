@@ -23,7 +23,6 @@ Das Profil liegt im Datenordner der Lehrkraft unter `profil/`:
 
 ```
 <Datenordner>/
-  Schulassistenz-Start.html  Startseite mit Knöpfen für alle Aufgaben (Abschnitt 2b)
   profil/
     profil.md          Einstellungen (Aufbau siehe Abschnitt 5)
     vorlagen/          Platzhalter-Fassungen (*.docx), Feldbeschreibungen (*.felder.md)
@@ -80,13 +79,14 @@ Fester Bestandteil von schulassistenz. Der Ordner `werkzeuge/pseudonymisierer/` 
 
 ## 2b. Startseite bereitstellen
 
-Fester Bestandteil von schulassistenz. Der Ordner `werkzeuge/startseite/` dieses Skills enthält `Schulassistenz-Start.html` (offline, lädt nichts nach), `kacheln.js` (Knöpfe des Plugins), `meine-einstellungen-vorlage.js` und `Anleitung.md`.
+Fester Bestandteil von schulassistenz. Ab Helfer 0.9 wohnt die Startseite im Schulassistenz-Helfer (Skill postfach-assistent, Ordner `werkzeuge/iserv-helfer/startseite/`: `start.html`, `start-a.js`, `kacheln.js` mit den Knöpfen des Plugins, `sicherung.js`, `fehlzeiten.js`, `Anleitung.md`). Geöffnet wird sie per Klick auf das Helfer-Symbol. Im Datenordner liegt nur noch `werkzeuge/startseite/meine-einstellungen.js` (Vorlage: `werkzeuge/startseite/meine-einstellungen-vorlage.js` dieses Skills).
 
-- Zusammen mit dem Pseudonymisierer einrichten (Runde 4): `Schulassistenz-Start.html` direkt in den `<Datenordner>` kopieren, `kacheln.js` und `Anleitung.md` nach `<Datenordner>/werkzeuge/startseite/`.
+- Einrichten (Runde 4): Schulassistenz-Helfer laden (Anleitung des Helfers), dann `meine-einstellungen-vorlage.js` als `<Datenordner>/werkzeuge/startseite/meine-einstellungen.js` ablegen. Eine alte `Schulassistenz-Start.html` im Datenordner nicht mehr anfassen; sie wird nicht mehr aktualisiert.
 - `meine-einstellungen-vorlage.js` als `meine-einstellungen.js` dort ablegen und aus dem Profil füllen: `schule` (Schule, Bundesland), `datenordner` (voller Pfad), `schuelerdaten` (nur wenn gesetzt: die Web-Adresse aus `ablage.schuelerdaten_web`, sonst der Pfad), `schuelerdaten_freigabe` (offen | erteilt | nicht erteilt). Fragen: Claude im Browser (`claude: "web"`) oder in der App (`"kopieren"`)? Lerngruppen nur als Kürzel wie `10d-bio`. Keine Schülernamen.
-- In zwei Sätzen erklären: Doppelklick öffnet die Startseite; Knöpfe öffnen Claude mit fertigem Auftrag oder lokale Werkzeuge. Verknüpfung auf dem Desktop anbieten (Anleitung).
-- **Updates:** `kacheln.js` und `Schulassistenz-Start.html` dürfen ersetzt werden. `meine-einstellungen.js` gehört der Lehrkraft: nie ersetzen, nur gezielt ergänzen.
-- **Neue Skills des Plugins** bringen ihren Eintrag in `kacheln.js` mit (Felder im Kopf der Datei; `neu_seit` auf das Datum setzen).
+- In zwei Sätzen erklären: Klick auf das Helfer-Symbol öffnet die Startseite; Knöpfe öffnen Claude mit fertigem Auftrag oder lokale Werkzeuge. Symbol anheften empfehlen (Anleitung).
+- `meine-einstellungen.js` wird von der Startseite als Text gelesen, nicht ausgeführt: nur Zuweisungen `window.SA_EINSTELLUNGEN = { … };` und `window.SA_MEINE_KACHELN = [ … ];` mit festen Werten (Text, Zahlen, Listen, Objekte, Kommentare erlaubt), keine Funktionen oder Berechnungen.
+- **Updates:** Die Startseite kommt mit dem Helfer. `meine-einstellungen.js` gehört der Lehrkraft: nie ersetzen, nur gezielt ergänzen.
+- **Neue Skills des Plugins** bringen ihren Eintrag in `kacheln.js` des Helfers mit (Felder im Kopf der Datei; `neu_seit` auf das Datum setzen).
 - **Eigene Skills der Lehrkraft:** Legt die Lehrkraft einen eigenen Skill an oder nutzt einen Skill außerhalb des Plugins regelmäßig, anbieten, einen Knopf in `SA_MEINE_KACHELN` von `meine-einstellungen.js` einzutragen: kurzer Titel aus Sicht der Lehrkraft, `bereich` passend zur Workflow-Map, `auftrag` mit Platzhaltern `{gruppe}`, `{kuerzel}`, `{thema}`, `{datum}`, ein paar Suchwörter, `neu_seit`. Kann Claude nicht in den Ordner schreiben, die geänderte Datei zum Herunterladen ausgeben.
 - Ein Auftrag auf einem Knopf enthält nie Namen, nur Platzhalter.
 
