@@ -1975,13 +1975,15 @@ function lebWerte(q,daten,ed){const w={};const ganz=v=>Math.min(6,Math.max(1,Mat
     if(q.typ==="mm"){const m=mittel(es.map(e=>e.v));w[d.k]={note:ganz(m),info:`Ø ${komma(m,2)} aus ${es.length} ${es.length===1?"Note":"Noten"}`}}
     else{const e=es[es.length-1];w[d.k]={note:ganz(e.v),info:e.was}}});
   return w}
+/* Für andere Teile der Startseite (z. B. „Was steht an?“): Notenübersicht mit vorgewähltem LEB-Panel öffnen */
+window.saLebOeffnen=(gid,quelleId)=>{if(quelleId)store.set("leb-quelle-"+gid,quelleId);return zeigeNoten(gid,{leb:quelleId||store.get("leb-quelle-"+gid,null)})};
 function lebMmBez(sj,von){const n=[1,2,3,4].find(i=>lebQuartal(sj,null,i)[0]===von);return n?`mündlich ${n}. Quartal`:"mündlich"}
 function lebQuartal(sj,datum,nr){const j=+sj,fq=window.saErkennung&&saErkennung.quartale?saErkennung.quartale(sj):null,b=fq||[[`${j}-08-01`,`${j}-10-31`],[`${j}-11-01`,`${j+1}-01-31`],[`${j+1}-02-01`,`${j+1}-04-30`],[`${j+1}-05-01`,`${j+1}-07-31`]];
   if(nr)return b[nr-1];return b.find(x=>datum>=x[0]&&datum<=x[1])||b[0]}
-async function zeigeNoten(gidStart){
+async function zeigeNoten(gidStart,opt){
   const slot=$("#panel-slot");const gruppen=ordner.gruppen.map(g=>g.id);if(!gruppen.length)return;
   let gid=gidStart&&gruppen.includes(gidStart)?gidStart:store.get("noten-gruppe",gruppen[0]);if(!gruppen.includes(gid))gid=gruppen[0];
-  let namen={},ed=null,meldung="",bearb=store.get("noten-bearbeiten",false),reg=[];
+  let namen={},ed=opt&&opt.leb?{typ:"leb",q:opt.leb}:null,meldung="",bearb=store.get("noten-bearbeiten",false),reg=[];
   const opsK=()=>"noten-aend-"+gid;const ops=()=>store.get(opsK(),[])||[];const opsSetzen=l=>store.set(opsK(),l.length?l:null);
   const zeichnen=async()=>{
     const g=ordner.gruppen.find(x=>x.id===gid);store.set("noten-gruppe",gid);
@@ -2056,7 +2058,7 @@ async function zeigeNoten(gidStart){
         <label>Bezeichnung <input id="lb-bez" value="${esc(ed.bez||"")}" autocomplete="off"></label>
         ${q&&q.id==="mm"?`<label>Zeitraum <select id="lb-quartal"><option value="">eigener Zeitraum</option>${quartale}</select></label><label>von <input id="lb-von" type="date" value="${esc(ed.von)}"></label><label>bis <input id="lb-bis" type="date" value="${esc(ed.bis)}"></label>`:""}</div>
         <div class="r-tab-wrap"><table class="r-tab n-tab"><thead><tr><th>Kürzel</th>${zeigN?"<th>Name (nur hier)</th>":""}<th>Note für LEB</th><th>aus</th></tr></thead><tbody>${reihe.map(k=>{const w=werte[k];return `<tr><td class="m">${esc(k)}</td>${zeigN?`<td>${esc(nameVon(k))}</td>`:""}<td class="m b">${w&&w.note!=null?w.note:"–"}</td><td>${w?esc(w.info):""}</td></tr>`}).join("")}</tbody></table></div>
-        <div class="actions"><button class="btn primary small" id="lb-ok">Für LEB-online bereitlegen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div>
+        <div class="actions"><button class="btn primary small" id="lb-direkt" title="Legt die Noten bereit und öffnet LEB-online gleich bei dieser Klasse bzw. diesem Kurs">Direkt in LEB-online</button><button class="btn ghost small" id="lb-ok">Nur bereitlegen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div>
         <p class="note">Ganze Noten 1–6 (gerundet wie der Zeugnisvorschlag). Der Helfer bekommt die Noten zusammen mit den Namen aus deiner Kürzelliste, nur in diesem Browser und höchstens 12 Stunden. Dann in LEB-online unter Noten PLUS die Leistungsüberprüfung anlegen (der Helfer füllt vor) und „Bewerten“ öffnen: Der Helfer-Kasten oben rechts trägt die Noten ein. „Speichern“ klickst du selbst.</p>`
         :`<p>In dieser Lerngruppe gibt es noch keine Noten.</p><div class="actions"><button class="btn ghost small" id="ne-zu">Abbrechen</button></div>`}</div>`}
     const aendHTML=O.length?`<div class="n-aend"><div><strong>${O.length} ${O.length===1?"Änderung":"Änderungen"} noch nicht gespeichert</strong> (bleiben in diesem Browser, bis du speicherst oder verwirfst)</div>
@@ -2096,18 +2098,23 @@ async function zeigeNoten(gidStart){
     if($("#lb-bez"))$("#lb-bez").addEventListener("input",e=>{ed.bez=e.target.value});
     if($("#lb-quartal"))$("#lb-quartal").addEventListener("change",e=>{if(!e.target.value)return;[ed.von,ed.bis]=e.target.value.split("|");ed.bez=lebMmBez(sj,ed.von);zeichnen()});
     ["#lb-von","#lb-bis"].forEach(s=>{if($(s))$(s).addEventListener("change",e=>{ed[s==="#lb-von"?"von":"bis"]=e.target.value;zeichnen()})});
-    if($("#lb-ok"))$("#lb-ok").addEventListener("click",async()=>{
+    const lebLos=async direkt=>{
       const q=lebQ.find(x=>x.id===ed.q);if(!q)return;const bez=ohnePipe($("#lb-bez").value);const p=textPruefen(bez,namen);if(p)return fehler(p);
       if(!Object.keys(namen).length)namen=await namenLesen(gid);
       if(!Object.keys(namen).length)return fehler(`Die Kürzelliste von ${gid} wurde nicht gefunden. Ohne Namen kann der Helfer die Noten in LEB-online nicht zuordnen.`);
       if(!(window.chrome&&chrome.storage&&chrome.storage.session))return fehler("Das geht nur in der Startseite im Helfer (Klick auf das Helfer-Symbol).");
       const werte=lebWerte(q,daten,ed);
       const paket={gruppe:gid,titel:bez||q.titel,bezeichnung:bez||q.titel,leistungsart:+ed.art||q.art,datum:q.id==="mm"?(ed.bis&&ed.bis<heuteISO()?ed.bis:heuteISO()):q.datum,
-        eintraege:reihe.map(k=>({k,vor:(namen[k]||{}).vor||"",nach:(namen[k]||{}).nach||"",note:werte[k]&&werte[k].note!=null?werte[k].note:null})),zeit:Date.now()};
+        eintraege:reihe.map(k=>({k,vor:(namen[k]||{}).vor||"",nach:(namen[k]||{}).nach||"",note:werte[k]&&werte[k].note!=null?werte[k].note:null})),zeit:Date.now(),direkt:!!direkt};
       await chrome.storage.session.set({saLeb:paket});
       const n=paket.eintraege.filter(e=>e.note!=null).length;
       ed=null;await zeichnen();const g=$("#n-guard");g.hidden=false;g.classList.add("ok");
-      g.textContent=`Bereitgelegt: ${paket.titel} (${n} Noten). Jetzt in LEB-online unter Noten PLUS die Leistungsüberprüfung anlegen und „Bewerten“ öffnen. Der Helfer-Kasten oben rechts trägt die Noten ein, speichern tust du selbst.`});
+      if(!direkt){g.textContent=`Bereitgelegt: ${paket.titel} (${n} Noten). Jetzt in LEB-online unter Noten PLUS die Leistungsüberprüfung anlegen und „Bewerten“ öffnen. Der Helfer-Kasten oben rechts trägt die Noten ein, speichern tust du selbst.`;return}
+      let r=null;try{r=await chrome.runtime.sendMessage({cmd:"leb-oeffnen",gruppe:gid})}catch{}
+      if(!r||!r.ok){g.classList.remove("ok");g.textContent=`Bereitgelegt: ${paket.titel} (${n} Noten). ${(r&&r.fehler)||"LEB-online ließ sich nicht öffnen."}`;return}
+      g.textContent=`${paket.titel} (${n} Noten) ist bereitgelegt, LEB-online öffnet sich. ${r.hinweis||""} Speichern klickst du selbst.`};
+    if($("#lb-ok"))$("#lb-ok").addEventListener("click",()=>lebLos(false));
+    if($("#lb-direkt"))$("#lb-direkt").addEventListener("click",()=>lebLos(true));
     if($("#n-alle"))$("#n-alle").addEventListener("click",()=>{ed=ed&&ed.typ==="alle"?null:{typ:"alle",art:store.get("noten-alle-art","Klausur")};zeichnen()});
     $("#n-druck").addEventListener("click",()=>{document.body.classList.add("druck-noten");window.print();setTimeout(()=>document.body.classList.remove("druck-noten"),500)});
     slot.querySelectorAll("button.n-e").forEach(b=>b.addEventListener("click",()=>{const c=+b.dataset.c;ed=ed&&ed.typ==="chip"&&ed.c===c?null:{typ:"chip",c,k:reg[c].k,r:reg[c]};zeichnen()}));

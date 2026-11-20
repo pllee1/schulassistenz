@@ -8,7 +8,15 @@
   const artSel = document.querySelector('select[name="leistungsarten_id"]');
   const istBewerten = notenSel.length > 0 && notenSel.every(s => s.closest("tr"));
   const istAnlegen = !!artSel && !!document.querySelector('input[name="bezeichnung"]');
-  if (!istBewerten && !istAnlegen) return;
+  const U = new URL(location.href);
+  const sid = U.searchParams.get("sid");
+  const bereich = (location.pathname.match(/\/lernstandskontrolle\/(kurse|klassen)\//) || [])[1] || null;
+  const gParam = b => b === "kurse" ? "kurse_id" : "zeug_klassen_faecher_id";
+  const istListeL = !istBewerten && !istAnlegen && /\/leistungen\/index\.php$/.test(location.pathname) && !!U.searchParams.get(gParam(bereich));
+  const istListeG = !istBewerten && !istAnlegen && /\/lernstandskontrolle\/(kurse|klassen)\/index\.php$/.test(location.pathname);
+  // Sitzung merken (nur in diesem Browser), damit die Startseite LEB-online direkt an der richtigen Stelle öffnen kann
+  if (sid) try { chrome.runtime.sendMessage({ cmd: "leb-sitzung", origin: location.origin, sid }).catch(() => { }); } catch { }
+  if (!istBewerten && !istAnlegen && !istListeL && !istListeG) return;
 
   // ---------- Namen vergleichen ----------
   const norm = s => String(s || "").toLowerCase()
@@ -97,6 +105,8 @@
       const n = [setze(artSel, p.leistungsart), setze(document.querySelector('input[name="datum"]'), datumDE(p.datum)), setze(document.querySelector('input[name="bezeichnung"]'), p.bezeichnung)].filter(Boolean).length;
       $("#msg").innerHTML = `<div class="ok">${n} Felder ausgefüllt (gelb umrandet). Bitte prüfen und dann selbst „Speichern“ klicken. Danach „Bewerten“ öffnen.</div>`;
     });
+    const bez = document.querySelector('input[name="bezeichnung"]');
+    if (window.name === "sa-anlegen" && bez && !bez.value.trim()) $("#fill").click();
   }
 
   // ---------- Bewerten ----------
@@ -133,6 +143,18 @@
   }
   // Bezeichnung, Datum und Art dieser Leistungsüberprüfung aus der Liste (Fenster, aus dem „Bewerten“ geöffnet wurde, sonst Liste neu laden)
   let infoCache;
+  // Zeilen einer LEB-Liste (Leistungsüberprüfungen): id, Bezeichnung, Datum, Leistungsart – keine Namen
+  function tabelleZeilen(doc) {
+    const trs = [...doc.querySelectorAll('tr[id^="t"]')].filter(t => /^t\d+$/.test(t.id));
+    if (!trs.length) return [];
+    const tab = trs[0].closest("table");
+    const kopf = [...tab.querySelectorAll("tr")].find(x => !trs.includes(x) && (x.querySelector("th") || /datum/i.test(x.textContent)));
+    const th = kopf ? [...kopf.cells].map(c => c.textContent.trim().toLowerCase()) : [];
+    return trs.map(tr => {
+      const zelle = n => { const i = th.findIndex(t => t.startsWith(n)); return i >= 0 && tr.cells[i] ? tr.cells[i].textContent.trim() : ""; };
+      return { id: tr.id.slice(1), tr, bezeichnung: zelle("bezeichnung"), datum: zelle("datum"), art: zelle("leistungsart") };
+    });
+  }
   async function leistungInfo() {
     if (infoCache !== undefined) return infoCache;
     infoCache = null;
@@ -140,13 +162,7 @@
       const u = new URL(location.href);
       const id = u.searchParams.get("leistungen_id") || u.searchParams.get("leistungen_kurse_id");
       if (!id) return null;
-      const ausTabelle = doc => {
-        const tr = doc.getElementById("t" + id); if (!tr) return null;
-        const tab = tr.closest("table"); const kopf = [...tab.querySelectorAll("tr")].find(x => x.querySelector("th") || /datum/i.test(x.textContent) && x !== tr);
-        const th = kopf ? [...kopf.cells].map(c => c.textContent.trim().toLowerCase()) : [];
-        const zelle = n => { const i = th.findIndex(t => t.startsWith(n)); return i >= 0 && tr.cells[i] ? tr.cells[i].textContent.trim() : ""; };
-        return { bezeichnung: zelle("bezeichnung"), datum: zelle("datum"), art: zelle("leistungsart") };
-      };
+      const ausTabelle = doc => { const z = tabelleZeilen(doc).find(x => x.id === String(id)); return z ? { bezeichnung: z.bezeichnung, datum: z.datum, art: z.art } : null; };
       try { if (window.opener && window.opener.document) infoCache = ausTabelle(window.opener.document); } catch { }
       if (!infoCache) {
         const q = new URLSearchParams();
@@ -188,6 +204,8 @@
       ${passt && (r.neu.length || r.anders.length) ? `<label class="ub"><input type="checkbox" id="bestaetigt"${bezGleich ? " checked" : ""}><b>${info && info.bezeichnung && !bezGleich ? `Trotzdem: „${esc(info.bezeichnung)}“ ist die richtige Leistung für „${esc(p.titel)}“.` : `Ja, dieses Fenster ist „${esc(p.titel)}“.`}</b></label>` : ""}
       <div class="row"><button class="b" id="fill"${bezGleich && passt && (r.neu.length || r.anders.length) ? "" : " disabled"}>Noten eintragen</button><button class="b b2" id="neu">Neu prüfen</button></div>
       <p class="info">Eingetragene Felder sind grün, abweichende gelb, nicht zugeordnete rot umrandet. Prüfen, dann selbst unten „Speichern“ klicken. Nach dem Speichern zeigt dieser Kasten den Abgleich.</p>`);
+    // Zuordnung Lerngruppe → LEB-Klasse/Kurs lernen (nur Kennungen, keine Namen)
+    if (r.quote >= 0.9 && bereich && U.searchParams.get(gParam(bereich))) try { chrome.runtime.sendMessage({ cmd: "leb-ziel", gruppe: p.gruppe, bereich, id: U.searchParams.get(gParam(bereich)) }).catch(() => { }); } catch { }
     r.nichtZu.forEach(x => markiere(x.z, FARBE.fehlt));
     r.anders.forEach(x => markiere(x.z, FARBE.anders));
     $("#neu").addEventListener("click", () => bewerten());
@@ -206,7 +224,68 @@
       }
       bewerten(`<div class="ok">${n} ${n === 1 ? "Note" : "Noten"} eingetragen. Bitte prüfen und unten selbst „Speichern“ klicken.</div>`).then(() => ziel.forEach(x => markiere(x.z, FARBE.neu)));
     });
+    // Direkt aus der Startseite geöffnet: bei passender Bezeichnung leere Felder sofort füllen (einmal je Fensterladen)
+    if (window.name === "sa-bewerten" && !autoFertig && bezGleich && passt && r.neu.length) { autoFertig = true; $("#fill").click(); }
+  }
+  let autoFertig = false;
+
+  // ---------- Direkter Weg: Listen-Seiten ----------
+  const zielHolen = async gruppe => { try { const r = await chrome.runtime.sendMessage({ cmd: "leb-ziel-holen", gruppe }); return r && r.ziel; } catch { return null; } };
+  const listeUrl = z => `${location.origin}/lernstandskontrolle/${z.bereich}/leistungen/index.php?sid=${encodeURIComponent(sid)}&${gParam(z.bereich)}=${encodeURIComponent(z.id)}`;
+  const POPUP = "left=100,top=40,width=900,height=820,scrollbars=yes,resizable=yes";
+  async function listeGruppen() {
+    const p = await paketHolen();
+    if (!p || !p.direkt) return host.remove();
+    const z = await zielHolen(p.gruppe);
+    if (z && sid) { zeigen(`<p>Öffne die Leistungsüberprüfungen von ${esc(p.gruppe)} …</p>`); location.href = listeUrl(z); return; }
+    const anders = bereich === "kurse" ? "klassen" : "kurse";
+    zeigen(`<div class="was">Direkt nach LEB-online: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)}</div>
+      <p>Einmalig: Welche Zeile ist <b>${esc(p.gruppe)}</b>? Bitte die Zeile anklicken, dann „Merken und weiter“. Danach geht es künftig direkt.</p>
+      <div id="gew" class="info">Noch keine Zeile gewählt.</div>
+      <div class="row"><button class="b" id="weiter" disabled>Merken und weiter</button><button class="b b2" id="anders">Steht unter ${anders === "kurse" ? "Kurse" : "Klassen"}</button></div>`);
+    let gew = null;
+    document.addEventListener("click", e => {
+      const tr = e.target.closest && e.target.closest('tr[id^="t"]'); if (!tr || !/^t\d+$/.test(tr.id)) return;
+      gew = tr.id.slice(1); $("#weiter").disabled = false;
+      $("#gew").textContent = "Gewählt: " + [...tr.cells].map(c => c.textContent.trim()).filter(Boolean).slice(0, 6).join(" · ");
+    }, true);
+    $("#anders").addEventListener("click", () => { location.href = `${location.origin}/lernstandskontrolle/${anders}/index.php?sid=${encodeURIComponent(sid)}`; });
+    $("#weiter").addEventListener("click", async () => {
+      if (!gew) return; const neu = { bereich, id: gew };
+      try { await chrome.runtime.sendMessage({ cmd: "leb-ziel", gruppe: p.gruppe, ...neu }); } catch { }
+      location.href = listeUrl(neu);
+    });
+  }
+  async function listeLeistungen() {
+    const p = await paketHolen();
+    if (!p || !p.direkt) return host.remove();
+    const gid = U.searchParams.get(gParam(bereich));
+    const z = await zielHolen(p.gruppe);
+    if (z && !(z.bereich === bereich && String(z.id) === String(gid))) {
+      zeigen(`<div class="warn">Diese Liste gehört nicht zu ${esc(p.gruppe)}.</div><div class="row"><button class="b" id="hin">Zu ${esc(p.gruppe)} wechseln</button></div>`);
+      $("#hin").addEventListener("click", () => { location.href = listeUrl(z); }); return;
+    }
+    const treffer = tabelleZeilen(document).filter(x => bezNorm(x.bezeichnung) === bezNorm(p.bezeichnung || p.titel));
+    const kopf = `<div class="was">Direkt nach LEB-online: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)} · ${esc(ART[p.leistungsart] || "")}${p.datum ? " · " + esc(datumDE(p.datum)) : ""}</div>`;
+    const bewertUrl = id => `bewertungsform.php?sid=${encodeURIComponent(sid)}&${gParam(bereich)}=${encodeURIComponent(gid)}&${bereich === "kurse" ? "leistungen_kurse_id" : "leistungen_id"}=${encodeURIComponent(id)}`;
+    if (treffer.length === 1) {
+      const t = treffer[0]; t.tr.style.outline = "3px solid #79b98a";
+      zeigen(`${kopf}<div class="ok">„${esc(t.bezeichnung)}“${t.datum ? " vom " + esc(t.datum) : ""} ist angelegt.</div>
+        <div class="row"><button class="b" id="bew">Bewerten öffnen</button><button class="b b2" id="neu">Neu prüfen</button></div>
+        <p class="info">Im Bewerten-Fenster trägt der Helfer die Noten gleich ein. Prüfen, dann selbst „Speichern“ klicken.</p>`);
+      $("#bew").addEventListener("click", () => window.open(bewertUrl(t.id), "sa-bewerten", POPUP));
+    } else if (treffer.length > 1) {
+      zeigen(`${kopf}<div class="warn">„${esc(p.bezeichnung)}“ gibt es hier ${treffer.length}-mal. Bitte die richtige Zeile markieren und wie gewohnt „Bewerten“ klicken.</div><div class="row"><button class="b b2" id="neu">Neu prüfen</button></div>`);
+    } else {
+      const j = (document.documentElement.innerHTML.match(/form\.php\?[^'"<>]*?jahrgaenge_id=(\d+)/) || [])[1];
+      const anlegenUrl = `form.php?sid=${encodeURIComponent(sid)}${j ? "&jahrgaenge_id=" + j : ""}&${gParam(bereich)}=${encodeURIComponent(gid)}`;
+      zeigen(`${kopf}<p>„${esc(p.bezeichnung || p.titel)}“ ist hier noch nicht angelegt.</p>
+        <div class="row"><button class="b" id="anl">Anlegen öffnen (vorausgefüllt)</button><button class="b b2" id="neu">Neu prüfen</button></div>
+        <p class="info">Im Anlegen-Fenster stehen Leistungsart, Datum und Bezeichnung schon drin. Gewichtung prüfen, selbst „Speichern“ klicken, dann hier „Neu prüfen“.</p>`);
+      $("#anl").addEventListener("click", () => window.open(anlegenUrl, "sa-anlegen", POPUP));
+    }
+    if ($("#neu")) $("#neu").addEventListener("click", () => location.reload());
   }
 
-  (istBewerten ? bewerten() : anlegen()).catch(e => zeigen(`<div class="warn">Fehler: ${esc(e && e.message || e)}</div>`));
+  (istListeG ? listeGruppen() : istListeL ? listeLeistungen() : istBewerten ? bewerten() : anlegen()).catch(e => zeigen(`<div class="warn">Fehler: ${esc(e && e.message || e)}</div>`));
 })();

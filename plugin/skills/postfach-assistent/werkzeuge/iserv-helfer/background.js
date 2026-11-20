@@ -360,3 +360,43 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   }).catch(() => antwort({ paket: null }));
   return true;
 });
+
+// LEB-online direkt: Sitzung (nur Sitzungsspeicher), Adresse und gelernte Zuordnung Lerngruppe → Klasse/Kurs (nur Kennungen)
+chrome.runtime.onMessage.addListener((m, sender, antwort) => {
+  if (m.cmd === "leb-sitzung") {
+    if (/^https:\/\/[a-z0-9.-]+$/i.test(m.origin || "") && /^[\w-]{10,200}$/.test(m.sid || "")) {
+      chrome.storage.session.set({ saLebSitzung: { origin: m.origin, sid: m.sid, zeit: Date.now() } });
+      chrome.storage.local.set({ saLebOrigin: m.origin });
+    }
+    return;
+  }
+  if (m.cmd === "leb-ziel") {
+    if (!m.gruppe || !/^(kurse|klassen)$/.test(m.bereich || "") || !/^\d+$/.test(String(m.id || ""))) return;
+    chrome.storage.local.get("saLebZiele").then(({ saLebZiele }) => {
+      const z = saLebZiele || {}; z[m.gruppe] = { bereich: m.bereich, id: String(m.id) };
+      return chrome.storage.local.set({ saLebZiele: z });
+    }).then(() => antwort({ ok: true })).catch(() => antwort({ ok: false }));
+    return true;
+  }
+  if (m.cmd === "leb-ziel-holen") {
+    chrome.storage.local.get("saLebZiele").then(({ saLebZiele }) => antwort({ ziel: (saLebZiele || {})[m.gruppe] || null })).catch(() => antwort({ ziel: null }));
+    return true;
+  }
+  if (m.cmd === "leb-oeffnen") {
+    (async () => {
+      const { saLebOrigin, saLebZiele } = await chrome.storage.local.get(["saLebOrigin", "saLebZiele"]);
+      const { saLebSitzung } = await chrome.storage.session.get("saLebSitzung");
+      const origin = (saLebSitzung && saLebSitzung.origin) || saLebOrigin;
+      if (!origin) return { ok: false, fehler: "Der Helfer kennt LEB-online noch nicht. Bitte LEB-online einmal öffnen, anmelden und Noten PLUS anklicken. Danach klappt der direkte Weg." };
+      const ziel = (saLebZiele || {})[m.gruppe];
+      const sid = saLebSitzung && saLebSitzung.origin === origin ? saLebSitzung.sid : null;
+      let url, hinweis;
+      if (!sid) { url = origin + "/"; hinweis = "Bitte bei LEB-online anmelden und dann Noten PLUS › Kurse (bzw. Klassen) anklicken. Der Helfer macht von dort weiter."; }
+      else if (ziel) { url = `${origin}/lernstandskontrolle/${ziel.bereich}/leistungen/index.php?sid=${encodeURIComponent(sid)}&${ziel.bereich === "kurse" ? "kurse_id" : "zeug_klassen_faecher_id"}=${encodeURIComponent(ziel.id)}`; hinweis = "LEB-online ist geöffnet. Falls die Anmeldung abgelaufen ist: anmelden, dann Noten PLUS › Kurse bzw. Klassen anklicken."; }
+      else { url = `${origin}/lernstandskontrolle/kurse/index.php?sid=${encodeURIComponent(sid)}`; hinweis = "Einmalig: In LEB-online die Zeile dieser Lerngruppe anklicken und „Merken und weiter“."; }
+      await chrome.tabs.create({ url });
+      return { ok: true, hinweis };
+    })().then(antwort).catch(e => antwort({ ok: false, fehler: "Helfer-Fehler (" + String((e && e.message) || e) + ")." }));
+    return true;
+  }
+});

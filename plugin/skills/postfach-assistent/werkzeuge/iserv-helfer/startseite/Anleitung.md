@@ -152,6 +152,8 @@ Für Schulen mit LEB-online (Noten PLUS). Der Helfer füllt dort Formulare aus, 
    Sicherungen: Der Kasten liest Bezeichnung, Datum und Leistungsart dieser Leistungsüberprüfung aus der LEB-Liste. Stimmt die Bezeichnung mit dem Paket überein, steht dort „Passt“. Weicht sie ab oder passt die Leistungsart (mündlich/schriftlich) nicht, ist Eintragen gesperrt bzw. braucht ein ausdrückliches „Trotzdem“-Häkchen. Deshalb beim Anlegen „Formular vorausfüllen“ nutzen: Dann heißen beide gleich (z. B. „mündlich 2. Quartal“, „Klassenarbeit 1“).
 6. Prüfen und unten selbst **Speichern** klicken. Öffnest du „Bewerten“ danach erneut, zeigt der Kasten den Abgleich.
 
+**Direkt in LEB-online (ab Helfer 0.15):** Statt „Nur bereitlegen“ den Knopf **Direkt in LEB-online** nehmen. Der Helfer öffnet LEB-online gleich bei der richtigen Klasse bzw. dem richtigen Kurs. Ist die Leistungsüberprüfung noch nicht angelegt, öffnet „Anlegen öffnen“ das Formular schon ausgefüllt: Gewichtung prüfen, Speichern, dann „Neu prüfen“. Ist sie angelegt, öffnet „Bewerten öffnen“ das Fenster und trägt die Noten sofort ein (nur leere Felder, nur bei gleicher Bezeichnung): prüfen, Speichern. Beim allerersten Mal je Lerngruppe klickst du in LEB-online einmal die passende Zeile an („Merken und weiter“). Ist die LEB-Anmeldung abgelaufen: anmelden, dann Noten PLUS › Kurse bzw. Klassen anklicken, der Helfer macht weiter.
+
 Claude sieht dabei nichts: Die Zuordnung Name ↔ Kürzel passiert nur im Helfer in deinem Browser.
 
 ## Skala im Live-Raster
