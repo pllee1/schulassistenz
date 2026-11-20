@@ -1975,6 +1975,7 @@ function lebWerte(q,daten,ed){const w={};const ganz=v=>Math.min(6,Math.max(1,Mat
     if(q.typ==="mm"){const m=mittel(es.map(e=>e.v));w[d.k]={note:ganz(m),info:`Ø ${komma(m,2)} aus ${es.length} ${es.length===1?"Note":"Noten"}`}}
     else{const e=es[es.length-1];w[d.k]={note:ganz(e.v),info:e.was}}});
   return w}
+function lebMmBez(sj,von){const n=[1,2,3,4].find(i=>lebQuartal(sj,null,i)[0]===von);return n?`mündlich ${n}. Quartal`:"mündlich"}
 function lebQuartal(sj,datum,nr){const j=+sj,b=[[`${j}-08-01`,`${j}-10-31`],[`${j}-11-01`,`${j+1}-01-31`],[`${j+1}-02-01`,`${j+1}-04-30`],[`${j+1}-05-01`,`${j+1}-07-31`]];
   if(nr)return b[nr-1];return b.find(x=>datum>=x[0]&&datum<=x[1])||b[0]}
 async function zeigeNoten(gidStart){
@@ -2046,7 +2047,7 @@ async function zeigeNoten(gidStart){
     // Nach LEB-online: Quelle wählen, Vorschau, Paket für den Helfer bereitlegen
     const lebQ=lebQuellen(daten,kaSp,kaVon,gilt);
     if(ed&&ed.typ==="leb"){const q=lebQ.find(x=>x.id===ed.q)||lebQ[0];ed.q=q?q.id:null;
-      if(q){if(ed.art==null)ed.art=q.art;if(ed.bez==null)ed.bez=q.titel;if(q.id==="mm"&&!ed.von){const v=lebQuartal(sj,heuteISO());ed.von=v[0];ed.bis=v[1]}}
+      if(q){if(ed.art==null)ed.art=q.art;if(q.id==="mm"&&!ed.von){const v=lebQuartal(sj,heuteISO());ed.von=v[0];ed.bis=v[1]}if(ed.bez==null)ed.bez=q.id==="mm"?lebMmBez(sj,ed.von):q.titel}
       const werte=q?lebWerte(q,daten,ed):{};
       const quartale=[1,2,3,4].map(n=>{const v=lebQuartal(sj,null,n);return `<option value="${v[0]}|${v[1]}"${ed.von===v[0]&&ed.bis===v[1]?" selected":""}>${n}. Quartal (${datumDE(v[0])}–${datumDE(v[1])})</option>`}).join("");
       edHTML=`<div class="n-edit"><div><strong>Nach LEB-online übertragen</strong> · ${esc(gid)}</div>
@@ -2093,7 +2094,7 @@ async function zeigeNoten(gidStart){
     if($("#lb-q"))$("#lb-q").addEventListener("change",e=>{ed={typ:"leb",q:e.target.value};store.set("leb-quelle-"+gid,e.target.value);zeichnen()});
     if($("#lb-art"))$("#lb-art").addEventListener("change",e=>{ed.art=+e.target.value});
     if($("#lb-bez"))$("#lb-bez").addEventListener("input",e=>{ed.bez=e.target.value});
-    if($("#lb-quartal"))$("#lb-quartal").addEventListener("change",e=>{if(!e.target.value)return;[ed.von,ed.bis]=e.target.value.split("|");zeichnen()});
+    if($("#lb-quartal"))$("#lb-quartal").addEventListener("change",e=>{if(!e.target.value)return;[ed.von,ed.bis]=e.target.value.split("|");ed.bez=lebMmBez(sj,ed.von);zeichnen()});
     ["#lb-von","#lb-bis"].forEach(s=>{if($(s))$(s).addEventListener("change",e=>{ed[s==="#lb-von"?"von":"bis"]=e.target.value;zeichnen()})});
     if($("#lb-ok"))$("#lb-ok").addEventListener("click",async()=>{
       const q=lebQ.find(x=>x.id===ed.q);if(!q)return;const bez=ohnePipe($("#lb-bez").value);const p=textPruefen(bez,namen);if(p)return fehler(p);

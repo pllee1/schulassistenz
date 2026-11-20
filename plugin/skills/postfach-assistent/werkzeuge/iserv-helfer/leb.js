@@ -131,18 +131,49 @@
       return m && !sc ? 1 : sc && !m ? 2 : null;
     } catch { return null; }
   }
+  // Bezeichnung, Datum und Art dieser Leistungsüberprüfung aus der Liste (Fenster, aus dem „Bewerten“ geöffnet wurde, sonst Liste neu laden)
+  let infoCache;
+  async function leistungInfo() {
+    if (infoCache !== undefined) return infoCache;
+    infoCache = null;
+    try {
+      const u = new URL(location.href);
+      const id = u.searchParams.get("leistungen_id") || u.searchParams.get("leistungen_kurse_id");
+      if (!id) return null;
+      const ausTabelle = doc => {
+        const tr = doc.getElementById("t" + id); if (!tr) return null;
+        const tab = tr.closest("table"); const kopf = [...tab.querySelectorAll("tr")].find(x => x.querySelector("th") || /datum/i.test(x.textContent) && x !== tr);
+        const th = kopf ? [...kopf.cells].map(c => c.textContent.trim().toLowerCase()) : [];
+        const zelle = n => { const i = th.findIndex(t => t.startsWith(n)); return i >= 0 && tr.cells[i] ? tr.cells[i].textContent.trim() : ""; };
+        return { bezeichnung: zelle("bezeichnung"), datum: zelle("datum"), art: zelle("leistungsart") };
+      };
+      try { if (window.opener && window.opener.document) infoCache = ausTabelle(window.opener.document); } catch { }
+      if (!infoCache) {
+        const q = new URLSearchParams();
+        for (const k of ["sid", "zeug_klassen_faecher_id", "kurse_id"]) if (u.searchParams.get(k)) q.set(k, u.searchParams.get(k));
+        const buf = await fetch(new URL("index.php?" + q, location.href), { credentials: "include" }).then(r => r.arrayBuffer());
+        infoCache = ausTabelle(new DOMParser().parseFromString((() => { try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); } catch { return new TextDecoder("windows-1252").decode(buf); } })(), "text/html"));
+      }
+    } catch { infoCache = null; }
+    return infoCache;
+  }
+  const bezNorm = t => norm(t).replace(/\b(nr|nummer)\b/g, "").replace(/\s+/g, " ").trim();
   async function bewerten(meldung = "") {
     const p = await paketHolen();
     if (!p) return zeigen(ohnePaket);
     const r = vergleich(p);
     zeilen.forEach(z => markiere(z, ""));
-    const sArt = seitenArt();
+    const info = await leistungInfo();
+    const infoArt = info && info.art ? (/m(ü|ue)ndlich/i.test(info.art) ? 1 : /schriftlich/i.test(info.art) ? 2 : null) : null;
+    const sArt = infoArt != null ? infoArt : seitenArt();
     const artFalsch = sArt != null && p.leistungsart && +p.leistungsart !== sArt;
+    const bezGleich = !!(info && info.bezeichnung && bezNorm(info.bezeichnung) === bezNorm(p.bezeichnung || p.titel));
     const gruppeOk = r.quote >= 0.5;
     const passt = gruppeOk && !artFalsch;
     const liste = (a, f) => a.length ? `<ul>${a.map(f).join("")}</ul>` : "";
     zeigen(`<div class="was">Bereitgelegt: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)} · ${esc(ART[p.leistungsart] || "")}${p.datum ? " · " + esc(datumDE(p.datum)) : ""}</div>
       ${meldung}
+      ${info && info.bezeichnung ? (bezGleich ? `<div class="ok">Passt: Dieses Fenster ist „${esc(info.bezeichnung)}“${info.datum ? " vom " + esc(info.datum) : ""}.</div>` : `<div class="warn"><b>Andere Leistung?</b> Dieses Fenster ist „${esc(info.bezeichnung)}“${info.datum ? " vom " + esc(info.datum) : ""}, bereitgelegt ist „${esc(p.bezeichnung || p.titel)}“.</div>`) : ""}
       ${artFalsch ? `<div class="warn"><b>Falsche Leistung?</b> Bereitgelegt ist „${esc(p.titel)}“ (${esc(ART[p.leistungsart])}), dieses Fenster gehört aber zu einer Leistungsüberprüfung „${esc(ART[sArt])}“. Eintragen ist gesperrt. Bitte in der Startseite die richtige Leistung bereitlegen.</div>` : ""}
       ${gruppeOk ? "" : `<div class="warn"><b>Passt die Lerngruppe?</b> Nur ${zeilen.length - r.nichtZu.length} von ${zeilen.length} Namen in diesem Fenster stehen in der Kürzelliste von ${esc(p.gruppe)}. Eintragen ist gesperrt.</div>`}
       <div><span class="tag t-neu">${r.neu.length}</span>werden neu eingetragen</div>
@@ -154,8 +185,8 @@
       ${passt ? "" : `<div class="info">Liste ausgeblendet, weil fast nichts passt.</div>`}${!passt ? "" : liste(r.nichtZu, x => `<li>${esc(x.z.name)} (nicht in der Kürzelliste, bleibt leer)</li>`)}
       ${!passt ? "" : liste(r.uebrig, e => `<li>${esc(e.k)} (${esc([e.nach, e.vor].filter(Boolean).join(", "))}) steht nicht in diesem Fenster</li>`)}
       ${r.ohne.length + r.lebOhneAkte.length ? `<div class="info">${r.ohne.length + r.lebOhneAkte.length} ohne Note in der Akte (bleiben unverändert)${r.lebOhneAkte.length ? `, davon ${r.lebOhneAkte.length} mit Note in LEB-online` : ""}.</div>` : ""}
-      ${passt && (r.neu.length || r.anders.length) ? `<label class="ub"><input type="checkbox" id="bestaetigt"><b>Ja, dieses Fenster ist „${esc(p.titel)}“.</b></label>` : ""}
-      <div class="row"><button class="b" id="fill" disabled>Noten eintragen</button><button class="b b2" id="neu">Neu prüfen</button></div>
+      ${passt && (r.neu.length || r.anders.length) ? `<label class="ub"><input type="checkbox" id="bestaetigt"${bezGleich ? " checked" : ""}><b>${info && info.bezeichnung && !bezGleich ? `Trotzdem: „${esc(info.bezeichnung)}“ ist die richtige Leistung für „${esc(p.titel)}“.` : `Ja, dieses Fenster ist „${esc(p.titel)}“.`}</b></label>` : ""}
+      <div class="row"><button class="b" id="fill"${bezGleich && passt && (r.neu.length || r.anders.length) ? "" : " disabled"}>Noten eintragen</button><button class="b b2" id="neu">Neu prüfen</button></div>
       <p class="info">Eingetragene Felder sind grün, abweichende gelb, nicht zugeordnete rot umrandet. Prüfen, dann selbst unten „Speichern“ klicken. Nach dem Speichern zeigt dieser Kasten den Abgleich.</p>`);
     r.nichtZu.forEach(x => markiere(x.z, FARBE.fehlt));
     r.anders.forEach(x => markiere(x.z, FARBE.anders));
