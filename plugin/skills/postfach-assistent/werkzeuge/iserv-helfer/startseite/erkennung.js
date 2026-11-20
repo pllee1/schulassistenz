@@ -17,7 +17,7 @@ const ARTEN=[
   {id:"konf-zeugnis",name:"Zeugnis-/Klassenkonferenz",farbe:"warn",
    muster:/zeugniskonferenz|klassenkonferenz|p(ä|ae)d(agogische|\.)?\s*konf|notenkonferenz|versetzungskonferenz|\bzk\b/i},
   {id:"notenschluss",name:"Notenschluss / Noteneingabe",farbe:"warn",
-   muster:/notenschluss|noteneingabe|notenabgabe|zeugnisnoten|noten\s*(eintragen|abgeben)|leb[- ]?(schluss|abgabe|eingabe)/i},
+   muster:/notenschluss|bewertungs(stopp|schluss|ende)|notenstopp|noteneingabe|notenabgabe|zeugnisnoten|noten\s*(eintragen|abgeben)|leb[- ]?(schluss|abgabe|eingabe)/i},
   {id:"zeugnisausgabe",name:"Zeugnisausgabe",farbe:"",muster:/zeugnisausgabe|zeugnisse\s*(ausgeben|ausgabe)|zeugnistag/i},
   {id:"pruefung",name:"Abschluss-/Abiturprüfung",farbe:"warn",
    muster:/abitur|abiprüfung|abschlussprüfung|mündliche\s*prüfung|präsentationsprüfung|prüfungstag|nachprüfung/i},
@@ -97,7 +97,7 @@ function akteZaehlen(gid,nr){
 }
 function schritt(art,t,tage){
   const gid=t.gruppe&&t.gruppe.id,ob=t.gruppe&&t.gruppe.oberstufe;
-  const S=(text,kachel,vor)=>({text,kachel,vor:vor||(gid?{gruppe:gid}:{})});
+  const S=(text,kachel,vor,leb)=>({text,kachel,vor:vor||(gid?{gruppe:gid}:{}),leb:leb&&gid&&!ob?leb:null});
   switch(art){
     case "klassenarbeit":{
       if(tage>14)return S("Klausur entwerfen (Erwartungshorizont, Notenschlüssel)","pruefung");
@@ -105,11 +105,11 @@ function schritt(art,t,tage){
       const z=akteZaehlen(gid,t.nr);
       if(!z||!z.mit)return S(`Korrigieren${t.nr?` (Klausur ${t.nr})`:""}`,"korrektur");
       if(z.mit<z.alle)return S(`Noten in den Akten: ${z.mit} von ${z.alle}. Fehlende nachtragen`,"notenuebersicht");
-      return ob?S("Noten vollständig in den Akten (Oberstufe, nicht in LEB)",""):S(`Noten vollständig in den Akten → nach LEB-online übertragen`,"notenuebersicht")}
+      return ob?S("Noten vollständig in den Akten (Oberstufe, nicht in LEB)",""):S(`Noten vollständig in den Akten → nach LEB-online übertragen`,"notenuebersicht",null,t.nr?"ka:Nr. "+t.nr:null)}
     case "mitarbeit":{const m=t._mm;if(!m)return S("","");
       const seit=`seit ${datumDE(m.ab)}`;
       const vor=m.wenig?`${m.wenig} von ${m.alle} mit weniger als 2 Mitarbeitseinträgen ${seit}${m.ohne?` (${m.ohne} ohne)`:""}. `:`Alle haben mindestens 2 Einträge ${seit}. `;
-      return S(vor+(ob?"Note festsetzen.":"Note festsetzen, dann nach LEB-online."),"beob-note")}
+      return S(vor+(ob?"Note festsetzen.":"Note festsetzen, dann nach LEB-online."),"beob-note",null,"mm")}
     case "test":return tage>0?S("Angesagt. Danach Noten eintragen",""):S("Noten eintragen (Live-Beobachtung oder Notenübersicht)","notenuebersicht");
     case "konf-zeugnis":return tage>21?S("Vormerken. Ab 3 Wochen vorher Zeugnisnoten vorbereiten",""):tage>=0?S("Zeugnisnoten und Tischvorlage vorbereiten","konferenz"):S("Beschlüsse in die Akten übernehmen","dokument");
     case "notenschluss":return tage>=0?S("Zeugnisnoten vorbereiten und eintragen","zeugnis-noten"):S("Vorbei. Noten vollständig?","notenuebersicht");
@@ -154,7 +154,7 @@ function grosseFerien(sj){const j=+sj;return ferienListe().filter(f=>tageZw(f.vo
    Das 2. Quartal endet am Halbjahres-Notenschluss, das 4. am Notenschluss zum Schuljahresende. */
 function notenschluss(sj,halbjahr){
   const j=+sj,a=halbjahr?`${j}-12-01`:`${j+1}-04-15`,b=halbjahr?`${j+1}-02-15`:`${j+1}-07-31`,l=[];
-  [].concat(E.notenschluss||[]).forEach(x=>{if(/^\d{4}-\d{2}-\d{2}$/.test(String(x)))l.push(String(x))});
+  [].concat(E.bewertungsstopp||[],E.notenschluss||[]).forEach(x=>{if(/^\d{4}-\d{2}-\d{2}$/.test(String(x)))l.push(String(x))});
   const ns=ARTEN.find(x=>x.id==="notenschluss").muster;
   for(const k of kalListe()){if(!k.an)continue;for(const e of (k.events||[]))if(e.start&&ns.test(e.titel||""))l.push(isoTag(e.start))}
   return l.filter(d=>d>=a&&d<=b).sort().pop()||"";
@@ -179,7 +179,7 @@ function mmAnlaesse(){
     const name=/ferien/i.test(f.name)?f.name.replace(/^\s*(die\s+)?/i,""):"Ferien";
     out.push({tag:letzterSchultag(f.von),grenze:f.von,sj,titelEnde:`vor den ${name}`,quelle:"Erinnerung (Ferienbeginn "+datumDE(f.von)+")",vorher:i>0?plusT(fl[i-1].bis,1):plusT(f.von,-70)})});
   const jetzt=schuljahrVon(isoTag(new Date()));
-  [jetzt,jetzt-1].forEach(sj=>[true,false].forEach(h=>{const ns=notenschluss(sj,h);if(ns)out.push({tag:ns,grenze:plusT(ns,1),sj,titelEnde:h?"bis zum Notenschluss (Halbjahr)":"bis zum Notenschluss",quelle:"Erinnerung (Notenschluss "+datumDE(ns)+")",vorher:plusT(ns,-70)})}));
+  [jetzt,jetzt-1].forEach(sj=>[true,false].forEach(h=>{const ns=notenschluss(sj,h);if(ns)out.push({tag:ns,grenze:plusT(ns,1),sj,titelEnde:h?"bis zum Bewertungsstopp (Halbjahr)":"bis zum Bewertungsstopp",quelle:"Erinnerung (Bewertungsstopp "+datumDE(ns)+")",vorher:plusT(ns,-70)})}));
   return out;
 }
 function ferienErinnerungen(von,bis){
@@ -247,7 +247,7 @@ function zeigen(){
       <td>${esc(t.titel)}<br><span class="note">${esc(t.quelle)}${t.weg?" · gefiltert":""}</span></td>
       <td>${t.art?`<span class="chip ${t.art.farbe}" style="white-space:nowrap">${esc(t.art.name)}</span>`:'<span class="note">nicht erkannt</span>'}</td>
       <td>${bez?esc(bez):'<span class="note">–</span>'}</td>
-      <td>${t.schritt&&t.schritt.text?esc(t.schritt.text):""}${k?`<br><button class="btn ghost small" data-erk="${i}">${esc(k.titel)}</button>`:""}</td></tr>`});
+      <td>${t.schritt&&t.schritt.text?esc(t.schritt.text):""}${k?`<br><button class="btn ghost small" data-erk="${i}">${esc(k.titel)}</button>`:""}${t.schritt&&t.schritt.leb&&typeof window.saLebOeffnen==="function"?` <button class="btn ghost small" data-erk-leb="${i}">Nach LEB-online</button>`:""}</td></tr>`});
   const sichtbar=liste.filter(t=>alle||t.art);
   slot.innerHTML=`<div class="panel"><h4>Termine erkennen (Probe)</h4>
     <p class="note">Nur Ansicht: Termine aus den eingeschalteten Kalendern${(ordner.aufgaben||[]).length?" und aus aufgaben.md":""} werden einer Art zugeordnet, mit deiner Lerngruppe verknüpft und bekommen einen Vorschlag für den nächsten Schritt. Gespeichert oder an Claude geschickt wird nichts.</p>
@@ -270,6 +270,8 @@ function zeigen(){
     const vor={...t.schritt.vor};
     if(k.typ==="claude"&&(k.felder||[]).includes("thema")&&!vor.thema)vor.thema=`${typeof titelSicher==="function"?titelSicher(t.titel):t.art.name} am ${datumDE(t.iso)}`;  // Titel ohne Namen
     oeffne(k,vor)}));
+  slot.querySelectorAll("[data-erk-leb]").forEach(b=>b.addEventListener("click",()=>{
+    const t=sichtbar[+b.dataset.erkLeb];if(typeof window.saLebOeffnen==="function")window.saLebOeffnen(t.gruppe.id,t.schritt.leb)}));
   slot.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
