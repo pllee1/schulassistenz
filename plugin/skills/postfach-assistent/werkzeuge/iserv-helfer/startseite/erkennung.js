@@ -359,6 +359,9 @@ function naechstes(){
   const karte=(t,i)=>{
     const dringend=t.tage<=3;
     const kopfz=`${esc(NX_KURZ[t.art.id]||t.art.name)} · ${nxTag(t)}`;
+    const wt=new Date(t.iso+"T12:00").toLocaleDateString("de-DE",{weekday:"short"}).replace(".","");
+    const datum=`${wt} ${datumDE(t.iso).slice(0,6)}${t.zeit?`, ${t.zeit}`:""}`;
+    const mein=!t._mm&&/^(klassenarbeit|test)$/.test(t.art.id)&&t.gruppe&&(t.gruppe.mehrdeutig||(t.gruppe.id&&!t.gruppe.nurKlasse));
     let titel,text,knoepfe="";
     if(t._mm){
       titel=esc(t.titel.replace(/^Mitarbeitsnote\s*/,"").replace(/^(\d\. Quartal)\s*/,"$1, "));
@@ -371,10 +374,11 @@ function naechstes(){
       const k=t.schritt.kachel?ALLE.find(x=>x.id===t.schritt.kachel):null;
       knoepfe=`<div class="nx-knoepfe">${k?`<button class="btn primary small" data-nx="${i}">${esc(k.titel)}</button>`:""}${t.schritt.leb&&typeof window.saLebOeffnen==="function"?`<button class="btn ghost small" data-nx-leb="${i}">Nach LEB-online</button>`:""}</div>`;
     }
-    return `<article class="nx-karte${dringend?" dringend":""}${t.tage<0?" vorbei":""}">
+    return `<article class="nx-karte${dringend?" dringend":""}${t.tage<0?" vorbei":""}${mein?" mein":""}">
       <div class="nx-zeile"><span class="nx-art">${kopfz}</span><span class="sp"></span>
         <button class="nx-mini" data-nx-spaeter="${i}" title="Eine Woche ausblenden">Später</button>
         <button class="nx-mini" data-nx-fertig="${i}" title="Erledigt, nicht mehr zeigen">✓</button></div>
+      <div class="nx-datum">${mein?`<span class="nx-meine">Meine</span>`:""}<span>${esc(datum)}</span></div>
       <div class="nx-titel">${titel}</div><div class="nx-text">${text}</div>${knoepfe}</article>`};
   sec.innerHTML=kopf+(karten.length?`<div class="nx-liste">${karten.map(karte).join("")}</div>`:`<p class="note">Nichts Dringendes in den nächsten zwei Wochen.</p>`)
     +(mehr>0?`<button class="linkbtn nx-mehr" id="nx-mehr">${mehr} weitere</button>`:"");
