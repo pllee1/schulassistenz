@@ -729,12 +729,16 @@ async function sdVerbinden(){
   }catch(e){if(e&&e.name==="AbortError")return;$("#ordner-note").textContent="Der Ordner ließ sich nicht öffnen. Ist das IServ-Laufwerk verbunden und bist du angemeldet?";return}
   renderOrdner();renderStatus();
 }
+/* Ordner, in dem diese Seite liegt (aus der Adresse), z. B. C:\Users\…\OneDrive\#Schule\schulassistenz */
+function seitenOrdner(){try{if(location.protocol!=="file:")return "";let p=decodeURIComponent(location.pathname).replace(/\/[^\/]*$/,"");if(/^\/[A-Za-z]:/.test(p))p=p.slice(1);return p.replace(/\//g,"\\")}catch{return ""}}
+const DATENORDNER_HILFE=()=>{const o=seitenOrdner();return "Gemeint ist der Ordner, in dem diese Startseite liegt"+(o?" („"+o+"“)":"")+", also dein Ordner mit profil/ und werkzeuge/. Er enthält keine Schülerdaten. Akten und Kürzellisten holt die Seite"+(sdDav()?" über den Schulassistenz-Helfer direkt von IServ. Den IServ-Ordner (Laufwerk Z: oder I:) hier nicht wählen: Chrome lehnt Netzlaufwerke mit „enthält Systemdateien“ ab.":" aus dem Schülerdaten-Ordner.")};
 async function ordnerVerbinden(){
   try{
     const h=await window.showDirectoryPicker({id:"schulassistenz",mode:"read"});
     await IDB.set("datenordner",h);ordnerHandle=h;await sdStart(true);await ordnerLesen(h);
     if(ordner.zustand==="falsch"){await IDB.set("datenordner",null);ordnerHandle=null}
-  }catch(e){if(e&&e.name==="AbortError")return}
+  }catch(e){if(e&&e.name==="AbortError"){if(ordner.zustand!=="an")$("#ordner-note").textContent="Kein Ordner gewählt. "+DATENORDNER_HILFE();return}
+    $("#ordner-note").textContent="Der Ordner ließ sich nicht öffnen. "+DATENORDNER_HILFE();return}
   renderOrdner();renderStatus();
 }
 function renderOrdner(){
@@ -774,8 +778,8 @@ function renderOrdner(){
     namen.forEach(n=>{const d=document.createElement("div");d.className="group";d.style.cursor="default";d.innerHTML=`<b>${esc(n)}</b>`;box.appendChild(d)});
     if(ordner.zustand==="nicht")note.textContent="Akten direkt anzeigen geht in Edge oder Chrome. In diesem Browser funktionieren alle anderen Knöpfe.";
     else if(ordner.zustand==="erlauben"){note.textContent="Der Browser fragt einmal je Sitzung, ob die Seite deinen Datenordner lesen darf.";knopf("Akten anzeigen",()=>ordnerStart(true),"primary")}
-    else if(ordner.zustand==="falsch"){note.textContent="In diesem Ordner liegen weder profil/ noch werkzeuge/ noch lerngruppen/. Bitte den Ordner wählen, in dem diese Seite liegt.";knopf("Anderen Ordner wählen",ordnerVerbinden,"primary")}
-    else{note.textContent="Verbinde einmal deinen Datenordner (den Ordner, in dem diese Seite liegt). Die Seite liest dann deine Akten, ändert aber nichts.";knopf("Datenordner verbinden",ordnerVerbinden,"primary")}
+    else if(ordner.zustand==="falsch"){note.textContent="In diesem Ordner liegen weder profil/ noch werkzeuge/ noch lerngruppen/. "+DATENORDNER_HILFE();knopf("Anderen Ordner wählen",ordnerVerbinden,"primary")}
+    else{note.textContent="Verbinde einmal auf diesem PC deinen Datenordner. "+DATENORDNER_HILFE()+" Das ist nötig, wenn Chrome neu eingerichtet oder die Websitedaten gelöscht wurden.";knopf("Datenordner verbinden",ordnerVerbinden,"primary")}
   }
 }
 function zeigeGruppe(g){
@@ -1655,7 +1659,7 @@ function einrPunkte(){
     {id:"dateien",pflicht:true,ok:!fehlt.length,titel:"Werkzeug-Dateien der Startseite",
       hilfe:fehlt.length?"Fehlt: "+fehlt.join(", ")+". Die Seite muss im Datenordner liegen, daneben der Ordner werkzeuge/startseite/. Liegt der Ordner in einem Cloud-Speicher (z. B. OneDrive), warte, bis alles synchronisiert ist.":"kacheln.js und meine-einstellungen.js gefunden."},
     {id:"ordner",pflicht:true,ok:ordner.zustand==="an",titel:"Datenordner verbunden",
-      hilfe:ordner.zustand==="an"?"Akten, Aufgaben und Kürzellisten werden gelesen.":ordner.zustand==="erlauben"?"Der Browser fragt nach dem Zugriff, bitte erlauben.":"Wähle den Ordner, in dem diese Seite liegt (z. B. …\\schulassistenz). Das ist auf jedem PC und in jedem Browser einmal nötig.",
+      hilfe:ordner.zustand==="an"?"Akten, Aufgaben und Kürzellisten werden gelesen.":ordner.zustand==="erlauben"?"Der Browser fragt nach dem Zugriff, bitte erlauben.":DATENORDNER_HILFE()+" Das ist auf jedem PC und in jedem Browser einmal nötig.",
       knopf:ordner.zustand==="an"||!kannOrdner?null:["Datenordner verbinden",()=>ordner.zustand==="erlauben"?ordnerStart(true):ordnerVerbinden()]},
     ...(sdExtern()?[{id:"schuelerdaten",pflicht:true,ok:sdZustand==="an",titel:"Schülerdaten-Ordner verbunden",
       hilfe:sdZustand==="an"?`Akten und Kürzellisten werden aus ${sdPfad("")} gelesen.`:sdDav()?(sdZustand==="helfer"?"Braucht den Schulassistenz-Helfer ab Version 0.4 (unten).":sdZustand==="anmelden"?"Einmal je Browser-Sitzung bei IServ anmelden, dann „Erneut versuchen“.":"IServ nicht erreichbar"+(davFehler?": "+davFehler:"")+"."):`Akten und Kürzellisten liegen in ${E.schuelerdaten}. Zu Hause muss dafür das IServ-Laufwerk im Explorer verbunden sein (Anleitung der Startseite, Abschnitt „Schülerdaten auf IServ“).`,
