@@ -32,7 +32,7 @@ const ARTEN=[
   {id:"ausflug",name:"Wandertag / Exkursion / Fahrt",farbe:"",
    muster:/wandertag|exkursion|ausflug|klassenfahrt|studienfahrt|kursfahrt|abschlussfahrt|skifahrt|schullandheim|museum|theaterbesuch|unterrichtsgang|lerngang|betriebsbesichtigung/i},
   {id:"projekt",name:"Projekttag / Sondertag",farbe:"",
-   muster:/projekttag|projektwoche|sportfest|bundesjugendspiele|sponsorenlauf|schulfest|tag der offenen tür|berufsorientierung|\bbo[- ]?tag|praktikum|girls.?day|boys.?day|zukunftstag|methodentag|bewerbungstraining|berufsberatung|berufsinformation|\bbiz\b/i},
+   muster:/projekttag|projektwoche|sportfest|bundesjugendspiele|sponsorenlauf|schulfest|tag der offenen tür|berufsorientierung|\bbo[- ]?tag|praktikum|girls.?day|boys.?day|zukunftstag|methodentag|bewerbungstraining|berufsberatung|berufsinformation|\bbiz\b|infoveranstaltung|informationsveranstaltung|infoabend|informationsabend/i},
   {id:"frei",name:"Unterrichtsfrei",farbe:"ok",
    muster:/ferien|feiertag|brückentag|beweglicher\s*ferientag|unterrichtsfrei|studientag|schulfrei|pädagogischer\s*tag|neujahr|karfreitag|ostermontag|ostersonntag|pfingst|himmelfahrt|fronleichnam|tag der arbeit|maifeiertag|tag der deutschen einheit|reformationstag|allerheiligen|heiligabend|silvester/i},
   {id:"fortbildung",name:"Fortbildung",farbe:"",muster:/fortbildung|schilf|\bfobi\b|workshop|seminar|tagung/i},
@@ -121,7 +121,9 @@ function schritt(art,t,tage){
     case "zeugnisausgabe":return S(tage>=0?"Zeugnisse prüfen, Bemerkungen fertig?":"Vorbei","");
     case "pruefung":return S(tage>=0?"Prüfung vorbereiten (Aufgaben, Protokoll)":"Protokoll ablegen",tage>=0?"pruefung":"dokument");
     case "konferenz":return tage>=0?S("Tagesordnung und Unterlagen im Postfach suchen","postfach",{}):S("Protokoll/Beschlüsse sichten","dokument",{});
-    case "eltern":return tage>=0?S("Gespräche vorbereiten (Akte, Noten, Fehlzeiten)","eltern"):S("Gesprächsprotokolle schreiben","eltern-protokoll");
+    case "eltern":{const gespr=/sprechtag|sprechabend|gespräch/i.test(t.titel);
+      if(tage>=0)return gespr?S("Gespräche vorbereiten (Akte, Noten, Fehlzeiten)","eltern"):S("Vormerken. Themen und Unterlagen für den Elternabend sammeln","",{});
+      return gespr?S("Gesprächsprotokolle schreiben","eltern-protokoll"):S("Vorbei","",{})}
     case "ausflug":return tage>21?S("Exkursion planen (Ort, Anfahrt, Kosten)","exkursion"):tage>=0?S("Elternbrief und Rücklauf","exkursion-elternbrief"):S("Rücklauf und Geld abrechnen","exkursion-ruecklauf");
     case "projekt":return S(tage>=0?"Vormerken, Woche anpassen":"Vorbei",tage>=0?"woche":"",{});
     case "frei":return S(tage>=0?"Unterrichtsfrei":"Vorbei","",{});
@@ -272,7 +274,7 @@ function zeigen(){
     <div class="r-tab-wrap"><table class="r-tab"><thead><tr><th>Wann</th><th>Termin</th><th>Erkannt als</th><th>Bezug</th><th>Nächster Schritt</th></tr></thead><tbody>${zeilen.join("")}</tbody></table></div>
     <p class="note" style="margin-top:8px">Falsch erkannt oder fehlt eine Art? Sag Claude, welcher Termin (Art und Titelmuster reichen, keine Namen), dann wird die Erkennung angepasst.</p>
     <div class="actions"><button class="btn ghost" id="erk-zu">Schließen</button></div></div>`;
-  $("#erk-zr").addEventListener("change",e=>{store.set("erk-zeitraum",e.target.value);zeigen()});
+  $("#erk-zr").addEventListener("change",e=>{store.set("erk-zeitraum",e.target.value);zeigen();nxBald()});
   $("#erk-alle").addEventListener("change",e=>{store.set("erk-alle",e.target.checked);zeigen()});
   $("#erk-gef").addEventListener("change",e=>{store.set("erk-gefiltert",e.target.checked);zeigen()});
   $("#erk-zu").addEventListener("click",()=>slot.innerHTML="");
@@ -298,13 +300,16 @@ function nxSetzen(key,wert){const w=nxWeg();
   const heute=isoTag(new Date());for(const k in w)if(w[k]!=="erledigt"&&w[k]<=heute||k.slice(0,10)<plusT(heute,-120))delete w[k];  // aufräumen
   w[key]=wert;store.set("nx-weg",w)}
 function nxKarten(){
-  const von=new Date();von.setHours(0,0,0,0);von.setDate(von.getDate()-42);
-  const bis=new Date();bis.setHours(23,59,59,0);bis.setDate(bis.getDate()+21);
+  // Rückblick folgt der Auswahl „Zeitraum“ der Terminliste (höchstens 2 Wochen), voraus höchstens 3 Wochen
+  const [zv,zn]=String(store.get("erk-zeitraum","2-8")).split("-").map(Number);
+  const zurueck=Math.min(14,7*(zv||0)),voraus=Math.min(21,7*(zn||3));
+  const von=new Date();von.setHours(0,0,0,0);von.setDate(von.getDate()-zurueck);
+  const bis=new Date();bis.setHours(23,59,59,0);bis.setDate(bis.getDate()+voraus);
   const liste=[...termineSammeln(von,bis,false),...ferienErinnerungen(von,bis)].map(erkennen).filter(t=>{
     if(!t.art||!NX_ARTEN.has(t.art.id)||!t.schritt||!(t.schritt.kachel||t.schritt.leb))return false;
     if(t.art.id==="test"&&t.tage>0)return false;               // angesagt, noch nichts zu tun
     if(t.tage>(t.art.id==="ausflug"||t.art.id==="mitarbeit"?21:14))return false;
-    if(t.tage<(t.art.id==="klassenarbeit"?-42:-14))return false;
+    if(t.tage<-zurueck||t.tage>voraus)return false;
     return !nxAusgeblendet(t)});
   // Mitarbeitsnoten je Termin zusammenfassen
   const karten=[],mm={};
