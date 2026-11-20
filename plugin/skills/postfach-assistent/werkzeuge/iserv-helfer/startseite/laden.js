@@ -3,7 +3,7 @@
       Stundenplan-Link, Entwürfe. Die Brücke hat sie beim letzten Öffnen der alten Seite in den Speicher des Helfers kopiert.
    2. Liest meine-einstellungen.js aus dem Datenordner als Text und wertet sie aus (Erweiterungsseiten dürfen sie nicht ausführen).
       Ohne Ordnerzugriff gilt die zuletzt gelesene Fassung (nur auf diesem Gerät gespeichert, keine Schülerdaten).
-   3. Lädt danach die eigentliche Startseite (start-a.js, sicherung.js, fehlzeiten.js, start-b.js). */
+   3. Lädt danach die eigentliche Startseite (start-a.js, sicherung.js, fehlzeiten.js, erkennung.js, start-b.js). */
 (() => {
   const EINST = ["werkzeuge", "startseite", "meine-einstellungen.js"];
   const idbGet = k => new Promise(ok => {
@@ -75,7 +75,7 @@
   const los = async () => {
     await umzugUebernehmen();
     await einstellungen();
-    for (const s of ["start-a.js", "sicherung.js", "fehlzeiten.js", "start-b.js"]) {
+    for (const s of ["start-a.js", "sicherung.js", "fehlzeiten.js", "erkennung.js", "start-b.js"]) {
       try { await skript(s); } catch (e) { console.error("Nicht geladen:", e.message); }
     }
     window.postMessage({ sa: "helfer-da", version: chrome.runtime.getManifest().version }, "*");

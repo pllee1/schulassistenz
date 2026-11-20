@@ -72,6 +72,10 @@ Die Kachel „Material suchen“ (Reiter Material) macht deine vorhandenen Mater
 - **Namen:** Termintitel, die an Claude gehen (Woche planen, `planung/stundenplan.md`), werden geprüft. Namen aus deinen Kürzellisten und Muster wie „Elterngespräch Becker“ werden durch [Name] ersetzt.
 - **Woche planen:** gibt Claude deine Stunden (nur Lerngruppen-Kürzel und Räume) und offenen Punkte mit. Ist der Datenordner mit Schreibrecht verbunden, legt die Seite außerdem `planung/stundenplan.md` für den Wochenplaner ab.
 
+## Was steht an? (Probe)
+
+Der Knopf **„Was steht an?“** in der Wochenleiste zeigt die Termine der eingeschalteten Kalender (und aus `planung/aufgaben.md`) als Liste: erkannte Art (Klassenarbeit, Test/Referat, Zeugniskonferenz, Konferenz, Elternsprechtag, Wandertag/Exkursion, Unterrichtsfrei, Fortbildung …), die passende Lerngruppe (aus Fach, Jahrgang, Klasse und Kurs im Titel, z. B. „KA 2 MA E“ → 10-ma-e) und einen Vorschlag für den nächsten Schritt mit Knopf zur passenden Kachel. Bei Klassenarbeiten zählt die Seite, wie viele Akten schon „Klausur n“ enthalten. Nur Ansicht: Es wird nichts gespeichert. Gehen Termintitel als Thema an Claude, werden Namen vorher ersetzt.
+
 ## Fehlzeiten-Ampel (WebUntis)
 
 Kachel „Fehlzeiten-Ampel“ (Verwaltung) oder rechts unter „Fehlzeiten“. Für Klassenleitungen und Tutorinnen und Tutoren.
