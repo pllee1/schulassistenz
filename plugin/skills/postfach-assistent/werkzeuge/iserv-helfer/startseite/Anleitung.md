@@ -164,6 +164,8 @@ Für Schulen mit LEB-online (Noten PLUS). Der Helfer füllt dort Formulare aus, 
 
 **Schreibweise aus LEB-online übernehmen (ab Helfer 0.20):** Bei „ähnlich geschrieben“ die Haken der richtigen Personen setzen und „Angehakte Schreibweisen in die Kürzelliste“ klicken. In der Startseite unter Akten der Lerngruppe › „Kürzelliste bearbeiten“ stehen die LEB-Schreibweisen dann schon drin (markiert); „Speichern“ schreibt sie in die Kürzelliste, „Änderungen verwerfen“ verwirft sie.
 
+**Mit zwei Klicks (ab Helfer 0.22):** Steht eine korrigierte Klassenarbeit in den Akten, zeigt „Als Nächstes“ die Karte mit „Nach LEB-online“. Ein Klick darauf legt die Noten bereit, schaltet deinen angemeldeten LEB-Tab zur Lerngruppe, legt die Leistungsüberprüfung an und öffnet „Bewerten“ mit den Noten. Du prüfst und klickst „Speichern“. Dafür einmal in Chrome Pop-ups für LEB-online erlauben (Schloss-Symbol links in der Adresszeile › Website-Einstellungen › Pop-ups und Weiterleitungen: Zulassen).
+
 Claude sieht dabei nichts: Die Zuordnung Name ↔ Kürzel passiert nur im Helfer in deinem Browser.
 
 ## Skala im Live-Raster

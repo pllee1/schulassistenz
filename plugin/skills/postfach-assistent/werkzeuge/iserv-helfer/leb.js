@@ -402,12 +402,23 @@
     if (!treffer.length && !window.opener) try {
       chrome.storage.onChanged.addListener((ch, bereichName) => { if (bereichName === "session" && ch.saLebAngelegt && ch.saLebAngelegt.newValue) setTimeout(() => location.reload(), 2500); });
     } catch { }
+    // Ein-Klick-Weg aus der Startseite: Fenster selbst öffnen (einmal je Paket; braucht erlaubte Pop-ups für LEB-online)
+    const autoMerk = "saAuto" + p.zeit;
+    let autoSchon = false; try { autoSchon = sessionStorage.getItem(autoMerk) === "1"; } catch { }
+    const autoOeffnen = (url, name) => {
+      if (!p.auto || autoSchon || window.opener || treffer.length > 1) return;
+      try { sessionStorage.setItem(autoMerk, "1"); } catch { }
+      const w = window.open(url, name, POPUP);
+      if (!w) setTimeout(() => { const b = $("#msg-auto"); if (b) b.innerHTML = `<div class="warn">Chrome hat das Fenster blockiert. Einmal Pop-ups für LEB-online erlauben (Symbol rechts in der Adresszeile › „Immer zulassen“), bis dahin den Knopf oben klicken.</div>`; }, 50);
+    };
     if (treffer.length === 1) {
       const t = treffer[0]; t.tr.style.outline = "3px solid #79b98a";
       zeigen(`${kopf}<div class="ok">„${esc(t.bezeichnung)}“${t.datum ? " vom " + esc(t.datum) : ""} ist angelegt.</div>
         <div class="row"><button class="b" id="bew">Bewerten öffnen</button><button class="b b2" id="neu">Neu prüfen</button></div>
         <p class="info">Im Bewerten-Fenster trägt der Helfer die Noten gleich ein. Prüfen, dann selbst „Speichern“ klicken.</p>`);
       $("#bew").addEventListener("click", () => window.open(bewertUrl(t.id), "sa-bewerten", POPUP));
+      $("#bew").closest(".row").insertAdjacentHTML("afterend", `<div id="msg-auto"></div>`);
+      if (!geradeAngelegt) autoOeffnen(bewertUrl(t.id), "sa-bewerten");
     } else if (treffer.length > 1) {
       zeigen(`${kopf}<div class="warn">„${esc(p.bezeichnung)}“ gibt es hier ${treffer.length}-mal. Bitte die richtige Zeile markieren und wie gewohnt „Bewerten“ klicken.</div><div class="row"><button class="b b2" id="neu">Neu prüfen</button></div>`);
     } else {
@@ -417,6 +428,8 @@
         <div class="row"><button class="b" id="anl">Anlegen öffnen (vorausgefüllt)</button><button class="b b2" id="neu">Neu prüfen</button></div>
         <p class="info">Das Anlegen-Fenster füllt Leistungsart, Datum und Bezeichnung aus und speichert selbst (Gewichtung bleibt 1-fach). Danach öffnet sich dort „Bewerten“ mit den Noten: prüfen und selbst „Speichern“ klicken.</p>`);
       $("#anl").addEventListener("click", () => window.open(anlegenUrl, "sa-anlegen", POPUP));
+      $("#anl").closest(".row").insertAdjacentHTML("afterend", `<div id="msg-auto"></div>`);
+      autoOeffnen(anlegenUrl, "sa-anlegen");
     }
     if ($("#neu")) $("#neu").addEventListener("click", () => location.reload());
   }

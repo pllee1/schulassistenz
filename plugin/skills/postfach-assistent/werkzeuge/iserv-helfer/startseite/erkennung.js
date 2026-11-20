@@ -310,7 +310,7 @@ function zeigen(){
     if(k.typ==="claude"&&(k.felder||[]).includes("thema")&&!vor.thema)vor.thema=`${typeof titelSicher==="function"?titelSicher(t.titel):t.art.name} am ${datumDE(t.iso)}`;  // Titel ohne Namen
     oeffne(k,vor)}));
   slot.querySelectorAll("[data-erk-leb]").forEach(b=>b.addEventListener("click",()=>{
-    const t=sichtbar[+b.dataset.erkLeb];if(typeof window.saLebOeffnen==="function")window.saLebOeffnen(t.gruppe.id,t.schritt.leb)}));
+    const t=sichtbar[+b.dataset.erkLeb];if(typeof window.saLebOeffnen==="function")window.saLebOeffnen(t.gruppe.id,t.schritt.leb,{sofort:true})}));
   slot.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
@@ -391,7 +391,7 @@ function nxVerdrahten(sec,karten){
   q("[data-nx]",b=>{const t=karten[+b.dataset.nx];const k=ALLE.find(x=>x.id===t.schritt.kachel);if(!k)return;
     const vor={...t.schritt.vor};if(k.typ==="claude"&&(k.felder||[]).includes("thema")&&!vor.thema)vor.thema=`${typeof titelSicher==="function"?titelSicher(t.titel):t.art.name} am ${datumDE(t.iso)}`;
     oeffne(k,vor);$("#panel-slot").scrollIntoView({behavior:"smooth",block:"start"})});
-  q("[data-nx-leb]",b=>{const t=karten[+b.dataset.nxLeb];if(typeof window.saLebOeffnen==="function")window.saLebOeffnen(t.gruppe.id,t.schritt.leb)});
+  q("[data-nx-leb]",b=>{const t=karten[+b.dataset.nxLeb];if(typeof window.saLebOeffnen==="function")window.saLebOeffnen(t.gruppe.id,t.schritt.leb,{sofort:true})});
   q("[data-nx-mm]",b=>{const [i,j]=b.dataset.nxMm.split("|").map(Number);const g=karten[i].gruppen[j];
     const k=ALLE.find(x=>x.id==="beob-note");if(k){oeffne(k,{gruppe:g._gruppe.id});$("#panel-slot").scrollIntoView({behavior:"smooth",block:"start"})}});
   q("[data-nx-spaeter]",b=>{nxSetzen(nxKey(karten[+b.dataset.nxSpaeter]),plusT(isoTag(new Date()),7));naechstes()});

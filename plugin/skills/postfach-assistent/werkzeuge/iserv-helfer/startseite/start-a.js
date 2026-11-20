@@ -2089,13 +2089,14 @@ function lebWerte(q,daten,ed){const w={};const ganz=v=>Math.min(6,Math.max(1,Mat
     else{const e=es[es.length-1];w[d.k]={note:ganz(e.v),info:e.was}}});
   return w}
 /* Für andere Teile der Startseite (z. B. „Was steht an?“): Notenübersicht mit vorgewähltem LEB-Panel öffnen */
-window.saLebOeffnen=(gid,quelleId)=>{if(quelleId)store.set("leb-quelle-"+gid,quelleId);return zeigeNoten(gid,{leb:quelleId||store.get("leb-quelle-"+gid,null)})};
+window.saLebOeffnen=(gid,quelleId,o)=>{if(quelleId)store.set("leb-quelle-"+gid,quelleId);return zeigeNoten(gid,{leb:quelleId||store.get("leb-quelle-"+gid,null),sofort:!!(o&&o.sofort)})};
 function lebMmBez(sj,von){const n=[1,2,3,4].find(i=>lebQuartal(sj,null,i)[0]===von);return n?`mündlich ${n}. Quartal`:"mündlich"}
 function lebQuartal(sj,datum,nr){const j=+sj,fq=window.saErkennung&&saErkennung.quartale?saErkennung.quartale(sj):null,b=fq||[[`${j}-08-01`,`${j}-10-31`],[`${j}-11-01`,`${j+1}-01-31`],[`${j+1}-02-01`,`${j+1}-04-30`],[`${j+1}-05-01`,`${j+1}-07-31`]];
   if(nr)return b[nr-1];return b.find(x=>datum>=x[0]&&datum<=x[1])||b[0]}
 async function zeigeNoten(gidStart,opt){
   const slot=$("#panel-slot");const gruppen=ordner.gruppen.map(g=>g.id);if(!gruppen.length)return;
   let gid=gidStart&&gruppen.includes(gidStart)?gidStart:store.get("noten-gruppe",gruppen[0]);if(!gruppen.includes(gid))gid=gruppen[0];
+  let sofortFertig=false,autoLauf=false;
   let namen={},ed=opt&&opt.leb?{typ:"leb",q:opt.leb}:null,meldung="",bearb=store.get("noten-bearbeiten",false),reg=[];
   const opsK=()=>"noten-aend-"+gid;const ops=()=>store.get(opsK(),[])||[];const opsSetzen=l=>store.set(opsK(),l.length?l:null);
   const zeichnen=async()=>{
@@ -2224,7 +2225,7 @@ async function zeigeNoten(gidStart,opt){
       if(!(window.chrome&&chrome.storage&&chrome.storage.session))return fehler("Das geht nur in der Startseite im Helfer (Klick auf das Helfer-Symbol).");
       const werte=lebWerte(q,daten,ed);
       const paket={gruppe:gid,titel:bez||q.titel,bezeichnung:bez||q.titel,leistungsart:+ed.art||q.art,datum:q.id==="mm"?(ed.bis&&ed.bis<heuteISO()?ed.bis:heuteISO()):q.datum,
-        eintraege:reihe.map(k=>({k,vor:(namen[k]||{}).vor||"",nach:(namen[k]||{}).nach||"",note:werte[k]&&werte[k].note!=null?werte[k].note:null})),zeit:Date.now(),direkt:!!direkt,quelle:q.id,von:ed.von||null,bis:ed.bis||null};
+        eintraege:reihe.map(k=>({k,vor:(namen[k]||{}).vor||"",nach:(namen[k]||{}).nach||"",note:werte[k]&&werte[k].note!=null?werte[k].note:null})),zeit:Date.now(),direkt:!!direkt,auto:!!(direkt&&autoLauf),quelle:q.id,von:ed.von||null,bis:ed.bis||null};
       await chrome.storage.session.set({saLeb:paket});
       const n=paket.eintraege.filter(e=>e.note!=null).length;
       ed=null;await zeichnen();const g=$("#n-guard");g.hidden=false;g.classList.add("ok");
@@ -2233,7 +2234,9 @@ async function zeigeNoten(gidStart,opt){
       if(!r||!r.ok){g.classList.remove("ok");g.textContent=`Bereitgelegt: ${paket.titel} (${n} Noten). ${(r&&r.fehler)||"LEB-online ließ sich nicht öffnen."}`;return}
       g.textContent=`${paket.titel} (${n} Noten) ist bereitgelegt, LEB-online öffnet sich. ${r.hinweis||""} Speichern klickst du selbst.`};
     if($("#lb-ok"))$("#lb-ok").addEventListener("click",()=>lebLos(false));
-    if($("#lb-direkt"))$("#lb-direkt").addEventListener("click",()=>lebLos(true));
+    if($("#lb-direkt"))$("#lb-direkt").addEventListener("click",()=>{autoLauf=false;lebLos(true)});
+    // Aus der Karte „Als Nächstes“ mit einem Klick: gleich den direkten Weg starten (einmal)
+    if(opt&&opt.sofort&&!sofortFertig&&ed&&ed.typ==="leb"&&$("#lb-direkt")){sofortFertig=true;autoLauf=true;lebLos(true)}
     if($("#n-alle"))$("#n-alle").addEventListener("click",()=>{ed=ed&&ed.typ==="alle"?null:{typ:"alle",art:store.get("noten-alle-art","Klausur")};zeichnen()});
     $("#n-druck").addEventListener("click",()=>{document.body.classList.add("druck-noten");window.print();setTimeout(()=>document.body.classList.remove("druck-noten"),500)});
     slot.querySelectorAll("button.n-e").forEach(b=>b.addEventListener("click",()=>{const c=+b.dataset.c;ed=ed&&ed.typ==="chip"&&ed.c===c?null:{typ:"chip",c,k:reg[c].k,r:reg[c]};zeichnen()}));
