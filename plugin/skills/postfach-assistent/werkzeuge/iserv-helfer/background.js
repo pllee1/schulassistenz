@@ -5,6 +5,7 @@ chrome.runtime.onInstalled.addListener(async d => {
     chrome.contextMenus.create({ id: "sa-auswahl", title: "Markierten Text pseudonymisiert an Claude", contexts: ["selection"] });
     chrome.contextMenus.create({ id: "sa-seite", title: "Diese Seite pseudonymisiert an Claude", contexts: ["page", "frame"] });
     chrome.contextMenus.create({ id: "sa-rueck", title: "Claudes Antwort: Namen wieder einsetzen", contexts: ["page", "frame", "editable"] });
+    chrome.contextMenus.create({ id: "sa-probe", title: "Startseite (Probe) öffnen", contexts: ["action"] });
   });
   // Schon offene IServ-Tabs sofort ausstatten (sonst erst nach Neuladen)
   try {
@@ -30,6 +31,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "sa-auswahl") senden(tab, { cmd: "oeffnen", auswahl: info.selectionText });
   if (info.menuItemId === "sa-seite") senden(tab, { cmd: "oeffnen" });
   if (info.menuItemId === "sa-rueck") senden(tab, { cmd: "rueck" });
+  if (info.menuItemId === "sa-probe") chrome.tabs.create({ url: chrome.runtime.getURL("probe.html") });
 });
 chrome.action.onClicked.addListener(tab => senden(tab, { cmd: "oeffnen" }));
 chrome.runtime.onMessage.addListener(m => {
