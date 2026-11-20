@@ -228,6 +228,11 @@ function zeigeLokal(k){
   slot.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 
+/* Wo die Kürzellisten liegen, für Hinweistexte (IServ, anderer Schülerdaten-Ordner oder Datenordner auf diesem Rechner) */
+const listenOrt=()=>sdDav()?"auf IServ":sdExtern()?"im Schülerdaten-Ordner":"auf diesem Rechner";
+function namenOrtText(){const el=$("#namen-ort");if(el)el.textContent=`Claude bekommt nur Kürzel. Namen stehen nur in deiner Kürzelliste ${listenOrt()} und werden nur hier im Browser angezeigt.`}
+namenOrtText();
+
 /* ---------- Live ---------- */
 function liveLink(){
   const g=$("#live-gruppe").value.trim();
@@ -585,7 +590,7 @@ function zeigeNeueGruppe(){
       const csv="\ufeffVorname;Nachname;Kürzel;Schüler-Code\r\n"+ks.map(k=>`;;${k};`).join("\r\n")+"\r\n";
       if(!(await existiert(kl,`Kuerzelliste-${x.id}.csv`)))await schreibe(kl,`Kuerzelliste-${x.id}.csv`,csv);
       await ordnerLesen(root);renderOrdner();
-      slot.innerHTML=`<div class="panel"><h4>${esc(x.id)} angelegt</h4><p>${x.n} Akten von ${esc(ks[0])} bis ${esc(ks[ks.length-1])}. Trag jetzt in der Kürzelliste die Namen ein. Sie bleibt auf diesem Rechner.</p><p><span class="path" id="p-pfad">${esc(sdPfad("kuerzellisten/Kuerzelliste-"+x.id+".csv"))}</span></p><div class="actions"><button class="btn primary" id="p-kopie">Pfad kopieren</button><button class="btn ghost" id="p-close">Schließen</button><span class="toast" id="p-toast" role="status"></span></div></div>`;
+      slot.innerHTML=`<div class="panel"><h4>${esc(x.id)} angelegt</h4><p>${x.n} Akten von ${esc(ks[0])} bis ${esc(ks[ks.length-1])}. Trag jetzt in der Kürzelliste die Namen ein. Sie liegt ${listenOrt()} und geht nie an Claude.</p><p><span class="path" id="p-pfad">${esc(sdPfad("kuerzellisten/Kuerzelliste-"+x.id+".csv"))}</span></p><div class="actions"><button class="btn primary" id="p-kopie">Pfad kopieren</button><button class="btn ghost" id="p-close">Schließen</button><span class="toast" id="p-toast" role="status"></span></div></div>`;
       $("#p-kopie").addEventListener("click",()=>kopiere($("#p-pfad").textContent,$("#p-toast"),$("#p-pfad")));
       $("#p-close").addEventListener("click",()=>slot.innerHTML="");
     }catch(e){$("#ng-toast").textContent="";$("#ng-guard").hidden=false;$("#ng-guard").textContent=(e&&e.message)||"Anlegen hat nicht geklappt.";$("#ng-go").disabled=false}
@@ -939,7 +944,7 @@ async function zeigeKuerzel(){
     <div class="r-tab-wrap"><table class="r-tab"><thead><tr><th>Lerngruppe</th><th>Kürzel</th><th>Name (nur hier)</th><th>Auch als</th><th></th></tr></thead><tbody id="kn-body"></tbody></table></div>
     <p class="note" id="kn-info"></p>
     <details class="kn-dateien"><summary>Kürzellisten-Dateien</summary><div id="kn-dat"></div></details>
-    <p class="note">Die Namen stehen nur in deinen Kürzellisten auf diesem Rechner und werden hier nur angezeigt. Nichts davon geht an Claude. Stehen Vor- und Nachname falsch herum, im Live-Raster „Vor-/Nachname tauschen“ klicken.</p>
+    <p class="note">Die Namen stehen nur in deinen Kürzellisten ${listenOrt()} und werden hier nur angezeigt. Nichts davon geht an Claude. Stehen Vor- und Nachname falsch herum, im Live-Raster „Vor-/Nachname tauschen“ klicken.</p>
     <div class="actions"><button class="btn ghost" id="p-close">Schließen</button><span class="toast" id="kn-toast" role="status"></span></div></div>`;
   const zeichne=()=>{
     const q=$("#kn-q").value.trim().toLowerCase().normalize("NFC"),gf=$("#kn-g").value;
@@ -1700,7 +1705,7 @@ function rasterZeichnen(){
       <button class="btn ghost small" id="r-ansicht" title="Zwischen Liste und Sitzplan-Raster wechseln">${R.ansicht==="liste"?"Als Raster":"Als Liste"}</button>
       <button class="btn ghost small" id="r-ordnen">${R.anordnen?"Anordnen fertig":"Sitzplan anordnen"}</button>
       <button class="btn primary small" id="r-ende">Stunde beenden</button></div>
-    ${hatNamen?"":`<p class="note">Keine Namen gefunden. Trag sie in kuerzellisten/Kuerzelliste-${esc(R.gid)} ein (Spalten Vorname, Nachname, Kürzel), dann erscheinen sie hier. Sie verlassen diesen Rechner nicht.</p>`}
+    ${hatNamen?"":`<p class="note">Keine Namen gefunden. Trag sie in kuerzellisten/Kuerzelliste-${esc(R.gid)} ein (Spalten Vorname, Nachname, Kürzel), dann erscheinen sie hier. Sie gehen nie an Claude.</p>`}
     <div class="r-leiste" id="r-leiste">
       ${liste?`<span class="wer">Notizen direkt in der Zeile des Kindes</span><span class="sp" style="flex:1"></span>`:`<span class="wer" id="r-wer">Kind antippen</span>
       ${knoepfeGruppen(leisteSym(),"",`<button class="sym no r-note-b" id="r-note-l" aria-pressed="${!!R.wahl&&R.noteOffen===R.wahl}" title="Note für das gewählte Kind eintragen (Test, Abfrage, Referat …)">Note</button>`)}${R.eingabe!=="knoepfe"?reglerHTML(""):""}
