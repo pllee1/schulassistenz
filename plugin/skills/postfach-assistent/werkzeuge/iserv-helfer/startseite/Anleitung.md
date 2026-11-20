@@ -162,6 +162,8 @@ Für Schulen mit LEB-online (Noten PLUS). Der Helfer füllt dort Formulare aus, 
 
 **Bessere LEB-Note in die Akte (ab Helfer 0.19):** Steht bei einer mündlichen Quartalsnote in LEB-online eine bessere Note als in der Akte, bietet der Kasten „Bessere LEB-Noten in die Akte“ an. Der Helfer merkt sie als „Quartalsnote“ vor; in der Notenübersicht der Lerngruppe erscheint sie als ungespeicherte Änderung, „In Akten speichern“ schreibt sie in die Akte. Eine Quartalsnote legt die mündliche Note für dieses Quartal fest (statt des Durchschnitts) und zählt nicht zusätzlich in den Durchschnitt.
 
+**Schreibweise aus LEB-online übernehmen (ab Helfer 0.20):** Bei „ähnlich geschrieben“ die Haken der richtigen Personen setzen und „Angehakte Schreibweisen in die Kürzelliste“ klicken. In der Startseite unter Akten der Lerngruppe › „Kürzelliste bearbeiten“ stehen die LEB-Schreibweisen dann schon drin (markiert); „Speichern“ schreibt sie in die Kürzelliste, „Änderungen verwerfen“ verwirft sie.
+
 Claude sieht dabei nichts: Die Zuordnung Name ↔ Kürzel passiert nur im Helfer in deinem Browser.
 
 ## Skala im Live-Raster

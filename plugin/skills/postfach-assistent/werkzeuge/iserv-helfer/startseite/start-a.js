@@ -737,9 +737,15 @@ async function kuerzellisteBearbeiten(g){
     $("#kl-speichern").disabled=!ae.length;$("#kl-verwerfen").disabled=!ae.length};
   slot.querySelectorAll("#kl-tab input").forEach(i=>{i.addEventListener("input",()=>{pruefe();$("#kl-toast").textContent=""});
     i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const alle=[...slot.querySelectorAll(`#kl-tab input[data-f="${i.dataset.f}"]`)];const n=alle[alle.indexOf(i)+1];if(n)n.focus()}})});
+  // Schreibweisen, die im LEB-Kasten vorgemerkt wurden, gleich einsetzen (gespeichert wird erst mit „Speichern“)
+  let lebVorgemerkt=[];
+  try{if(window.chrome&&chrome.storage&&chrome.storage.local){const {saLebNamen}=await chrome.storage.local.get("saLebNamen");lebVorgemerkt=(saLebNamen||[]).filter(x=>x.gruppe===g.id);
+    lebVorgemerkt.forEach(x=>{const tr=[...slot.querySelectorAll("#kl-tab tbody tr")].find(t=>t.dataset.k===x.k);if(!tr)return;
+      const a=tr.querySelector('input[data-f="a"]'),b=tr.querySelector('input[data-f="b"]');if(a)a.value=tausch?x.nach:x.vor;if(b)b.value=tausch?x.vor:x.nach})}}catch{}
   pruefe();
+  if(lebVorgemerkt.length)$("#kl-toast").textContent=`${lebVorgemerkt.length} ${lebVorgemerkt.length===1?"Schreibweise":"Schreibweisen"} aus LEB-online eingesetzt (markiert). Prüfen und „Speichern“ klicken.`;
   $("#kl-zurueck").addEventListener("click",()=>{if(geaendert().length&&!$("#kl-zurueck").dataset.sicher){$("#kl-zurueck").dataset.sicher="1";$("#kl-toast").textContent="Noch nicht gespeichert. Nochmal klicken verwirft die Änderungen.";return}zurueck()});
-  $("#kl-verwerfen").addEventListener("click",()=>kuerzellisteBearbeiten(g));
+  $("#kl-verwerfen").addEventListener("click",async()=>{if(lebVorgemerkt.length)try{const {saLebNamen}=await chrome.storage.local.get("saLebNamen");await chrome.storage.local.set({saLebNamen:(saLebNamen||[]).filter(x=>x.gruppe!==g.id)})}catch{}kuerzellisteBearbeiten(g)});
   $("#kl-speichern").addEventListener("click",async()=>{const t=$("#kl-toast");const ae=geaendert();if(!ae.length)return;
     $("#kl-speichern").disabled=true;t.textContent="Speichere …";
     try{
@@ -749,6 +755,7 @@ async function kuerzellisteBearbeiten(g){
       const sp2=kuerzelSpalten(frisch.zeilen);const werte={};ae.forEach(w=>werte[w.k]={vor:w.vor,nach:w.nach,code:w.code});
       const daten=frisch.art==="xlsx"?await xlsxNamenSchreiben(frisch.buf,sp2,werte):csvNamenSchreiben(frisch,sp2,werte);
       const fh=await kl.getFileHandle(frisch.name,{create:true});const w=await fh.createWritable();await w.write(daten);await w.close();
+      try{if(lebVorgemerkt.length){const {saLebNamen}=await chrome.storage.local.get("saLebNamen");await chrome.storage.local.set({saLebNamen:(saLebNamen||[]).filter(x=>x.gruppe!==g.id)})}}catch{}
       await kuerzellisteBearbeiten(g);$("#kl-toast").textContent=`Gespeichert: ${ae.length} ${ae.length===1?"Zeile":"Zeilen"} in ${frisch.name}.`;
     }catch(e){t.textContent=/NoModification|InvalidState|locked|gesperrt/i.test(String(e&&(e.name+e.message)))?"Die Datei ist gerade gesperrt (in Excel geöffnet?). Bitte Excel schließen und nochmal speichern.":(e&&e.message)||"Speichern hat nicht geklappt.";$("#kl-speichern").disabled=false}});
   slot.scrollIntoView({block:"nearest",behavior:"smooth"});

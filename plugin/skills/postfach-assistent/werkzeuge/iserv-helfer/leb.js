@@ -242,7 +242,8 @@
       ${besser.length ? `<div class="row"><button class="b b2" id="inakte">Bessere LEB-${besser.length === 1 ? "Note" : "Noten"} in die Akte (${besser.length})</button></div><div class="info">Bei ${esc(besser.map(x => x.e.k).join(", "))} ist LEB-online besser als die Akte. Der Knopf merkt die LEB-Note als Quartalsnote vor, gespeichert wird sie erst in der Notenübersicht („In Akten speichern“).</div>` : ""}
       ${r.aehnlich.length && gruppeOk ? `<div><span class="tag t-aeh">${r.aehnlich.length}</span>ähnlich geschrieben, bitte bestätigen</div>
       ${liste(r.aehnlich, (x, i) => `<li><label class="ub"><input type="checkbox" class="aeh" data-i="${i}">LEB „${esc(x.z.name)}“ = Kürzelliste „${esc([x.e.nach, x.e.vor].filter(Boolean).join(", "))}“ (${esc(x.e.k)}) · Akte ${x.e.note ?? "–"}${x.l != null ? ", LEB " + x.l : ""}</label></li>`)}
-      <div class="info">Tipp: Schreibweise in der Kürzelliste korrigieren (Startseite › Akten der Lerngruppe › „Kürzelliste bearbeiten“), dann klappt es künftig ohne Rückfrage.</div>` : ""}
+      <div class="row"><button class="b b2" id="inliste" disabled>Angehakte Schreibweisen in die Kürzelliste</button></div>
+      <div class="info">Haken setzen = gleiche Person. Der Knopf merkt die LEB-Schreibweise vor; in der Startseite unter Akten ${esc(p.gruppe)} › „Kürzelliste bearbeiten“ steht sie dann schon drin, du klickst nur noch „Speichern“. Die Namen bleiben in deinem Browser.</div>` : ""}
       <div><span class="tag t-fehlt">${r.nichtZu.length + r.uebrig.length}</span>nicht zugeordnet</div>
       ${passt ? "" : `<div class="info">Liste ausgeblendet, weil fast nichts passt.</div>`}${!passt ? "" : liste(r.nichtZu, x => `<li>${esc(x.z.name)} (nicht in der Kürzelliste, bleibt leer)</li>`)}
       ${!passt ? "" : liste(r.uebrig, e => `<li>${esc(e.k)} (${esc([e.nach, e.vor].filter(Boolean).join(", "))}) steht nicht in diesem Fenster</li>`)}
@@ -257,6 +258,29 @@
     if (gruppeOk) r.aehnlich.forEach(x => markiere(x.z, "#8fb3e8"));
     $("#neu").addEventListener("click", () => bewerten());
     if ($("#bestaetigt")) $("#bestaetigt").addEventListener("change", e => { $("#fill").disabled = !e.target.checked; });
+    if ($("#inliste")) {
+      const angehakt = () => [...root.querySelectorAll(".aeh:checked")].map(c => r.aehnlich[+c.dataset.i]).filter(Boolean);
+      root.querySelectorAll(".aeh").forEach(c => c.addEventListener("change", () => { $("#inliste").disabled = !angehakt().length; }));
+      $("#inliste").addEventListener("click", async () => {
+        const neu = angehakt().map(x => {
+          const roh = x.z.name.replace(/\s+/g, " ").trim(); const i = roh.indexOf(",");
+          const nach = (i < 0 ? roh : roh.slice(0, i)).trim(), vor = (i < 0 ? "" : roh.slice(i + 1)).trim();
+          // Reihenfolge der Kürzelliste beibehalten (manche Listen haben Vor- und Nachname vertauscht)
+          const gerade = abstand(norm(x.e.nach), norm(nach)) + abstand(norm(x.e.vor), norm(vor));
+          const quer = abstand(norm(x.e.nach), norm(vor)) + abstand(norm(x.e.vor), norm(nach));
+          return quer < gerade ? { k: x.e.k, vor: nach, nach: vor } : { k: x.e.k, vor, nach };
+        }).filter(x => x.k && (x.vor || x.nach));
+        if (!neu.length) return;
+        try {
+          const { saLebNamen } = await chrome.storage.local.get("saLebNamen");
+          const l = (saLebNamen || []).filter(x => !(x.gruppe === p.gruppe && neu.some(n => n.k === x.k)));
+          neu.forEach(n => l.push({ gruppe: p.gruppe, ...n, zeit: Date.now() }));
+          await chrome.storage.local.set({ saLebNamen: l });
+          $("#inliste").disabled = true; $("#inliste").textContent = `${neu.length} vorgemerkt`;
+          $("#inliste").closest(".row").insertAdjacentHTML("afterend", `<div class="ok">Vorgemerkt. Startseite › Akten ${esc(p.gruppe)} › „Kürzelliste bearbeiten“ öffnen und „Speichern“ klicken.</div>`);
+        } catch { $("#inliste").textContent = "Ging nicht, bitte Seite neu laden"; }
+      });
+    }
     if ($("#inakte")) $("#inakte").addEventListener("click", async () => {
       const heute = new Date().toISOString().slice(0, 10);
       const datum = p.bis && p.bis < heute ? p.bis : p.datum;
