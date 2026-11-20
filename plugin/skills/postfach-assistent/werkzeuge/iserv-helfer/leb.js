@@ -128,6 +128,15 @@
   async function anlegen() {
     const p = await paketHolen();
     if (!p) return zeigen(ohnePaket);
+    // form.php mit Kennung = „Bearbeiten“ einer bestehenden Leistungsüberprüfung: Speichern ändert diese, legt keine neue an.
+    const uq = new URL(location.href).searchParams;
+    const kennung = uq.get("leistungen_id") || uq.get("leistungen_kurse_id");
+    const kopfText = [...document.querySelectorAll("h1,h2,h3,b,strong,td,div")].slice(0, 80).map(x => x.textContent).join(" ");
+    if (kennung || /bearbeiten/i.test(kopfText) && !/anlegen/i.test(kopfText)) {
+      return zeigen(`<div class="was">Bereitgelegt: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)}</div>
+        <div class="warn">Dieses Fenster <b>bearbeitet eine schon vorhandene</b> Leistungsüberprüfung. „Speichern“ ändert diese, es entsteht keine neue. Der Helfer füllt hier nichts aus.</div>
+        <p class="info">Bitte dieses Fenster ohne Speichern schließen und in der Liste oben links auf „Anlegen“ klicken (oder im Helfer-Kasten „Anlegen öffnen“).</p>`);
+    }
     zeigen(`<div class="was">Bereitgelegt: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)} · ${esc(ART[p.leistungsart] || "")} · ${esc(datumDE(p.datum))}</div>
       <div class="row"><button class="b" id="fill">Formular vorausfüllen</button></div>
       <p class="info">Setzt Leistungsart, Datum und Bezeichnung. Gewichtung und Notiz bleiben, wie sie sind. Gespeichert wird erst, wenn du „Speichern“ klickst.</p><div id="msg"></div>`);
