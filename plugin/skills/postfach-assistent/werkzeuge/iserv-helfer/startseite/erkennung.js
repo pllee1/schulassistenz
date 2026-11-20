@@ -271,13 +271,14 @@ function zeigen(){
     <p class="note" style="display:flex;gap:18px;flex-wrap:wrap;margin-top:6px"><span style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="erk-alle"${alle?" checked":""}><label for="erk-alle">auch nicht erkannte zeigen</label></span><span style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="erk-gef"${gef?" checked":""}><label for="erk-gef">auch vom Kalenderfilter ausgeblendete</label></span></p>
     <p class="note" style="margin:8px 0">${liste.length} Termine aus ${kalZahl} Kalender${kalZahl===1?"":"n"}, davon ${erkannt} erkannt. ${Object.entries(zaehl).sort((a,b)=>b[1]-a[1]).map(([n,z])=>`<span class="chip"><b>${z}</b> ${esc(n)}</span>`).join(" ")}</p>
     ${kalZahl?"":`<p class="note">Noch keine Termine geladen. Bitte erst im Kalender (Knopf „Kalender“ oben) IServ verbinden oder aktualisieren.</p>`}
-    <div class="r-tab-wrap"><table class="r-tab"><thead><tr><th>Wann</th><th>Termin</th><th>Erkannt als</th><th>Bezug</th><th>Nächster Schritt</th></tr></thead><tbody>${zeilen.join("")}</tbody></table></div>
-    <p class="note" style="margin-top:8px">Falsch erkannt oder fehlt eine Art? Sag Claude, welcher Termin (Art und Titelmuster reichen, keine Namen), dann wird die Erkennung angepasst.</p>
+    <div class="r-tab-wrap erk-tab" id="erk-tab" style="height:${Math.max(200,+store.get("erk-hoehe",460)||460)}px"><table class="r-tab"><thead><tr><th>Wann</th><th>Termin</th><th>Erkannt als</th><th>Bezug</th><th>Nächster Schritt</th></tr></thead><tbody>${zeilen.join("")}</tbody></table></div>
+    <p class="note" style="margin-top:8px">Liste scrollt in sich; an der Ecke unten rechts ziehen, um sie größer oder kleiner zu machen (bleibt gespeichert). Falsch erkannt oder fehlt eine Art? Sag Claude, welcher Termin (Art und Titelmuster reichen, keine Namen), dann wird die Erkennung angepasst.</p>
     <div class="actions"><button class="btn ghost" id="erk-zu">Schließen</button></div></div>`;
   $("#erk-zr").addEventListener("change",e=>{store.set("erk-zeitraum",e.target.value);zeigen();nxBald()});
   $("#erk-alle").addEventListener("change",e=>{store.set("erk-alle",e.target.checked);zeigen()});
   $("#erk-gef").addEventListener("change",e=>{store.set("erk-gefiltert",e.target.checked);zeigen()});
   $("#erk-zu").addEventListener("click",()=>slot.innerHTML="");
+  const tab=$("#erk-tab");if(tab&&window.ResizeObserver){let tm=null;new ResizeObserver(()=>{clearTimeout(tm);tm=setTimeout(()=>{if(tab.isConnected&&tab.offsetHeight>0)store.set("erk-hoehe",tab.offsetHeight)},300)}).observe(tab)}
   slot.querySelectorAll("[data-erk]").forEach(b=>b.addEventListener("click",()=>{
     const t=sichtbar[+b.dataset.erk];const k=ALLE.find(x=>x.id===t.schritt.kachel);if(!k)return;
     const vor={...t.schritt.vor};

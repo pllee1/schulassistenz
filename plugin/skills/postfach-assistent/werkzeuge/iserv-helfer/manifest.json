@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Schulassistenz-Helfer",
-  "version": "0.16.2",
+  "version": "0.16.3",
   "description": "Öffnet die Schulassistenz-Startseite, gibt Mails und Messenger-Nachrichten aus IServ (oder markierten Text von jeder Seite) mit Kürzeln statt Namen an Claude, setzt die Namen in der Antwort wieder ein und holt für die Startseite Stundenplan, Kalender und den Fehlzeiten-Export aus WebUntis. Trägt bereitgelegte Noten in LEB-online ein (Speichern klickst du selbst). Die Kürzelliste bleibt auf diesem Rechner.",
   "permissions": [
     "storage",
