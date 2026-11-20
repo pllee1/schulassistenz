@@ -361,6 +361,14 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   return true;
 });
 
+// Zuordnungen aus meine-einstellungen.js (leb: { adresse, ziele: { "<lerngruppe>": { bereich: "kurse"|"klassen", id: "1400" } } }) plus gelernte
+async function lebZiele() {
+  const { saLebZiele, saEinstellungen } = await chrome.storage.local.get(["saLebZiele", "saEinstellungen"]);
+  const e = (saEinstellungen && saEinstellungen.e && saEinstellungen.e.leb) || {};
+  const aus = {};
+  for (const [g, z] of Object.entries(e.ziele || {})) if (z && /^(kurse|klassen)$/.test(z.bereich || "") && /^\d+$/.test(String(z.id || ""))) aus[g] = { bereich: z.bereich, id: String(z.id) };
+  return { ziele: { ...aus, ...(saLebZiele || {}) }, adresse: /^https:\/\/[a-z0-9.-]+$/i.test(String(e.adresse || "").replace(/\/+$/, "")) ? String(e.adresse).replace(/\/+$/, "") : null };
+}
 // LEB-online direkt: Sitzung (nur Sitzungsspeicher), Adresse und gelernte Zuordnung Lerngruppe → Klasse/Kurs (nur Kennungen)
 chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   if (m.cmd === "leb-sitzung") {
@@ -379,16 +387,17 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
     return true;
   }
   if (m.cmd === "leb-ziel-holen") {
-    chrome.storage.local.get("saLebZiele").then(({ saLebZiele }) => antwort({ ziel: (saLebZiele || {})[m.gruppe] || null })).catch(() => antwort({ ziel: null }));
+    lebZiele().then(({ ziele }) => antwort({ ziel: ziele[m.gruppe] || null })).catch(() => antwort({ ziel: null }));
     return true;
   }
   if (m.cmd === "leb-oeffnen") {
     (async () => {
-      const { saLebOrigin, saLebZiele } = await chrome.storage.local.get(["saLebOrigin", "saLebZiele"]);
+      const { saLebOrigin } = await chrome.storage.local.get("saLebOrigin");
+      const { ziele, adresse } = await lebZiele();
       const { saLebSitzung } = await chrome.storage.session.get("saLebSitzung");
-      const origin = (saLebSitzung && saLebSitzung.origin) || saLebOrigin;
+      const origin = (saLebSitzung && saLebSitzung.origin) || saLebOrigin || adresse;
       if (!origin) return { ok: false, fehler: "Der Helfer kennt LEB-online noch nicht. Bitte LEB-online einmal öffnen, anmelden und Noten PLUS anklicken. Danach klappt der direkte Weg." };
-      const ziel = (saLebZiele || {})[m.gruppe];
+      const ziel = ziele[m.gruppe];
       const sid = saLebSitzung && saLebSitzung.origin === origin ? saLebSitzung.sid : null;
       let url, hinweis;
       if (!sid) { url = origin + "/"; hinweis = "Bitte bei LEB-online anmelden und dann Noten PLUS › Kurse (bzw. Klassen) anklicken. Der Helfer macht von dort weiter."; }

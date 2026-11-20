@@ -23,6 +23,9 @@ window.SA_EINSTELLUNGEN = {
   // schulordner: { web: "https://<eure-iserv-adresse>/webdav/Groups", laufwerk: "S:\\", gruppen: [] },
   // Optional: Adresse eurer WebUntis-Seite für „Aus WebUntis holen“ (Fehlzeiten-Ampel), z. B. "https://<schule>.webuntis.com"
   // webuntis: "",
+  // Optional: LEB-online („Direkt in LEB-online“). Adresse und je Lerngruppe die Zeile in Noten PLUS (Kurse: kurse_id, Klassen: zeug_klassen_faecher_id).
+  // Fehlt eine Zuordnung, fragt der Helfer beim ersten Mal nach (Zeile anklicken).
+  // leb: { adresse: "https://<schule>.leb-server11.de", ziele: { "10-ma-e": { bereich: "kurse", id: "1400" } } },
   // Optional: Ferien und unterrichtsfreie Tage für die Fehlzeiten-Ampel (Entschuldigungsfrist in Schultagen), je [erster Tag, letzter Tag].
   // ferien: [["2026-12-23", "2027-01-08"], ["2027-02-01", "2027-02-02"]],
   // Optional: Filter für Schulkalender. Ohne Eintrag leitet die Seite Jahrgänge und Klassen aus „lerngruppen“ ab.
