@@ -133,6 +133,10 @@ Was in Dateien steht, kommt über deinen Cloud-Speicher (z. B. OneDrive) auf and
 
 Rechts unter „Lerngruppen und Akten“ öffnet „Kürzel nachschlagen“ eine Liste aller Kürzel mit Namen aus deinen Kürzellisten. Du kannst nach Name oder Kürzel suchen und nach Lerngruppe filtern. „Akte“ öffnet die Akte, „Auch als“ zeigt verknüpfte Kürzel. Unter „Kürzellisten-Dateien“ findest du die Pfade zum Bearbeiten in Excel. Die Namen werden nur auf diesem Rechner angezeigt und gehen nie an Claude.
 
+### Kürzelliste bearbeiten
+
+Im Akten-Fenster einer Lerngruppe (Klick auf die Lerngruppe) öffnet **Kürzelliste bearbeiten** alle Kürzel der Gruppe mit Vor- und Nachname (und Schüler-Code, falls die Spalte da ist). Dort Schreibfehler korrigieren oder fehlende Namen eintragen, geänderte Zeilen werden markiert, dann **Speichern**. Die Seite schreibt direkt in deine Kürzelliste (Excel-Datei bleibt Excel-Datei, Formatierung bleibt erhalten; sonst die CSV). Kürzel selbst lassen sich hier nicht ändern, dafür gibt es „Kürzel hinzufügen“ und „Kürzel entfernen“. Dasselbe geht über „Kürzel nachschlagen“ › „Kürzellisten-Dateien“ › „Bearbeiten“. Ist die Datei gerade in Excel geöffnet, Excel vorher schließen. Die Namen bleiben auf deinem Rechner bzw. auf IServ und gehen nie an Claude.
+
 ## Notenübersicht: Noten eintragen und korrigieren
 
 „Noten bearbeiten“ schaltet die Übersicht zum Eintragen um.

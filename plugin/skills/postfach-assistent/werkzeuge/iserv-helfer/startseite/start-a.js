@@ -447,7 +447,7 @@ function renderOrdner(){
 }
 function zeigeGruppe(g){
   const slot=$("#panel-slot");
-  slot.innerHTML=`<div class="panel"><div class="p-kopf"><h4>Akten ${esc(g.id)}</h4><span class="sp"></span><label class="r-skala">Sortieren <select id="g-sort">${SORT_OPT.map(([k,v])=>`<option value="${k}"${store.get("akten-sort","kuerzel")===k?" selected":""}>${v}</option>`).join("")}</select></label><button class="btn ghost small" id="g-noten">Notenübersicht</button><button class="btn ghost small" id="g-namen" aria-pressed="${store.get("akten-namen",false)}">${store.get("akten-namen",false)?"Namen ausblenden":"Namen einblenden"}</button></div>
+  slot.innerHTML=`<div class="panel"><div class="p-kopf"><h4>Akten ${esc(g.id)}</h4><span class="sp"></span><label class="r-skala">Sortieren <select id="g-sort">${SORT_OPT.map(([k,v])=>`<option value="${k}"${store.get("akten-sort","kuerzel")===k?" selected":""}>${v}</option>`).join("")}</select></label><button class="btn ghost small" id="g-liste" title="Namen in der Kürzelliste korrigieren oder ergänzen. Die Namen bleiben ${listenOrt()} und gehen nicht an Claude.">Kürzelliste bearbeiten</button><button class="btn ghost small" id="g-noten">Notenübersicht</button><button class="btn ghost small" id="g-namen" aria-pressed="${store.get("akten-namen",false)}">${store.get("akten-namen",false)?"Namen ausblenden":"Namen einblenden"}</button></div>
     <div class="kids" id="kids">${g.gruppeText?`<button class="kid" data-k="">Gruppe</button>`:""}${g.akten.map(a=>`<button class="kid" data-k="${esc(a.kuerzel)}">${esc(a.kuerzel)}${a.offen?`<span class="o">${a.offen}</span>`:""}</button>`).join("")}</div>
     <p class="note" id="akte-hint">Kürzel anklicken, um die Akte zu lesen. Orange Zahlen sind offene Punkte.</p>
     <p class="note" id="g-wer" hidden></p>
@@ -470,6 +470,7 @@ function zeigeGruppe(g){
     const ord=sortiereKuerzel(knoepfe.map(b=>b.dataset.k),namen,art);ord.forEach(k=>box.appendChild(knoepfe.find(b=>b.dataset.k===k)))}
   $("#g-sort").addEventListener("change",e=>{store.set("akten-sort",e.target.value);kidsOrdnen()});
   $("#g-noten").addEventListener("click",()=>zeigeNoten(g.id));
+  $("#g-liste").addEventListener("click",()=>kuerzellisteBearbeiten(g));
   kidsOrdnen();
   slot.querySelectorAll(".kid").forEach(b=>b.addEventListener("click",()=>{
     slot.querySelectorAll(".kid").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
@@ -650,6 +651,107 @@ async function kuerzelHinzufuegen(g){
     const g2=ordner.gruppen.find(x=>x.id===g.id);if(g2)zeigeGruppe(g2);
     $("#g-toast").textContent=`${neu} angelegt. Namen in der Kürzelliste ergänzen.`;
   }catch(e){t.textContent=(e&&e.message)||"Hat nicht geklappt."}
+}
+
+/* ---------- Kürzelliste bearbeiten (Pauls Wunsch 20.11.): Namen direkt auf der Startseite korrigieren ----------
+   Liest und schreibt nur die lokale Kürzelliste (xlsx bevorzugt, sonst csv) im Schülerdaten-Ordner. Namen gehen nie an Claude. */
+function kuerzelSpalten(zeilen){
+  const kopf=Math.max(0,zeilen.findIndex(z=>(z||[]).some(x=>/^(k(ü|ue)rzel|code|pseudonym)$/i.test(String(x||"").trim()))));
+  const h=(zeilen[kopf]||[]).map(x=>String(x||"").trim().toLowerCase());
+  const iV=h.findIndex(x=>x.startsWith("vorname")),iN=h.findIndex(x=>x.startsWith("nachname"));
+  let iK=h.findIndex(x=>/k(ü|ue)rzel|pseudonym/.test(x));if(iK<0)iK=h.findIndex(x=>/code/.test(x));
+  const iC=h.findIndex((x,i)=>i!==iK&&/code/.test(x));
+  return {kopf,iV,iN,iK,iC,titel:(zeilen[kopf]||[]).map(x=>String(x||"").trim())}}
+async function kuerzellisteLaden(gid){
+  const sd=sdRoot();if(!sd)throw new Error("Bitte zuerst rechts den Datenordner verbinden.");
+  let kl=null;try{kl=await sd.getDirectoryHandle("kuerzellisten")}catch{}
+  if(kl)for(const art of ["xlsx","csv"]){let fh;try{fh=await kl.getFileHandle(`Kuerzelliste-${gid}.${art}`)}catch{continue}
+    const f=await fh.getFile();
+    if(art==="xlsx"){const buf=await f.arrayBuffer();return {art,name:`Kuerzelliste-${gid}.xlsx`,buf,zeilen:await xlsxZeilen(buf)}}
+    const text=await f.text();const z0=text.replace(/^﻿/,"").split(/\r?\n/)[0]||"";
+    return {art,name:`Kuerzelliste-${gid}.csv`,sep:(z0.match(/;/g)||[]).length>=(z0.match(/,/g)||[]).length?";":",",zeilen:csvZeilen(text)}}
+  return {art:"neu",name:`Kuerzelliste-${gid}.csv`,sep:";",zeilen:[["Vorname","Nachname","Kürzel","Schüler-Code"]]}}
+const spaltenBuchstabe=n=>{let s="";n++;while(n>0){const r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26)}return s};
+/* Ändert in der Excel-Datei nur die Namens-Zellen im ersten Blatt; Formatierung und alles andere bleibt. */
+async function xlsxNamenSchreiben(buf,sp,werte){
+  const Z=window.saSicherung;if(!Z)throw new Error("Excel-Dateien kann die Seite gerade nicht schreiben (Sicherungsteil nicht geladen). Bitte Seite neu laden.");
+  const teile=await Z.zipEntpacken(new Uint8Array(buf));const blatt=teile.find(t=>t.rel==="xl/worksheets/sheet1.xml");
+  if(!blatt)throw new Error("Erstes Tabellenblatt nicht gefunden.");
+  const td=new TextDecoder(),dp=new DOMParser();const ss=[];const sx=teile.find(t=>t.rel==="xl/sharedStrings.xml");
+  if(sx){const d=dp.parseFromString(td.decode(sx.bytes),"application/xml");for(const si of d.getElementsByTagName("si"))ss.push([...si.getElementsByTagName("t")].map(t=>t.textContent).join(""))}
+  const roh=td.decode(blatt.bytes);const kopfzeile=(roh.match(/^\s*<\?xml[^>]*\?>/)||[""])[0];
+  const doc=dp.parseFromString(roh,"application/xml");if(doc.getElementsByTagName("parsererror").length)throw new Error("Die Excel-Datei ist nicht lesbar.");
+  const NS=doc.documentElement.namespaceURI;const sd=doc.getElementsByTagNameNS(NS,"sheetData")[0];
+  const zellwert=c=>{const t=c.getAttribute("t");if(t==="s")return ss[+((c.getElementsByTagNameNS(NS,"v")[0]||{}).textContent)]||"";
+    if(t==="inlineStr")return [...c.getElementsByTagNameNS(NS,"t")].map(x=>x.textContent).join("");return (c.getElementsByTagNameNS(NS,"v")[0]||{}).textContent||""};
+  const zelle=(row,nr,col,wert)=>{if(col<0)return;const ref=spaltenBuchstabe(col)+nr;
+    let c=[...row.getElementsByTagNameNS(NS,"c")].find(x=>spalteNr(x.getAttribute("r")||"A")===col);
+    if(!c){if(!wert)return;c=doc.createElementNS(NS,"c");c.setAttribute("r",ref);
+      const danach=[...row.getElementsByTagNameNS(NS,"c")].find(x=>spalteNr(x.getAttribute("r")||"A")>col);row.insertBefore(c,danach||null)}
+    if(zellwert(c)===wert)return;
+    while(c.firstChild)c.removeChild(c.firstChild);c.removeAttribute("t");
+    if(wert){c.setAttribute("t","inlineStr");const is=doc.createElementNS(NS,"is"),t=doc.createElementNS(NS,"t");
+      t.setAttributeNS("http://www.w3.org/XML/1998/namespace","xml:space","preserve");t.textContent=wert;is.appendChild(t);c.appendChild(is)}};
+  const offen=new Map(Object.entries(werte));let maxR=0,maxC=Math.max(sp.iV,sp.iN,sp.iK,sp.iC);
+  for(const row of [...sd.getElementsByTagNameNS(NS,"row")]){const nr=+row.getAttribute("r")||0;maxR=Math.max(maxR,nr);
+    const kc=[...row.getElementsByTagNameNS(NS,"c")].find(x=>spalteNr(x.getAttribute("r")||"A")===sp.iK);
+    const k=kc?zellwert(kc).trim():"";if(!k||!offen.has(k))continue;
+    const w=offen.get(k);offen.delete(k);zelle(row,nr,sp.iV,w.vor);zelle(row,nr,sp.iN,w.nach);zelle(row,nr,sp.iC,w.code)}
+  for(const [k,w] of offen){const nr=++maxR;const row=doc.createElementNS(NS,"row");row.setAttribute("r",String(nr));sd.appendChild(row);
+    [[sp.iV,w.vor],[sp.iN,w.nach],[sp.iK,k],[sp.iC,w.code]].filter(x=>x[0]>=0).sort((a,b)=>a[0]-b[0]).forEach(([col,v])=>zelle(row,nr,col,v))}
+  const dim=doc.getElementsByTagNameNS(NS,"dimension")[0];if(dim&&maxR)dim.setAttribute("ref","A1:"+spaltenBuchstabe(maxC)+maxR);
+  blatt.bytes=new TextEncoder().encode((kopfzeile?kopfzeile+"\n":"")+new XMLSerializer().serializeToString(doc));
+  return Z.zipBauen(teile)}
+function csvNamenSchreiben(liste,sp,werte){
+  const zeilen=liste.zeilen.map(z=>[...z]);const offen=new Map(Object.entries(werte));const breite=Math.max(...zeilen.map(z=>z.length),sp.iK+1);
+  const setze=(z,i,v)=>{if(i<0)return;while(z.length<=i)z.push("");z[i]=v};
+  zeilen.slice(sp.kopf+1).forEach(z=>{const k=String(z[sp.iK]||"").trim();if(!offen.has(k))return;const w=offen.get(k);offen.delete(k);setze(z,sp.iV,w.vor);setze(z,sp.iN,w.nach);setze(z,sp.iC,w.code)});
+  for(const [k,w] of offen){const z=Array(breite).fill("");setze(z,sp.iV,w.vor);setze(z,sp.iN,w.nach);setze(z,sp.iK,k);setze(z,sp.iC,w.code);zeilen.push(z)}
+  const q=v=>{v=String(v??"");return /["\r\n]/.test(v)||v.includes(liste.sep)?'"'+v.replace(/"/g,'""')+'"':v};
+  return "﻿"+zeilen.map(z=>z.map(q).join(liste.sep)).join("\r\n")+"\r\n"}
+async function kuerzellisteBearbeiten(g){
+  const slot=$("#panel-slot");const zurueck=()=>{const g2=ordner.gruppen.find(x=>x.id===g.id);if(g2)zeigeGruppe(g2);else slot.innerHTML=""};
+  const meld=m=>{const t=$("#g-toast")||$("#kn-toast")||$("#kl-toast");if(t)t.textContent=m};
+  let liste;try{liste=await kuerzellisteLaden(g.id)}catch(e){meld((e&&e.message)||"Kürzelliste nicht lesbar.");return}
+  const sp=kuerzelSpalten(liste.zeilen);
+  if(sp.iK<0){meld(`In ${liste.name} fehlt die Spalte „Kürzel“. Bitte die Datei einmal in Excel prüfen.`);return}
+  if(sp.iV<0||sp.iN<0){meld(`In ${liste.name} fehlen die Spalten „Vorname“ und „Nachname“. Bitte die Datei einmal in Excel prüfen.`);return}
+  const tausch=store.get("namen-tausch",false);
+  const ausDatei={};liste.zeilen.slice(sp.kopf+1).forEach(z=>{const k=String(z[sp.iK]||"").trim();if(k&&!ausDatei[k])ausDatei[k]={vor:String(z[sp.iV]??"").trim(),nach:String(z[sp.iN]??"").trim(),code:sp.iC>=0?String(z[sp.iC]??"").trim():""}});
+  const ks=[...new Set([...g.akten.map(a=>a.kuerzel),...Object.keys(ausDatei)])].sort((a,b)=>a.localeCompare(b,"de",{numeric:true}));
+  const titelV=tausch?sp.titel[sp.iN]:sp.titel[sp.iV],titelN=tausch?sp.titel[sp.iV]:sp.titel[sp.iN];
+  slot.innerHTML=`<div class="panel"><div class="p-kopf"><h4>Kürzelliste ${esc(g.id)}</h4><span class="sp"></span><button class="btn ghost small" id="kl-zurueck">Zurück zu den Akten</button></div>
+    <p class="note">Hier korrigierst du Namen oder trägst fehlende ein. Gespeichert wird direkt in <span class="path">${esc(sdPfad("kuerzellisten/"+liste.name))}</span>${liste.art==="neu"?" (die Datei wird neu angelegt)":""}. Die Namen bleiben ${listenOrt()} und gehen nie an Claude.</p>
+    <div class="r-tab-wrap"><table class="r-tab kl-tab" id="kl-tab"><thead><tr><th>Kürzel</th><th>${esc(titelV||"Vorname")}</th><th>${esc(titelN||"Nachname")}</th>${sp.iC>=0?`<th>${esc(sp.titel[sp.iC])}</th>`:""}<th></th></tr></thead><tbody>${ks.map(k=>{const n=ausDatei[k]||{vor:"",nach:"",code:""};const a=tausch?n.nach:n.vor,b=tausch?n.vor:n.nach;
+      return `<tr data-k="${esc(k)}"><td class="m"><b>${esc(k)}</b></td><td><input data-f="a" value="${esc(a)}" autocomplete="off" spellcheck="false" aria-label="${esc(titelV||"Vorname")} ${esc(k)}"></td><td><input data-f="b" value="${esc(b)}" autocomplete="off" spellcheck="false" aria-label="${esc(titelN||"Nachname")} ${esc(k)}"></td>${sp.iC>=0?`<td><input data-f="c" class="mono" value="${esc(n.code)}" autocomplete="off" spellcheck="false" style="max-width:9em" aria-label="Code ${esc(k)}"></td>`:""}<td><small>${[g.akten.some(x=>x.kuerzel===k)?"":"keine Akte",ausDatei[k]?"":"fehlt bisher in der Liste"].filter(Boolean).join(", ")}</small></td></tr>`}).join("")}</tbody></table></div>
+    <p class="note" id="kl-info"></p>
+    <div class="actions"><button class="btn primary" id="kl-speichern" disabled>Speichern</button><button class="btn ghost" id="kl-verwerfen" disabled>Änderungen verwerfen</button><span class="toast" id="kl-toast" role="status"></span></div></div>`;
+  const zeilenWerte=()=>[...slot.querySelectorAll("#kl-tab tbody tr")].map(tr=>{const v=f=>{const i=tr.querySelector(`input[data-f="${f}"]`);return i?i.value.replace(/\s+/g," ").trim():""};
+    const a=v("a"),b=v("b");return {k:tr.dataset.k,vor:tausch?b:a,nach:tausch?a:b,code:sp.iC>=0?v("c").toUpperCase():""}});
+  const geaendert=()=>zeilenWerte().filter(w=>{const o=ausDatei[w.k];return o?(o.vor!==w.vor||o.nach!==w.nach||(sp.iC>=0&&o.code.toUpperCase()!==w.code)):(w.vor||w.nach||w.code)});
+  const pruefe=()=>{const ae=geaendert();
+    slot.querySelectorAll("#kl-tab tbody tr").forEach(tr=>tr.classList.toggle("fehlt",ae.some(w=>w.k===tr.dataset.k)));
+    const ws=zeilenWerte();const doppelt=ws.filter((w,i)=>(w.vor||w.nach)&&ws.findIndex(x=>x.vor===w.vor&&x.nach===w.nach)!==i).map(w=>w.k);
+    const codes=sp.iC>=0?ws.filter((w,i)=>w.code&&ws.findIndex(x=>x.code===w.code)!==i).map(w=>w.k):[];
+    $("#kl-info").textContent=(ae.length?`${ae.length} ${ae.length===1?"Zeile":"Zeilen"} geändert (markiert). `:"")+(doppelt.length?`Gleicher Name doppelt bei ${doppelt.join(", ")}. `:"")+(codes.length?`Gleicher Code doppelt bei ${codes.join(", ")}. `:"")+(ws.some(w=>!w.vor&&!w.nach)?`Ohne Namen: ${ws.filter(w=>!w.vor&&!w.nach).length}.`:"");
+    $("#kl-speichern").disabled=!ae.length;$("#kl-verwerfen").disabled=!ae.length};
+  slot.querySelectorAll("#kl-tab input").forEach(i=>{i.addEventListener("input",()=>{pruefe();$("#kl-toast").textContent=""});
+    i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const alle=[...slot.querySelectorAll(`#kl-tab input[data-f="${i.dataset.f}"]`)];const n=alle[alle.indexOf(i)+1];if(n)n.focus()}})});
+  pruefe();
+  $("#kl-zurueck").addEventListener("click",()=>{if(geaendert().length&&!$("#kl-zurueck").dataset.sicher){$("#kl-zurueck").dataset.sicher="1";$("#kl-toast").textContent="Noch nicht gespeichert. Nochmal klicken verwirft die Änderungen.";return}zurueck()});
+  $("#kl-verwerfen").addEventListener("click",()=>kuerzellisteBearbeiten(g));
+  $("#kl-speichern").addEventListener("click",async()=>{const t=$("#kl-toast");const ae=geaendert();if(!ae.length)return;
+    $("#kl-speichern").disabled=true;t.textContent="Speichere …";
+    try{
+      const sd=await sdSchreib();const kl=await sd.getDirectoryHandle("kuerzellisten",{create:true});
+      const frisch=await kuerzellisteLaden(g.id);   // kurz vor dem Schreiben neu lesen, falls die Datei inzwischen in Excel geändert wurde
+      if(frisch.art!==liste.art)throw new Error("Die Kürzelliste wurde inzwischen ersetzt. Bitte „Änderungen verwerfen“ und neu eintragen.");
+      const sp2=kuerzelSpalten(frisch.zeilen);const werte={};ae.forEach(w=>werte[w.k]={vor:w.vor,nach:w.nach,code:w.code});
+      const daten=frisch.art==="xlsx"?await xlsxNamenSchreiben(frisch.buf,sp2,werte):csvNamenSchreiben(frisch,sp2,werte);
+      const fh=await kl.getFileHandle(frisch.name,{create:true});const w=await fh.createWritable();await w.write(daten);await w.close();
+      await kuerzellisteBearbeiten(g);$("#kl-toast").textContent=`Gespeichert: ${ae.length} ${ae.length===1?"Zeile":"Zeilen"} in ${frisch.name}.`;
+    }catch(e){t.textContent=/NoModification|InvalidState|locked|gesperrt/i.test(String(e&&(e.name+e.message)))?"Die Datei ist gerade gesperrt (in Excel geöffnet?). Bitte Excel schließen und nochmal speichern.":(e&&e.message)||"Speichern hat nicht geklappt.";$("#kl-speichern").disabled=false}});
+  slot.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 
 /* ---------- Woche: Stundenplan (iCal aus WebUntis o. ä.) und Aufgabenliste ---------- */
@@ -956,9 +1058,10 @@ async function zeigeKuerzel(){
     $("#kn-info").textContent=`${tr.length} von ${alle.length} Kürzeln${ohne?`, ${ohne} davon noch ohne Namen`:""}${tr.length>300?". Es werden die ersten 300 gezeigt.":"."}`;
     $("#kn-body").querySelectorAll("button[data-k]").forEach(b=>b.addEventListener("click",()=>{const g=ordner.gruppen.find(y=>y.id===b.dataset.g);if(!g)return;zeigeGruppe(g);const z=$(`.kid[data-k="${b.dataset.k}"]`);if(z)z.click()}));
   };
-  $("#kn-dat").innerHTML=gruppen.map(id=>`<div class="kn-datei"><span>${esc(id)}</span>${dateien[id]?`<span class="path" data-pfad="${esc(sdPfad("kuerzellisten/"+dateien[id]))}">${esc(sdPfad("kuerzellisten/"+dateien[id]))}</span><button class="btn ghost small">Pfad kopieren</button>`:`<span class="warn">keine Kürzelliste gefunden</span>`}</div>`).join("")
-    +`<p class="note">Zum Bearbeiten: Pfad kopieren, im Explorer oben in die Adresszeile einfügen, Enter. Die Datei öffnet sich in Excel.</p>`;
-  $("#kn-dat").querySelectorAll(".kn-datei button").forEach(b=>b.addEventListener("click",()=>{const el=b.previousElementSibling;kopiere(el.dataset.pfad,$("#kn-toast"),el)}));
+  $("#kn-dat").innerHTML=gruppen.map(id=>`<div class="kn-datei"><span>${esc(id)}</span>${dateien[id]?`<span class="path" data-pfad="${esc(sdPfad("kuerzellisten/"+dateien[id]))}">${esc(sdPfad("kuerzellisten/"+dateien[id]))}</span><button class="btn ghost small">Pfad kopieren</button>`:`<span class="warn">keine Kürzelliste gefunden</span>`}<button class="btn ghost small" data-bearb="${esc(id)}">Bearbeiten</button></div>`).join("")
+    +`<p class="note">Namen korrigieren geht direkt mit „Bearbeiten“. Für Excel: Pfad kopieren, im Explorer oben in die Adresszeile einfügen, Enter.</p>`;
+  $("#kn-dat").querySelectorAll(".kn-datei button:not([data-bearb])").forEach(b=>b.addEventListener("click",()=>{const el=b.previousElementSibling;kopiere(el.dataset.pfad,$("#kn-toast"),el)}));
+  $("#kn-dat").querySelectorAll("button[data-bearb]").forEach(b=>b.addEventListener("click",()=>{const g=ordner.gruppen.find(y=>y.id===b.dataset.bearb);if(g)kuerzellisteBearbeiten(g)}));
   $("#kn-q").addEventListener("input",zeichne);$("#kn-g").addEventListener("change",zeichne);
   $("#p-close").addEventListener("click",()=>slot.innerHTML="");
   zeichne();$("#kn-q").focus({preventScroll:true});slot.scrollIntoView({block:"nearest",behavior:"smooth"});
