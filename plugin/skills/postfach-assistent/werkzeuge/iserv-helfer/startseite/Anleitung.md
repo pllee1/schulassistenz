@@ -27,13 +27,18 @@ Die frühere Datei `Schulassistenz-Start.html` im Datenordner wird nicht mehr ak
 
 ## Bedienen
 
-- **Suchfeld:** Stichwort tippen, z. B. „Klausur“, „Eltern“, „AB“. Enter öffnet den ersten Treffer. Gibt es keinen Knopf, schickst du deinen Text direkt an Claude.
-- **Live-Beobachtung:** Lerngruppe eintragen, „Starten“ (oder in der Wochenansicht auf die Stunde klicken). Es öffnet sich das Raster, siehe unten.
-- **Favoriten:** Stern ★ an einem Knopf. „Zuletzt benutzt“ füllt sich von selbst.
-- **Alle Werkzeuge:** in Reitern nach Arbeitsbereich. Reiter ohne Knöpfe sind ausgeblendet.
+Seit Helfer 0.23 hat die Startseite drei Bereiche und ein Zahnrad. Jede Funktion steht an genau einem Ort.
+
+- **Heute:** deine Stunden des Tages. An der laufenden bzw. nächsten Stunde steht der Knopf „● Live-Beobachtung“, daneben „Gruppe“. Darunter die Woche mit Kalender, unten der **Schnellstart** (Werkzeuge mit ★). Rechts **Als Nächstes** (die vier dringendsten Punkte, „Alle Termine ansehen“ für die ganze Liste). Ist einer Stunde noch keine Lerngruppe zugeordnet, steht dort „Lerngruppe zuordnen“.
+- **Lerngruppen:** links deine Gruppen, rechts die gewählte Gruppe mit vier Reitern: **Akten**, **Noten**, **Fehlzeiten**, **Namen & Kürzel** (Namensliste, Kürzel verknüpfen, Code-Zuordnung, Kürzel nachschlagen). Oben „● Live-Beobachtung“ und „Nach LEB-online“, unten Aufträge an Claude, bei denen die Gruppe schon eingetragen ist.
+- **Werkzeuge:** alle Aufträge an Claude und die Werkzeuge auf diesem Rechner (Kennzeichen „PC“) auf einer Seite, in sieben Gruppen. ★ setzt ein Werkzeug in den Schnellstart.
+- **⚙ Einrichtung & Daten:** Einrichtung prüfen, Sicherung, Neu einlesen, Ordner wählen, Stundenplan-Link, Kalender, Outlook-Export, Dateien und Ordner (Schulprofil, Kürzelliste, Akten-Ordner, Ausgaben). Ein Punkt am Zahnrad heißt: hier ist etwas zu tun.
+- **Suchfeld oben:** findet Werkzeuge, Lerngruppen und Kürzel (z. B. „M07“ öffnet die Akte). Umlaute dürfen als ae/oe/ue getippt werden. Enter öffnet den ersten Treffer. Findet die Suche nichts, schickst du den Text direkt an Claude.
+- **Fenster** (Auftrag an Claude, Termine, Sicherung …) erscheinen mittig über der Seite. In der Lerngruppe erscheinen sie im Inhaltsbereich; nach „Schließen“ ist der Reiter wieder da.
+- **Namen ändern:** Doppelklick auf einen Namen (Akten mit „Namen einblenden“, Noten, Live-Beobachtung) öffnet ein kleines Feld. Enter speichert in der Kürzelliste, Esc bricht ab. Namen stehen nur dort, deshalb ist der neue Name danach überall zu sehen. Die Kürzel ändern sich nicht.
+- **Tastatur:** `/` Suche, `Esc` Fenster schließen, `Alt`+`1`/`2`/`3` Heute, Lerngruppen, Werkzeuge, `Alt`+`0` Einrichtung & Daten. Die Zurück-Taste des Browsers springt zur vorigen Ansicht; die Seite öffnet beim nächsten Mal dort, wo du warst.
 - **Blau „mit Claude“:** öffnet ein Feld für Lerngruppe, Kürzel oder Thema, zeigt den Auftrag und öffnet Claude. Steht im Kürzelfeld etwas, das wie ein Name aussieht, bleibt der Knopf gesperrt.
-- **Grün „öffnet lokal“:** Pseudonymisierer und Abschluss-Check öffnen sich als eigene Seite des Helfers (ab 0.10). Sie sind abgeschottet: kein Netz, kein Zugriff auf andere Daten. Der Abschluss-Check zeigt das Schullogo aus dem Profil (`logo:` unter `layout`), wenn eins eingetragen ist. Eigene Knöpfe, die auf eine HTML-Datei im Datenordner zeigen, öffnen als Datei (dafür beim Helfer „Zugriff auf Datei-URLs zulassen“).
-- **Live-Beobachtung:** Lerngruppe aus der Liste wählen (alle Gruppen mit Akten, in Klammern die Zahl der Kürzel), dann „Starten“. Oben im laufenden Raster wechselst du über dieselbe Liste in eine andere Gruppe; was du schon eingetragen hast, bleibt als Entwurf gespeichert. Bei Ordnern zeigt die Seite den Pfad zum Kopieren (Explorer: Windows-Taste + E, Pfad einfügen).
+- **Werkzeuge auf diesem PC:** Pseudonymisierer und Abschluss-Check öffnen sich als eigene Seite des Helfers. Sie sind abgeschottet: kein Netz, kein Zugriff auf andere Daten.
 
 ## Live-Beobachtung im Raster
 

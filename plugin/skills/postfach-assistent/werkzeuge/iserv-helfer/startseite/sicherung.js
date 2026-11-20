@@ -130,7 +130,7 @@ async function erinnern(){
 /* ---------- Panel ---------- */
 async function zeigen(){
   const slot=$("#panel-slot");
-  if(!bereit()){slot.innerHTML=`<div class="panel"><h4>Schülerdaten sichern</h4><p>Dafür braucht die Seite deine Akten. Bitte rechts unter „Lerngruppen und Akten“ den Datenordner${sdExtern()?" und den Schülerdaten-Ordner":""} verbinden.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;
+  if(!bereit()){slot.innerHTML=`<div class="panel"><h4>Schülerdaten sichern</h4><p>Dafür braucht die Seite deine Akten. Bitte unter „Lerngruppen“ den Datenordner${sdExtern()?" und den Schülerdaten-Ordner":""} verbinden.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;
     $("#p-close").addEventListener("click",()=>slot.innerHTML="");slot.scrollIntoView({block:"nearest",behavior:"smooth"});return}
   slot.innerHTML=`<div class="panel"><div class="p-kopf"><h4>Schülerdaten sichern</h4><span class="sp"></span><button class="btn ghost small" id="p-close">Schließen</button></div>
     <p class="note" id="sich-stand">Lese den Stand …</p>

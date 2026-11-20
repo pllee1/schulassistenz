@@ -1,6 +1,6 @@
 {
   "name": "schulassistenz",
-  "version": "1.28.0",
+  "version": "1.29.0",
   "description": "Entlastung im Schulalltag für Lehrkräfte aller Fächer und Schulformen: Unterricht und Einheiten planen, Material, Plakate, Schaubilder und Prüfungen gestalten und korrigieren, eigenes Material im Materiallager finden und wiederverwenden, Beobachtungen, Lernstandsakten, individuelle Lernpläne, Zeugnisse, Elterngespräche, Exkursionen, Postfach, Verwaltung und Wochenplanung. Schülerdaten nur als Kürzel; mit lokaler Startseite, Pseudonymisierer und Schulassistenz-Helfer.",
   "keywords": [
     "schule",

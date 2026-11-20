@@ -82,7 +82,7 @@ function renderStatus(){
 
 /* ---------- Kacheln ---------- */
 function kachel(k){
-  const el=document.createElement("div");el.className="tile";
+  const el=document.createElement("div");el.className="tile"+(k.typ==="lokal"?" pc":"");
   const fav=favs.includes(k.id);
   const direkt=k.typ==="lokal"&&/\.html?$/i.test(k.ziel||"");
   const inner=`<span class="meta"><span class="${k.typ==="lokal"?"k-lokal":"k-claude"}">${k.typ==="lokal"?"öffnet lokal":"mit Claude"}</span>${istNeu(k)?'<span class="badge neu">neu</span>':""}${k.eigen?'<span class="badge eigen">eigener Skill</span>':""}</span><strong>${esc(k.titel)}</strong><span class="d">${esc(k.kurz)}</span>`;
@@ -94,32 +94,40 @@ function kachel(k){
   return el;
 }
 function fill(sel,list){const c=$(sel);c.innerHTML="";list.forEach(k=>c.appendChild(kachel(k)))}
+/* Werkzeuge-Seite (Helfer 0.23): alle Werkzeuge auf einer Seite in sieben Gruppen statt Reitern.
+   Was zu einer Lerngruppe gehört (Noten, Fehlzeiten, Akten, Kürzel) oder Technik ist (Dateien, Sicherung), steht nicht hier, die Suche findet es trotzdem. */
+const WZ_GRUPPEN=[["planen","Planen","#8fb3e8"],["material","Material","#c6a0e8"],["unterricht","Unterrichten & fördern","#8fcf9f"],["pruefen","Prüfen & bewerten","#e9b65f"],["zeugnis","Zeugnis & Konferenz","#e9786a"],["eltern","Eltern & Post","#7fd1c7"],["organisieren","Organisieren","#b5aa9b"]];
+const WZ_BEREICH={planen:"planen",selbst:"planen",material:"material",unterricht:"unterricht",bewerten:"pruefen",kommunizieren:"eltern",verwaltung:"organisieren",kooperation:"organisieren",entwicklung:"organisieren"};
+const WZ_ID={"zeugnis-noten":"zeugnis","zeugnis-asv":"zeugnis",konferenz:"zeugnis",bericht:"zeugnis",dokument:"organisieren",pseudonymisierer:"organisieren"};
+const WZ_ANDERSWO=new Set(["notenuebersicht","lerngruppe-neu","fehlzeiten","fehlzeiten-ampel","sicherung","akte","helfer","kuerzelliste","akten-ordner","ausgaben","profil","profil-aendern"]);
+const wzGruppe=k=>WZ_ANDERSWO.has(k.id)?null:(WZ_ID[k.id]||WZ_BEREICH[k.bereich]||(k.bereich==="werkzeuge"?"organisieren":null));
+const suchNorm=s=>String(s||"").toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss");
 function render(){
-  const roh=$("#q").value.trim(),q=roh.toLowerCase();
+  const roh=$("#q").value.trim(),q=suchNorm(roh);
   const byId=id=>ALLE.find(k=>k.id===id);
   const fl=favs.map(byId).filter(Boolean);
   fill("#favs",fl);
-  if(!fl.length)$("#favs").innerHTML='<div class="empty">Markiere Werkzeuge mit ★, dann erscheinen sie hier.</div>';
-  const rec=recent.filter(id=>!favs.includes(id)).map(byId).filter(Boolean).slice(0,3);
-  $("#recent-sec").hidden=!rec.length||!!q;fill("#recent",rec);
-  const sichtbar=BEREICHE.filter(([b])=>ALLE.some(k=>k.bereich===b));
-  if(sichtbar.length&&!sichtbar.some(([b])=>b===tab))tab=sichtbar[0][0];
+  if(!fl.length)$("#favs").innerHTML='<div class="empty">Setze in „Werkzeuge“ einen ★, dann steht das Werkzeug hier.</div>';
+  const area=$("#area");area.innerHTML="";
   if(q){
     const woerter=q.split(/\s+/);
-    const treffer=ALLE.filter(k=>{const t=(k.titel+" "+k.kurz+" "+(k.stichworte||"")).toLowerCase();return woerter.every(w=>t.includes(w))});
-    $("#all-h").textContent=treffer.length?`${treffer.length} Treffer für „${roh}“`:"Kein Werkzeug gefunden";
-    $("#tabs").hidden=true;
-    if(treffer.length)fill("#area",treffer);
-    else{
-      $("#area").innerHTML='<div class="empty"><span>Dafür gibt es noch keinen Knopf. Du kannst den Text direkt als Auftrag an Claude geben.</span><button class="btn primary" id="frei" style="justify-self:start">Als Auftrag an Claude</button></div>';
+    const treffer=ALLE.filter(k=>{const t=suchNorm(k.titel+" "+k.kurz+" "+(k.stichworte||""));return woerter.every(w=>t.includes(w))});
+    const ziele=window.saAnsicht?saAnsicht.suchZiele(roh):[];
+    $("#all-h").textContent=treffer.length||ziele.length?`Treffer für „${roh}“`:"Nichts gefunden";$("#wz-hinweis").hidden=true;
+    const liste=document.createElement("div");liste.className="such-liste";area.appendChild(liste);
+    ziele.forEach(z=>{const b=document.createElement("button");b.className="such-ziel";b.innerHTML=`<b>${esc(z.titel)}</b><small>${esc(z.kurz)}</small>`;b.addEventListener("click",z.los);liste.appendChild(b)});
+    treffer.forEach(k=>liste.appendChild(kachel(k)));
+    if(!treffer.length&&!ziele.length){
+      area.innerHTML='<div class="empty"><span>Dafür gibt es noch keinen Knopf. Du kannst den Text direkt als Auftrag an Claude geben.</span><button class="btn primary" id="frei" style="justify-self:start">Als Auftrag an Claude</button></div>';
       $("#frei").addEventListener("click",()=>oeffne({id:"frei",titel:"Freier Auftrag",typ:"claude",felder:[],auftrag:roh}));
-    }
+    }else{const f=document.createElement("p");f.className="note";f.style.marginTop="10px";f.innerHTML=`Nicht das Richtige? <button class="linkbtn" id="frei">„${esc(roh)}“ als Auftrag an Claude geben</button>`;area.appendChild(f);
+      $("#frei").addEventListener("click",()=>oeffne({id:"frei",titel:"Freier Auftrag",typ:"claude",felder:[],auftrag:roh}))}
     matHinweis(roh).catch(()=>{});
   }else{
-    $("#all-h").textContent="Alle Werkzeuge";$("#tabs").hidden=false;
-    $("#tabs").innerHTML=sichtbar.map(([b,n])=>`<button role="tab" aria-selected="${b===tab}" data-b="${b}">${n}<span class="n">${ALLE.filter(k=>k.bereich===b).length}</span></button>`).join("");
-    $("#tabs").querySelectorAll("[role=tab]").forEach(t=>t.addEventListener("click",()=>{tab=t.dataset.b;store.set("tab",tab);render()}));
-    fill("#area",ALLE.filter(k=>k.bereich===tab));
+    $("#all-h").textContent="Werkzeuge";$("#wz-hinweis").hidden=false;
+    WZ_GRUPPEN.forEach(([id,name,farbe])=>{const ks=ALLE.filter(k=>wzGruppe(k)===id);if(!ks.length)return;
+      const box=document.createElement("section");box.className="wz-gruppe";box.style.setProperty("--c",farbe);
+      box.innerHTML=`<h3>${esc(name)}</h3>`;ks.forEach(k=>box.appendChild(kachel(k)));area.appendChild(box)});
   }
 }
 function merke(k){if(!k||k.id==="frei"||k.id==="live")return;recent=[k.id,...recent.filter(x=>x!==k.id)].slice(0,6);store.set("recent",recent)}
@@ -204,7 +212,7 @@ function oeffne(k,vor){
 /* ---------- Lokale Ziele ---------- */
 function zeigeLokal(k){
   if(k.ziel==="aktion:neue-lerngruppe"){merke(k);setTimeout(render,50);return zeigeNeueGruppe()}
-  if(k.ziel==="aktion:notenuebersicht"){merke(k);setTimeout(render,50);if(ordner.zustand!=="an"||!ordner.gruppen.length){const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Notenübersicht</h4><p>Dafür braucht die Seite deine Akten. Bitte rechts unter „Lerngruppen und Akten“ den Ordner verbinden bzw. „Akten anzeigen“ klicken.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}return zeigeNoten()}
+  if(k.ziel==="aktion:notenuebersicht"){merke(k);setTimeout(render,50);if(ordner.zustand!=="an"||!ordner.gruppen.length){const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Notenübersicht</h4><p>Dafür braucht die Seite deine Akten. Bitte unter „Lerngruppen“ den Ordner verbinden bzw. „Akten anzeigen“ klicken.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}return zeigeNoten()}
   if(/^werkzeug:/.test(k.ziel||"")){merke(k);setTimeout(render,50);return werkzeugOeffnen(k.ziel.slice(9))}
   if(k.ziel==="aktion:materiallager"){merke(k);setTimeout(render,50);return zeigeMaterial()}
   if(k.ziel==="aktion:fehlzeiten"){merke(k);setTimeout(render,50);if(window.saFehlzeiten)return window.saFehlzeiten.zeigen();const slot=$("#panel-slot");slot.innerHTML=`<div class="panel"><h4>Fehlzeiten-Ampel</h4><p>Es fehlt die Datei werkzeuge/startseite/fehlzeiten.js. Nach dem nächsten Update ist sie da.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
@@ -426,11 +434,12 @@ function renderOrdner(){
   if(ordner.zustand==="an"&&ordner.gruppen.length){
     ordner.gruppen.forEach(g=>{
       const b=document.createElement("button");b.className="group";
-      b.innerHTML=`<b>${esc(g.id)}</b><span class="pill${g.offen?" open":""}">${g.offen?g.offen+" offen":g.akten.length+" Akten"}</span><small>${g.akten.length} Akten${g.letzte?" · zuletzt "+datumDE(g.letzte):""}</small>`;
-      b.addEventListener("click",()=>zeigeGruppe(g));box.appendChild(b);
+      b.innerHTML=`<b>${esc(g.id)}</b>${g.offen?`<span class="pill open" title="offene Punkte in den Akten">${g.offen}</span>`:""}<small>${g.akten.length} Kinder${g.letzte?" · zuletzt "+datumDE(g.letzte):""}</small>`;
+      b.dataset.g=g.id;b.addEventListener("click",()=>window.saAnsicht?saAnsicht.gruppe(g.id):zeigeGruppe(g));box.appendChild(b);
     });
-    note.textContent=(sdExtern()?"Aus deinem Schülerdaten-Ordner gelesen.":"Aus deinem Datenordner gelesen.")+" Angezeigt werden nur Kürzel. Klick auf eine Lerngruppe zeigt die Akten.";
-    knopf("Neue Lerngruppe",zeigeNeueGruppe,"primary");knopf("Notenübersicht",()=>zeigeNoten());knopf("Kürzel nachschlagen",zeigeKuerzel);if(ordner.gruppen.length>1)knopf("Kürzel verknüpfen",zeigeVerknuepfen);knopf("Code-Zuordnung",zeigeCodeZuordnung);if(window.saSicherung)knopf("Sichern",()=>window.saSicherung.zeigen());if(sdExtern())umzugPruefen().then(n=>{if(n)knopf("Schülerdaten umziehen ("+n+")",zeigeUmzug,"primary")});knopf("Neu einlesen",()=>ordnerStart(true));
+    // Helfer 0.23: Noten, Kürzel, Code-Zuordnung stehen in der Lerngruppe; Sichern und Neu einlesen unter ⚙
+    note.textContent="";
+    knopf("+ Neue Lerngruppe",zeigeNeueGruppe);if(sdExtern())umzugPruefen().then(n=>{if(n)knopf("Schülerdaten umziehen ("+n+")",zeigeUmzug,"primary")});
   }else if(ordner.zustand==="an"){
     namen.forEach(n=>{const d=document.createElement("div");d.className="group";d.style.cursor="default";d.innerHTML=`<b>${esc(n)}</b><span class="pill">noch keine Akten</span>`;box.appendChild(d)});
     note.textContent=freigabe()==="erteilt"?"Datenordner verbunden. Noch keine Lerngruppen angelegt.":"Datenordner verbunden. Lernstandsakten gibt es erst, wenn die Schulleitung zugestimmt hat. Bis dahin bleibt dieser Bereich leer.";
@@ -458,7 +467,7 @@ function zeigeGruppe(g){
   const nameVon=k=>{const n=namen[k];return n?[n.vor,n.nach].filter(Boolean).join(" "):""};
   function namenSetzen(){const an=store.get("akten-namen",false);
     slot.querySelectorAll(".kid[data-k]").forEach(b=>{const k=b.dataset.k;if(!k)return;let s=b.querySelector(".nm");
-      const n=an?nameVon(k):"";if(!s){s=document.createElement("span");s.className="nm";b.insertBefore(s,b.querySelector(".o"))}s.textContent=n?" · "+n:"";b.title=n||""});
+      const n=an?nameVon(k):"";if(!s){s=document.createElement("span");s.className="nm";b.insertBefore(s,b.querySelector(".o"))}s.textContent=n?" · "+n:"";b.title=n?n+" (Doppelklick auf den Namen ändert ihn)":"";if(n){s.dataset.nmK=k;s.dataset.nmG=g.id}});
     const w=$("#g-wer");const n=an&&aktiv?nameVon(aktiv):"";w.hidden=!n;w.textContent=n?`${aktiv}: ${n} (Name nur hier angezeigt, geht nicht an Claude)`:"";
     const gb=$("#g-namen");gb.textContent=an?"Namen ausblenden":"Namen einblenden";gb.setAttribute("aria-pressed",String(an))}
   $("#g-namen").addEventListener("click",async()=>{store.set("akten-namen",!store.get("akten-namen",false));if(store.get("akten-namen",false)&&!Object.keys(namen).length)namen=await namenLesen(g.id);namenSetzen();
@@ -516,7 +525,7 @@ function belegtePraefixe(){const s=new Set();ordner.gruppen.forEach(g=>g.akten.f
 function praefixVorschlag(fach){const b=belegtePraefixe();const kand=[...(fach||"").toUpperCase().replace(/[^A-ZÄÖÜ]/g,""),..."ABCDEFGHJKLMNOPQRSTUVWXYZ"];
   for(const c of kand)if(!b.has(c))return c;for(const a of "ABCDEFGHJKLMNOPQRSTUVWXYZ")for(const c of "ABCDEFGHJKLMNOPQRSTUVWXYZ")if(!b.has(a+c))return a+c;return "X"}
 async function schreibRecht(){
-  if(!ordnerHandle)throw new Error("Bitte zuerst rechts den Datenordner verbinden.");
+  if(!ordnerHandle)throw new Error("Bitte zuerst unter „Lerngruppen“ den Datenordner verbinden.");
   let p=await ordnerHandle.queryPermission({mode:"readwrite"});
   if(p!=="granted")p=await ordnerHandle.requestPermission({mode:"readwrite"});
   if(p!=="granted")throw new Error("Ohne Schreibzugriff kann die Seite nichts anlegen. Beim Nachfragen des Browsers „Änderungen speichern“ erlauben.");
@@ -524,7 +533,7 @@ async function schreibRecht(){
 }
 async function sdSchreib(){
   if(!sdExtern())return schreibRecht();
-  if(!sdHandle)throw new Error("Bitte zuerst rechts den Schülerdaten-Ordner verbinden ("+sdPfad("")+").");
+  if(!sdHandle)throw new Error("Bitte zuerst unter „Lerngruppen“ den Schülerdaten-Ordner verbinden ("+sdPfad("")+").");
   let p=await sdHandle.queryPermission({mode:"readwrite"});
   if(p!=="granted")p=await sdHandle.requestPermission({mode:"readwrite"});
   if(p!=="granted")throw new Error("Ohne Schreibzugriff auf den Schülerdaten-Ordner kann die Seite nichts speichern.");
@@ -536,7 +545,7 @@ const kindAkte=(k,id,sj,ld)=>`---\nkuerzel: ${k}\nlerngruppe: ${id}\nschuljahr: 
 function zeigeNeueGruppe(){
   const slot=$("#panel-slot");
   if(ordner.zustand!=="an"){
-    slot.innerHTML=`<div class="panel"><h4>Neue Lerngruppe</h4><p>Dafür braucht die Seite Zugriff auf deinen Datenordner. Bitte rechts zuerst „Datenordner verbinden“ bzw. „Akten anzeigen“ klicken.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;
+    slot.innerHTML=`<div class="panel"><h4>Neue Lerngruppe</h4><p>Dafür braucht die Seite Zugriff auf deinen Datenordner. Bitte unter „Lerngruppen“ zuerst „Datenordner verbinden“ bzw. „Akten anzeigen“ klicken.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;
     $("#p-close").addEventListener("click",()=>slot.innerHTML="");slot.scrollIntoView({block:"nearest",behavior:"smooth"});return;
   }
   if(freigabe()!=="erteilt"){
@@ -663,7 +672,7 @@ function kuerzelSpalten(zeilen){
   const iC=h.findIndex((x,i)=>i!==iK&&/code/.test(x));
   return {kopf,iV,iN,iK,iC,titel:(zeilen[kopf]||[]).map(x=>String(x||"").trim())}}
 async function kuerzellisteLaden(gid){
-  const sd=sdRoot();if(!sd)throw new Error("Bitte zuerst rechts den Datenordner verbinden.");
+  const sd=sdRoot();if(!sd)throw new Error("Bitte zuerst unter „Lerngruppen“ den Datenordner verbinden.");
   let kl=null;try{kl=await sd.getDirectoryHandle("kuerzellisten")}catch{}
   if(kl)for(const art of ["xlsx","csv"]){let fh;try{fh=await kl.getFileHandle(`Kuerzelliste-${gid}.${art}`)}catch{continue}
     const f=await fh.getFile();
@@ -862,7 +871,7 @@ function renderWoche(){
   const ohneDatum=auf.filter(a=>!a.datum).length,ueber=auf.filter(a=>a.datum&&a.datum<heute).length;
   if(ordner.aufgaben&&ordner.aufgaben.length)fuss.push(`${auf.length} offene Punkte in der Aufgabenliste${ueber?`, davon ${ueber} überfällig`:""}${ohneDatum?`, ${ohneDatum} ohne Datum`:""}`);
   else if(ordner.zustand==="an")fuss.push("Noch keine Aufgabenliste (planung/aufgaben.md). Der Postfach-Assistent und der Wochenplaner legen sie an.");
-  else fuss.push("Termine und Aufgaben erscheinen, sobald rechts der Datenordner verbunden ist.");
+  else fuss.push("Termine und Aufgaben erscheinen, sobald unter „Lerngruppen“ der Datenordner verbunden ist.");
   if(plan.events.length){const s=new Date(plan.stand);fuss.push(`Stundenplan: ${esc(plan.quelle)}, Stand ${s.getDate()}.${s.getMonth()+1}. ${hhmm(s)}`)}
   else fuss.push("Noch kein Stundenplan. Klick auf „Stundenplan“.");
   {const k=kalListe(),f=store.get("kal-fehler",{});if(k.length)fuss.push(`Weitere Kalender: ${k.map(x=>esc(x.name)+(f[x.id]?" (nicht abgerufen)":"")).join(", ")}`);
@@ -1039,7 +1048,7 @@ async function zeigeUmzug(){
 /* Kürzel nachschlagen: Kürzel ↔ Name, nur lokal angezeigt */
 async function zeigeKuerzel(){
   const slot=$("#panel-slot");
-  if(ordner.zustand!=="an"||!sdRoot()){slot.innerHTML=`<div class="panel"><h4>Kürzel nachschlagen</h4><p>Dafür bitte rechts zuerst den Datenordner${sdExtern()?" und den Schülerdaten-Ordner":""} verbinden.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
+  if(ordner.zustand!=="an"||!sdRoot()){slot.innerHTML=`<div class="panel"><h4>Kürzel nachschlagen</h4><p>Dafür bitte unter „Lerngruppen“ zuerst den Datenordner${sdExtern()?" und den Schülerdaten-Ordner":""} verbinden.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
   const alle=[],dateien={};
   let kl=null;try{kl=await sdRoot().getDirectoryHandle("kuerzellisten")}catch{}
   for(const g of ordner.gruppen){const m=await namenLesen(g.id);
@@ -1734,9 +1743,9 @@ const wasAkte=e=>e.kat==="NO"?`${e.art||"Sonstige Leistung"}: ${notenWertText(e.
 let R=null;
 async function rasterStarten(gid,stunde){
   const sec=$("#raster");
-  if(ordner.zustand!=="an"){sec.hidden=false;sec.innerHTML=`<div class="r-kopf"><h2>Live-Beobachtung</h2><span class="sp"></span><button class="btn ghost small" id="r-zu">Schließen</button></div><p>Für das Raster braucht die Seite deinen Datenordner. Bitte rechts „Datenordner verbinden“ bzw. „Akten anzeigen“ klicken.</p>`;$("#r-zu").addEventListener("click",()=>sec.hidden=true);sec.scrollIntoView({block:"start",behavior:"smooth"});return}
+  if(ordner.zustand!=="an"){sec.hidden=false;sec.innerHTML=`<div class="r-kopf"><h2>Live-Beobachtung</h2><span class="sp"></span><button class="btn ghost small" id="r-zu">Schließen</button></div><p>Für das Raster braucht die Seite deinen Datenordner. Bitte unter „Lerngruppen“ „Datenordner verbinden“ bzw. „Akten anzeigen“ klicken.</p>`;$("#r-zu").addEventListener("click",()=>sec.hidden=true);sec.scrollIntoView({block:"start",behavior:"smooth"});return}
   const g=ordner.gruppen.find(x=>x.id===gid);
-  if(!g){sec.hidden=false;sec.innerHTML=`<div class="r-kopf"><h2>Live-Beobachtung</h2><span class="sp"></span><button class="btn ghost small" id="r-zu">Schließen</button></div><p>Die Lerngruppe „${esc(gid)}“ gibt es im Datenordner nicht. Lege sie rechts mit „Neue Lerngruppe“ an.</p>`;$("#r-zu").addEventListener("click",()=>sec.hidden=true);return}
+  if(!g){sec.hidden=false;sec.innerHTML=`<div class="r-kopf"><h2>Live-Beobachtung</h2><span class="sp"></span><button class="btn ghost small" id="r-zu">Schließen</button></div><p>Die Lerngruppe „${esc(gid)}“ gibt es im Datenordner nicht. Lege sie unter „Lerngruppen“ mit „+ Neue Lerngruppe“ an.</p>`;$("#r-zu").addEventListener("click",()=>sec.hidden=true);return}
   const fach=((g.gruppeText.match(/^fach:\s*(.+)$/m)||[])[1]||"").trim();
   const heute=heuteISO();const schluessel=`live-${gid}-${heute}`;
   const entwurf=store.get(schluessel,null);
@@ -1834,7 +1843,7 @@ function rasterZeichnen(){
     const sy=leisteSym();
     box.innerHTML=kinderListe().map(k=>{const idx=R.eintraege.map((e,i)=>e.k===k?i:-1).filter(i=>i>=0);const aktiv=R.ersetze!=null&&R.eintraege[R.ersetze].k===k;
       const anw=R.eintraege.find(e=>e.k===k&&e.kat==="A"&&e.st!=="spät"),spaet=R.eintraege.find(e=>e.k===k&&e.kat==="A"&&e.st==="spät");
-      return `<div class="r-zeile${aktiv?" aktiv":""}${anw?" abw":""}" data-k="${esc(k)}"><div class="r-wer2"><span class="k">${esc(k)}</span><span class="n">${esc(anzeigeName(k))}</span>${R.fokus.includes(k)&&!anw?`<span class="r-fok">Fokus</span>`:""}</div><div class="r-anw" role="group" aria-label="Anwesenheit ${esc(k)}"><button class="r-anw-b" data-k="${esc(k)}" data-a="krank" aria-pressed="${anw&&anw.st==="krank"?"true":"false"}" title="Kind ist krank (nochmal antippen hebt auf)">krank</button><button class="r-anw-b" data-k="${esc(k)}" data-a="fehlt" aria-pressed="${anw&&anw.st==="fehlt"?"true":"false"}" title="Kind fehlt, Grund unbekannt (nochmal antippen hebt auf)">fehlt</button><button class="r-anw-b" data-k="${esc(k)}" data-a="spät" aria-pressed="${spaet?"true":"false"}" title="Verspätung mit Minuten eintragen">zu spät</button>${R.spaetOffen===k?`<span class="r-min"><input type="number" min="1" max="120" class="r-min-in" data-k="${esc(k)}" value="${spaet?spaet.sk:spaetVorschlag()}" aria-label="Minuten Verspätung ${esc(k)}"> min <button class="btn ghost small r-min-ok" data-k="${esc(k)}" aria-label="Verspätung speichern">✓</button></span>`:""}</div><div class="r-knoepfe">${R.eingabe!=="knoepfe"?reglerHTML(k):""}${knoepfeGruppen(sy,k,`<button class="sym no r-note-b" data-k="${esc(k)}" aria-pressed="${R.noteOffen===k}" title="Note eintragen (Mitarbeit, Test, Abfrage, Referat …)">Note</button>`)}</div>${R.noteOffen===k?noteFormHTML(k):""}<div class="r-heute">${idx.length?idx.map(chipHTML).join(""):`<span class="r-leer">noch nichts</span>`}${aktiv?`<small class="r-tipp">Neues Symbol wählen oder Notiz bestätigen</small>`:""}</div><div class="r-notizzeile"><input class="r-notiz2" data-k="${esc(k)}" placeholder="Notiz zu ${esc(k)} (keine Namen), Enter speichert" autocomplete="off" aria-label="Notiz zu ${esc(k)}" value="${esc(R.notizen[k]||"")}"><button class="btn ghost small r-ok" data-k="${esc(k)}" aria-label="Notiz zu ${esc(k)} speichern" title="Notiz als Eintrag speichern">✓</button></div></div>`}).join("");
+      return `<div class="r-zeile${aktiv?" aktiv":""}${anw?" abw":""}" data-k="${esc(k)}"><div class="r-wer2"><span class="k">${esc(k)}</span><span class="n" data-nm-g="${esc(R.gid)}" data-nm-k="${esc(k)}">${esc(anzeigeName(k))}</span>${R.fokus.includes(k)&&!anw?`<span class="r-fok">Fokus</span>`:""}</div><div class="r-anw" role="group" aria-label="Anwesenheit ${esc(k)}"><button class="r-anw-b" data-k="${esc(k)}" data-a="krank" aria-pressed="${anw&&anw.st==="krank"?"true":"false"}" title="Kind ist krank (nochmal antippen hebt auf)">krank</button><button class="r-anw-b" data-k="${esc(k)}" data-a="fehlt" aria-pressed="${anw&&anw.st==="fehlt"?"true":"false"}" title="Kind fehlt, Grund unbekannt (nochmal antippen hebt auf)">fehlt</button><button class="r-anw-b" data-k="${esc(k)}" data-a="spät" aria-pressed="${spaet?"true":"false"}" title="Verspätung mit Minuten eintragen">zu spät</button>${R.spaetOffen===k?`<span class="r-min"><input type="number" min="1" max="120" class="r-min-in" data-k="${esc(k)}" value="${spaet?spaet.sk:spaetVorschlag()}" aria-label="Minuten Verspätung ${esc(k)}"> min <button class="btn ghost small r-min-ok" data-k="${esc(k)}" aria-label="Verspätung speichern">✓</button></span>`:""}</div><div class="r-knoepfe">${R.eingabe!=="knoepfe"?reglerHTML(k):""}${knoepfeGruppen(sy,k,`<button class="sym no r-note-b" data-k="${esc(k)}" aria-pressed="${R.noteOffen===k}" title="Note eintragen (Mitarbeit, Test, Abfrage, Referat …)">Note</button>`)}</div>${R.noteOffen===k?noteFormHTML(k):""}<div class="r-heute">${idx.length?idx.map(chipHTML).join(""):`<span class="r-leer">noch nichts</span>`}${aktiv?`<small class="r-tipp">Neues Symbol wählen oder Notiz bestätigen</small>`:""}</div><div class="r-notizzeile"><input class="r-notiz2" data-k="${esc(k)}" placeholder="Notiz zu ${esc(k)} (keine Namen), Enter speichert" autocomplete="off" aria-label="Notiz zu ${esc(k)}" value="${esc(R.notizen[k]||"")}"><button class="btn ghost small r-ok" data-k="${esc(k)}" aria-label="Notiz zu ${esc(k)} speichern" title="Notiz als Eintrag speichern">✓</button></div></div>`}).join("");
     box.querySelectorAll(".r-notiz2").forEach(f=>{f.addEventListener("input",()=>{R.notizen[f.dataset.k]=f.value});f.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();rasterNotizBestaetigen(f.dataset.k)}})});
     box.querySelectorAll(".r-ok").forEach(b=>b.addEventListener("click",()=>rasterNotizBestaetigen(b.dataset.k)));
     reglerVerdrahten(box,x=>x.dataset.k);
@@ -1851,7 +1860,7 @@ function rasterZeichnen(){
   }else kinderListe().forEach(k=>{
     const b=document.createElement("button");b.className="kind"+(R.fokus.includes(k)&&!abwesend(k)?" fokus":"")+(abwesend(k)?" abw":"")+(R.anordnen?" ziehen":"");b.dataset.k=k;b.setAttribute("aria-pressed",R.wahl===k?"true":"false");
     const meine=R.eintraege.filter(e=>e.k===k);
-    b.innerHTML=`<span class="k">${esc(k)}</span><span class="n">${esc(anzeigeName(k))||"&nbsp;"}</span><span class="e">${meine.map(e=>esc(symText(e.kat,e.st,e.sk,e.art))).join(" ")}</span>`;
+    b.innerHTML=`<span class="k">${esc(k)}</span><span class="n"${anzeigeName(k)?` data-nm-g="${esc(R.gid)}" data-nm-k="${esc(k)}"`:""}>${esc(anzeigeName(k))||"&nbsp;"}</span><span class="e">${meine.map(e=>esc(symText(e.kat,e.st,e.sk,e.art))).join(" ")}</span>`;
     if(R.anordnen){b.draggable=true;
       b.addEventListener("dragstart",ev=>{ev.dataTransfer.setData("text/plain",k)});
       b.addEventListener("dragover",ev=>{ev.preventDefault();b.classList.add("ueber")});
@@ -2137,7 +2146,7 @@ async function zeigeNoten(gidStart,opt){
       reg.push({k,x,neu});return `<button type="button" class="${cls}" data-c="${reg.length-1}" title="${tip}${neu?" – antippen zum Zurücknehmen":" – antippen zum Korrigieren oder Streichen"}">${esc(wertAnz(x))}</button>`}).join("");
     const gilt=x=>x.filter(e=>!e.alt);const hatTests=daten.some(x=>x.te.length);
     const zeilen=reihe.map(k=>{const d=daten.find(x=>x.k===k);
-      return `<tr${ed&&ed.k===k?' class="n-akt"':""}><td class="m">${esc(k)}</td>${zeigN?`<td>${esc(nameVon(k))}</td>`:""}
+      return `<tr${ed&&ed.k===k?' class="n-akt"':""}><td class="m">${esc(k)}</td>${zeigN?`<td data-nm-g="${esc(gid)}" data-nm-k="${esc(k)}" title="Doppelklick: Namen ändern">${esc(nameVon(k))}</td>`:""}
         <td>${modus==="einzeln"||bearb?`<div class="n-liste">${zellen(d.mm,k)||'<span class="n-leer">–</span>'}</div>`:`<span class="n-anz">${gilt(d.mm).length} Noten</span>`}</td>
         ${hatTests?`<td><div class="n-liste">${zellen(d.te,k)}</div></td>`:""}
         <td class="m b">${zeigGenau(d.mu)}</td>
@@ -2312,7 +2321,7 @@ function auswertenMitClaude(gid){
 $("#q").addEventListener("input",render);
 $("#q").addEventListener("keydown",e=>{
   if(e.key==="Escape"){e.target.value="";render()}
-  if(e.key==="Enter"){const erste=$("#area .tile .go");if(erste)erste.click();else if($("#frei"))$("#frei").click()}
+  if(e.key==="Enter"){const erste=$("#area .such-ziel, #area .tile .go");if(erste)erste.click();else if($("#frei"))$("#frei").click()}
 });
 /* ---------- Materiallager (Skill materiallager) ---------- */
 const MAT_E=Object.assign({wurzel:"",ausschliessen:[],quellen_ordner:"90_Quellen"},E.materiallager||{});

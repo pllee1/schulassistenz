@@ -376,88 +376,230 @@ button.kq{cursor:pointer} button.kq[aria-pressed="false"]{color:var(--muted);tex
 #tipp{position:fixed;z-index:9999;max-width:300px;padding:7px 10px;border-radius:8px;background:#12110f;color:var(--ink);border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.45);font:13px/1.45 var(--f-body);pointer-events:none;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s}
 #tipp.an{opacity:1;transform:none}
 #tipp b{color:var(--accent);font-weight:600}
+
+/* ===== Helfer neu sortiert (0.23): Kopf mit Bereichen, Ansichten statt Fenster, Fenster mittig ===== */
+.wrap{gap:16px}
+.kopf{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 0 10px;background:linear-gradient(var(--bg) 82%,transparent)}
+.kopf h1{font-size:24px;gap:10px}.kopf h1 img{width:32px;height:32px}.kopf h1::after{margin-left:-10px}
+nav.bereiche{display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+nav.bereiche a{padding:6px 15px;border-radius:9px;color:var(--muted);font-weight:600;font-size:14.5px;text-decoration:none}
+nav.bereiche a:hover{color:var(--ink)}
+nav.bereiche a[aria-current="page"]{background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 0 0 1px rgba(143,179,232,.35)}
+.kopf .search{flex:1 1 260px;position:relative;min-width:200px}
+.kopf .search input{font-size:15px;padding:9px 40px 9px 12px;border-radius:12px}
+.such-taste{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--f-mono);font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 6px;pointer-events:none}
+.kopf .search input:focus+.such-taste{display:none}
+.rad{position:relative;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--muted);font-size:19px;text-decoration:none}
+.rad:hover,.rad[aria-current="page"]{color:var(--ink);border-color:var(--accent)}
+.rad .punkt{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--warn)}
+kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);border-radius:5px;padding:0 5px;background:var(--surface2)}
+.hinweise{display:grid;gap:8px}.hinweise:empty{display:none}
+.hinweise>*{margin:0!important}
+.sich-hinweis,.hw{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:13.5px;padding:7px 12px;border-radius:10px;background:var(--warn-soft);color:var(--warn);border:0}
+.sich-hinweis p{margin:0;flex:1 1 300px}.hw span{flex:1 1 300px}
+.ansicht{display:grid;gap:16px;min-width:0}
+body.live-an .ansicht{display:none}
+.karte{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+h2.t,.tag-kopf h2,.wz-kopf h2,.lg-kopf h2{font-family:var(--f-display);font-weight:700;font-size:22px;margin:0}
+/* Heute */
+.heute-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;align-items:start}
+.heute-links{display:grid;gap:18px;min-width:0}
+.tag-kopf{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px;margin-bottom:12px}.tag-kopf .kw{font-size:13px;color:var(--muted)}
+.tl{display:grid;gap:8px}
+.st{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:9px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--line)}
+.st .z{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.st b{font-weight:600}.st small{display:block;color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis}
+.st .akt{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.st.vorbei{opacity:.55}.st.vorbei:hover{opacity:1}
+.st.jetzt{background:var(--live-soft);border-color:rgba(233,120,106,.55)}
+.st.termin{background:var(--ok-soft);border-color:transparent}.st.termin.frist{background:var(--warn-soft)}
+.st.aus b{text-decoration:line-through;color:var(--muted)}
+.jetzt-tag{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--live);margin-left:8px}
+.tl-leer{font-size:13.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#woche-sec .alt,#w-zu{display:none}
+#naechstes{margin:0}
+#naechstes .nx-liste{grid-auto-flow:row;grid-auto-columns:auto;overflow:visible;padding-bottom:0}
+#naechstes .nx-hinweis,#naechstes #nx-zu{display:none}
+#naechstes .nx-kopf h3{font-family:var(--f-display);font-style:normal;font-weight:700;font-size:22px}
+#naechstes .nx-karte{background:var(--surface2)}
+.schnell{display:flex;flex-wrap:wrap;gap:8px}
+.schnell .tile{min-height:0;border-radius:99px;border-left-width:1px;display:flex;align-items:center}
+.schnell .tile .go{padding:7px 32px 7px 14px}.schnell .tile .meta,.schnell .tile .d{display:none}
+.schnell .tile strong{font-size:13.5px}.schnell .star{top:50%;transform:translateY(-50%);right:6px;opacity:.9}
+.schnell .empty{grid-column:auto}
+/* Lerngruppen */
+.lg{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;align-items:start}
+.lg-leiste{position:sticky;top:76px}
+.lg-leiste .group[aria-current="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.lg-haupt{display:grid;gap:12px}
+.lg-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.lg-kopf h2{font-family:var(--f-mono);font-weight:500}
+.lg-kopf .info{color:var(--muted);font-size:14px}.lg-kopf .sp{flex:1}
+.reiter{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--line)}
+.reiter button{all:unset;cursor:pointer;padding:8px 14px;color:var(--muted);font-size:14px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.reiter button:hover{color:var(--ink)}
+.reiter button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.reiter button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#lg-inhalt #panel-slot>.panel{border:0;padding:0;background:transparent}
+#v-einstellungen #einr-auf,#v-einstellungen #einr-weg,#v-einstellungen #einr-pruefen{display:none}
+#lg-inhalt .panel:has(#kids) #p-close,#lg-inhalt #n-close,#lg-inhalt #kl-zurueck,#lg-inhalt #g-noten,#lg-inhalt #g-liste,#lg-inhalt .r-skala:has(#n-gruppe),#lg-inhalt .r-skala:has(#fz-gruppe),#lg-inhalt .panel:has(#fz-gruppe) .p-kopf>#p-close{display:none}
+#lg-inhalt .panel:has(#kids)>.p-kopf h4,#lg-inhalt .panel[aria-label="Notenübersicht"]>.p-kopf,#lg-inhalt .panel:has(#kl-tab)>.p-kopf h4{display:none}
+#lg-inhalt .panel[aria-label="Notenübersicht"]>.p-kopf{display:none}
+#fz-side{display:none}
+.lg-claude{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--accent-soft)}
+.lg-claude .t{font-size:11.5px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-right:4px}
+.lg-claude .btn{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.lg-leer{color:var(--muted);font-size:14px;padding:30px 10px;text-align:center}
+/* Werkzeuge */
+.wz-kopf{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+#v-werkzeuge #area{display:block;columns:3 280px;column-gap:16px}
+#v-werkzeuge #area:has(.such-liste),#v-werkzeuge #area:has(.empty){columns:auto}
+#lg-inhalt #n-leb{display:none}
+.wz-gruppe{break-inside:avoid;margin:0 0 16px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:12px;padding:10px 12px 6px;display:grid}
+.wz-gruppe h3{font-style:normal;font-weight:700;font-size:15.5px;color:var(--c);margin:2px 2px 4px}
+.wz-gruppe .tile{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;min-height:0}
+.wz-gruppe .tile:first-of-type{border-top:0}
+.wz-gruppe .tile:hover{background:var(--surface2)}
+.wz-gruppe .tile .go{padding:7px 34px 7px 4px;gap:0}
+.wz-gruppe .tile strong{font-size:14px}.wz-gruppe .tile .d{font-size:12px;line-height:1.35}
+.wz-gruppe .tile .meta{order:2;display:none}
+.wz-gruppe .tile.pc strong::after,.such-liste .tile.pc strong::after{content:"PC";font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--ok);margin-left:7px;vertical-align:1px}
+.wz-gruppe .star{top:6px}
+.such-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.such-liste .meta{display:none}
+.such-ziel{all:unset;box-sizing:border-box;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:4px 10px 10px 4px;padding:10px 13px;display:grid;gap:2px}
+.such-ziel:hover,.such-ziel:focus-visible{border-color:var(--accent)}
+.such-ziel b{font-weight:600}.such-ziel small{color:var(--muted);font-size:12.5px}
+.such-h{column-span:all;font-family:var(--f-display);font-style:italic;font-size:15px;color:var(--muted);margin:4px 0 8px}
+/* Einstellungen */
+.einst-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.einst-grid .karte{display:grid;gap:8px;align-content:start}
+.einst-grid h3{margin:0}
+#v-einstellungen .einr{margin:0}
+/* Fenster mittig */
+.dialog{position:fixed;inset:0;z-index:50;background:rgba(10,9,8,.62);display:grid;place-items:start center;padding:6vh 16px 16px;overflow:auto}
+.dialog-box{width:min(880px,100%)}
+.dialog-box .panel{box-shadow:0 18px 50px rgba(0,0,0,.5)}
+/* Namen per Doppelklick */
+[data-nm-k]{cursor:text}
+[data-nm-k]:hover{text-decoration:underline dotted var(--muted);text-underline-offset:3px}
+.nm-edit{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:10px;display:grid;gap:8px;box-shadow:0 12px 30px rgba(0,0,0,.5);width:300px}
+.nm-edit .zeile{display:flex;gap:6px}.nm-edit input{flex:1 1 0;min-width:0;width:0}
+.nm-edit small{color:var(--muted);font-size:12px}
+.nm-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok);border-radius:10px;padding:8px 14px;font-size:13.5px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.nm-toast.fehler{background:var(--err-soft);color:var(--err);border-color:var(--err)}
+@media (max-width:900px){.heute-grid,.lg{grid-template-columns:1fr}.lg-leiste{position:static}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="banner" class="banner err" hidden></div>
 
-  <header>
+  <!-- Kopf (Helfer 0.23, „Helfer neu sortiert“): drei Bereiche, Suche, Zahnrad. Jede Funktion hat genau einen Ort. -->
+  <header class="kopf" id="kopf">
     <h1><img src="../icon48.png" alt="">Schulassistenz</h1>
-    <div class="status" id="status"></div>
+    <nav class="bereiche" id="nav" aria-label="Bereiche">
+      <a href="#heute" data-v="heute" title="Heute (Alt+1)">Heute</a>
+      <a href="#gruppen" data-v="gruppen" title="Lerngruppen (Alt+2)">Lerngruppen</a>
+      <a href="#werkzeuge" data-v="werkzeuge" title="Werkzeuge (Alt+3)">Werkzeuge</a>
+    </nav>
+    <div class="search">
+      <input id="q" type="search" placeholder="Suchen oder Auftrag an Claude …" aria-label="Werkzeug, Lerngruppe oder Kürzel suchen" autocomplete="off">
+      <kbd class="such-taste" aria-hidden="true">/</kbd>
+    </div>
+    <a class="rad" id="nav-einst" href="#einstellungen" data-v="einstellungen" aria-label="Einrichtung und Daten" title="Einrichtung und Daten (Alt+0)">⚙<span class="punkt" id="rad-punkt" hidden></span></a>
   </header>
 
-  <section id="einr" hidden aria-label="Einrichtung auf diesem PC"></section>
+  <div id="hinweise" class="hinweise"></div>
 
-  <div class="search">
-    <input id="q" type="search" placeholder="Was möchtest du tun? z. B. Klausur, Eltern, Arbeitsblatt" aria-label="Werkzeug suchen" autocomplete="off">
-    <p class="hint">Tippe ein Stichwort. Findet die Suche nichts, kannst du deinen Text direkt an Claude schicken. Esc leert das Feld.</p>
-  </div>
-
-  <section id="naechstes" hidden aria-labelledby="nx-h"></section>
-
-  <div id="panel-slot"></div>
   <section id="raster" hidden aria-label="Live-Beobachtung"></section>
 
-  <div class="top">
-    <section class="live" aria-labelledby="live-h">
-      <h2 id="live-h">Live-Beobachtung</h2>
-      <p>Liste mit deinen Kürzeln und Namen: in der Zeile des Kindes ein Symbol antippen (oder als Sitzplan-Raster). Am Ende freigeben, dann landet alles in den Akten.</p>
-      <p id="live-test" hidden>Solange die Schulleitung nicht zugestimmt hat, nur mit Testkürzeln.</p>
-      <div class="row">
-        <select id="live-gruppe" class="live-wahl" aria-label="Lerngruppe"><option value="">Lerngruppe wählen …</option></select>
-        <button class="btn live-btn" id="live-go">Starten</button>
+  <!-- Heute -->
+  <section class="ansicht" id="v-heute" data-v="heute" aria-label="Heute">
+    <div class="heute-grid">
+      <div class="heute-links">
+        <section class="karte" id="tag-sec" aria-labelledby="tag-h">
+          <div class="tag-kopf"><h2 id="tag-h">Heute</h2><span class="kw" id="tag-kw"></span></div>
+          <div id="tag-liste" class="tl"></div>
+        </section>
+        <section id="woche-sec" aria-labelledby="woche-h">
+          <div class="woche-kopf">
+            <h3 id="woche-h">Woche</h3><span class="kw w-nav" id="woche-kw"></span><span class="sp"></span>
+            <button class="btn ghost small w-nav" id="w-zurueck" aria-label="Vorige Woche">‹</button>
+            <button class="btn ghost small w-nav" id="w-heute">Aktuell</button>
+            <button class="btn ghost small w-nav" id="w-vor" aria-label="Nächste Woche">›</button>
+            <button class="btn ghost small w-nav" id="w-kal" aria-expanded="false" aria-controls="kal-sec">Kalender</button>
+            <button class="btn ghost small w-nav alt" id="w-plan">Stundenplan</button>
+            <button class="btn ghost small w-nav alt" id="w-planen">Woche planen</button>
+            <button class="btn ghost small alt" id="w-zu" aria-expanded="true" aria-controls="woche-koerper">Ausblenden</button>
+          </div>
+          <div id="woche-koerper">
+            <div class="woche" id="woche"></div>
+            <div class="woche-fuss" id="woche-fuss"></div>
+            <div id="kal-sec" hidden aria-label="Kalender"></div>
+          </div>
+        </section>
+        <section aria-labelledby="fav-h" class="schnell-sec">
+          <h3 id="fav-h">Schnellstart</h3>
+          <div class="tiles schnell" id="favs"></div>
+        </section>
       </div>
-    </section>
-    <section aria-labelledby="fav-h" style="min-width:0">
-      <h3 id="fav-h">Favoriten</h3>
-      <div class="tiles" id="favs"></div>
-    </section>
-  </div>
-
-  <section id="woche-sec" aria-labelledby="woche-h">
-    <div class="woche-kopf">
-      <h3 id="woche-h">Woche</h3><span class="kw w-nav" id="woche-kw"></span><span class="sp"></span>
-      <button class="btn ghost small w-nav" id="w-zurueck" aria-label="Vorige Woche">‹</button>
-      <button class="btn ghost small w-nav" id="w-heute">Aktuell</button>
-      <button class="btn ghost small w-nav" id="w-vor" aria-label="Nächste Woche">›</button>
-      <button class="btn ghost small w-nav" id="w-kal" aria-expanded="false" aria-controls="kal-sec">Kalender</button>
-      <button class="btn ghost small w-nav" id="w-plan">Stundenplan</button>
-      <button class="btn ghost small w-nav" id="w-planen">Woche planen</button>
-      <button class="btn ghost small" id="w-zu" aria-expanded="true" aria-controls="woche-koerper" title="Woche und Kalender ein- oder ausblenden, bleibt so gespeichert">Ausblenden</button>
-    </div>
-    <div id="woche-koerper">
-    <div class="woche" id="woche"></div>
-    <div class="woche-fuss" id="woche-fuss"></div>
-    <div id="kal-sec" hidden aria-label="Kalender"></div>
+      <section id="naechstes" class="karte" hidden aria-labelledby="nx-h"></section>
     </div>
   </section>
 
-  <div class="main">
-    <div class="col">
-      <section id="recent-sec" aria-labelledby="rec-h" hidden>
-        <h3 id="rec-h">Zuletzt benutzt</h3>
-        <div class="tiles" id="recent"></div>
-      </section>
-      <section aria-labelledby="all-h">
-        <h3 id="all-h">Alle Werkzeuge</h3>
-        <div class="tabs" role="tablist" id="tabs"></div>
-        <div class="tiles" id="area"></div>
+  <!-- Lerngruppen -->
+  <section class="ansicht" id="v-gruppen" data-v="gruppen" hidden aria-label="Lerngruppen">
+    <div class="lg">
+      <aside class="side lg-leiste" aria-labelledby="lg-h">
+        <h3 id="lg-h">Meine Lerngruppen</h3>
+        <div id="groups"></div>
+        <p class="note" id="ordner-note"></p>
+        <div class="actions" id="ordner-actions"></div>
+      </aside>
+      <section class="karte lg-haupt" id="lg-haupt" aria-live="polite">
+        <div id="lg-kopf" class="lg-kopf"></div>
+        <div id="lg-reiter" class="reiter" role="tablist" aria-label="Bereiche der Lerngruppe"></div>
+        <div id="lg-extra" class="actions lg-extra" hidden></div>
+        <div id="lg-inhalt"></div>
+        <div id="lg-claude" class="lg-claude" hidden></div>
       </section>
     </div>
-    <aside class="side" aria-labelledby="lg-h">
-      <h3 id="lg-h">Lerngruppen und Akten</h3>
-      <div id="groups"></div>
-      <p class="note" id="ordner-note"></p>
-      <div class="actions" id="ordner-actions"></div>
-    </aside>
-  </div>
+  </section>
 
-  <footer>
-    <span id="namen-ort">Claude bekommt nur Kürzel. Namen stehen nur in deiner Kürzelliste auf diesem Rechner.</span>
-    <span><button class="linkbtn" id="einr-pruefen">Einrichtung prüfen</button> · <span id="version"></span></span>
-  </footer>
+  <!-- Werkzeuge -->
+  <section class="ansicht" id="v-werkzeuge" data-v="werkzeuge" hidden aria-labelledby="all-h">
+    <div class="wz-kopf"><h2 id="all-h">Werkzeuge</h2><p class="note" id="wz-hinweis">Alles auf einer Seite, nach Tätigkeit sortiert. ★ setzt ein Werkzeug in den Schnellstart. „PC“ heißt: läuft auf diesem Rechner, ohne Claude.</p></div>
+    <div class="tiles" id="area"></div>
+  </section>
+
+  <!-- Einrichtung & Daten -->
+  <section class="ansicht" id="v-einstellungen" data-v="einstellungen" hidden aria-labelledby="einst-h">
+    <div class="wz-kopf"><h2 id="einst-h">Einrichtung &amp; Daten</h2><div class="status" id="status"></div></div>
+    <section id="einr" hidden aria-label="Einrichtung auf diesem PC"></section>
+    <div class="einst-grid">
+      <section class="karte"><h3>Schülerdaten</h3><p class="note" id="einst-daten-note"></p><div class="actions" id="einst-daten"></div></section>
+      <section class="karte"><h3>Kalender und Stundenplan</h3><p class="note">Stundenplan-Link aus WebUntis, weitere Kalender (IServ, Schulkalender) und ihre Filter.</p><div class="actions" id="einst-kal"></div></section>
+      <section class="karte"><h3>Bedienung</h3><p class="note"><kbd>/</kbd> Suche · <kbd>Esc</kbd> Fenster schließen · <kbd>Alt</kbd>+<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> Heute, Lerngruppen, Werkzeuge · <kbd>Alt</kbd>+<kbd>0</kbd> diese Seite. Namen: Doppelklick auf einen Namen ändert ihn in der Kürzelliste.</p><div class="actions" id="einst-bed"></div></section>
+    </div>
+    <h3 style="margin-top:6px">Dateien und Ordner</h3>
+    <div class="tiles" id="einst-dateien"></div>
+    <footer>
+      <span id="namen-ort">Claude bekommt nur Kürzel. Namen stehen nur in deiner Kürzelliste auf diesem Rechner.</span>
+      <span><button class="linkbtn" id="einr-pruefen">Einrichtung prüfen</button> · <span id="version"></span></span>
+    </footer>
+  </section>
+
+  <!-- Ältere Bedienelemente, die der Code noch anspricht; bleiben unsichtbar -->
+  <div id="alt" hidden>
+    <div id="recent-sec"><div id="recent"></div></div>
+    <div id="tabs"></div>
+    <section class="live"><p id="live-test" hidden></p><select id="live-gruppe"><option value=""></option></select><button id="live-go"></button></section>
+  </div>
 </div>
+
+<!-- Fenster (Aufträge, Termine, Sicherung …) erscheinen mittig über der Seite -->
+<div id="dialog" class="dialog" hidden><div class="dialog-box" role="dialog" aria-modal="true" aria-label="Fenster"><div id="panel-slot"></div></div></div>
 <datalist id="gruppen-liste"></datalist>
 
 </body>

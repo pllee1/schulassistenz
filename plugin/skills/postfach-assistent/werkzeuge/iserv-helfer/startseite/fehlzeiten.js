@@ -292,7 +292,7 @@ async function seitenleiste(){
 
 async function zeigen(gid){
   const slot=$("#panel-slot");
-  if(ordner.zustand!=="an"||!sdRoot()){slot.innerHTML=`<div class="panel"><h4>Fehlzeiten-Ampel</h4><p>Dafür braucht die Seite deine Akten und Kürzellisten. Bitte rechts zuerst den Datenordner${sdExtern()?" und den Schülerdaten-Ordner":""} verbinden.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
+  if(ordner.zustand!=="an"||!sdRoot()){slot.innerHTML=`<div class="panel"><h4>Fehlzeiten-Ampel</h4><p>Dafür braucht die Seite deine Akten und Kürzellisten. Bitte unter „Lerngruppen“ zuerst den Datenordner${sdExtern()?" und den Schülerdaten-Ordner":""} verbinden.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
   if(!F||(gid&&F.gid!==gid)){const g=gid||store.get("fz-gruppe","")||((ordner.gruppen.find(x=>/^\d+[a-z]/i.test(x.id))||ordner.gruppen[0]||{}).id);
     const s=g?await standLesen(g):null;F=s?{gid:g,zeilen:s.zeilen,stand:s.stand,zeitraum:s.zeitraum,quelle:"gespeicherter Stand",neu:false}:{gid:g,zeilen:null}}
   zeichnen();slot.scrollIntoView({block:"nearest",behavior:"smooth"});
@@ -310,7 +310,7 @@ function zeichnen(meldung){
       const nm=zeigeNamen&&namen[x.k]?`<div class="nm">${esc([namen[x.k].vor,namen[x.k].nach].filter(Boolean).join(" "))}</div>`:"";
       return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td><td class="z">${fmt(x.unent)}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td><td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
   }
-  const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (rechts „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>{const a=(F.aehnlich&&F.aehnlich.get(n))||[];return `<li>${esc(n)} (${c} Zeilen)${a.length?` · ähnlich in der Kürzelliste: ${a.map(e=>`${esc(e.kuerzel)} ${esc(e.anzeige)} (${esc(e.gruppe)})`).join(", ")}. Steht dort der Name anders geschrieben oder fehlt der Nachname?`:""}</li>`}).join("")}</ul></div>`:"";
+  const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (Lerngruppe › Akten › „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>{const a=(F.aehnlich&&F.aehnlich.get(n))||[];return `<li>${esc(n)} (${c} Zeilen)${a.length?` · ähnlich in der Kürzelliste: ${a.map(e=>`${esc(e.kuerzel)} ${esc(e.anzeige)} (${esc(e.gruppe)})`).join(", ")}. Steht dort der Name anders geschrieben oder fehlt der Nachname?`:""}</li>`}).join("")}</ul></div>`:"";
   const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> Ist in WebUntis als Zeitraum „Aktuelles Schuljahr“ eingestellt? Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung.</div>`:"";
   const klasseHinweis=F.neu&&F.klassen&&F.klassen.length===1&&!F.gid.toLowerCase().startsWith(F.klassen[0].toLowerCase())?`<div class="fz-warn">Die Datei ist für die Klasse ${esc(F.klassen[0])}, angezeigt wird ${esc(F.gid)}. Oben unter „Lerngruppe“ kannst du wechseln.</div>`:"";
   const ohne=F.ohne?`<div class="fz-warn">${F.ohne} Zeilen gehören zu Kindern aus anderen Lerngruppen und sind hier nicht enthalten. Andere Lerngruppe wählen, um sie zu sehen.</div>`:"";
@@ -382,7 +382,7 @@ async function holenUeberTab(){
 }
 async function speichern(){
   const g=$("#fz-guard");g.hidden=true;
-  try{await standSpeichern(F.gid,F.zeilen,F.quelle,F.zeitraum);F.neu=false;F.roh=null;F.fehlend=null;F.ohne=0;await seitenleiste();zeichnen("Gespeichert (nur Kürzel). Die Ampel steht jetzt auch rechts.")}
+  try{await standSpeichern(F.gid,F.zeilen,F.quelle,F.zeitraum);F.neu=false;F.roh=null;F.fehlend=null;F.ohne=0;await seitenleiste();zeichnen("Gespeichert (nur Kürzel). Die Ampel steht jetzt im Reiter „Fehlzeiten“ der Lerngruppe.")}
   catch(e){g.hidden=false;g.textContent=e.message||"Speichern hat nicht geklappt."}
 }
 function informiertFragen(k){
