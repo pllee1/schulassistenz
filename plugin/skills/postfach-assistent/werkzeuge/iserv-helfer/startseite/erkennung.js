@@ -13,7 +13,7 @@ if(typeof kalListe!=="function")return;
 /* ---------- Arten von Terminen ---------- */
 /* Reihenfolge zählt: die erste passende Art gewinnt. */
 const ARTEN=[
-  {id:"mitarbeit",name:"Mitarbeitsnote (Quartal)",farbe:"warn",muster:/^Mitarbeitsnote( \d\. Quartal)? vor den /,nurIntern:true},
+  {id:"mitarbeit",name:"Mitarbeitsnote (Quartal)",farbe:"warn",muster:/^Mitarbeitsnote( \d\. Quartal)? (vor den |bis zum )/,nurIntern:true},
   {id:"konf-zeugnis",name:"Zeugnis-/Klassenkonferenz",farbe:"warn",
    muster:/zeugniskonferenz|klassenkonferenz|p(ä|ae)d(agogische|\.)?\s*konf|notenkonferenz|versetzungskonferenz|\bzk\b/i},
   {id:"notenschluss",name:"Notenschluss / Noteneingabe",farbe:"warn",
@@ -149,29 +149,52 @@ function ferienListe(){
    Ohne drei bekannte große Ferien: null (dann gelten feste Monate). */
 const tageZw=(a,b)=>Math.round((new Date(b+"T12:00")-new Date(a+"T12:00"))/864e5);
 function grosseFerien(sj){const j=+sj;return ferienListe().filter(f=>tageZw(f.von,f.bis)>=4&&f.von>=`${j}-08-15`&&f.von<=`${j+1}-06-30`)}
+/* Notenschluss zum Halbjahr (1.12.–15.2.) und am Schuljahresende (15.4.–31.7.): Kalendertermin („Notenschluss“,
+   „Noteneingabe“ …) oder notenschluss in meine-einstellungen.js (Datum oder Liste).
+   Das 2. Quartal endet am Halbjahres-Notenschluss, das 4. am Notenschluss zum Schuljahresende. */
+function notenschluss(sj,halbjahr){
+  const j=+sj,a=halbjahr?`${j}-12-01`:`${j+1}-04-15`,b=halbjahr?`${j+1}-02-15`:`${j+1}-07-31`,l=[];
+  [].concat(E.notenschluss||[]).forEach(x=>{if(/^\d{4}-\d{2}-\d{2}$/.test(String(x)))l.push(String(x))});
+  const ns=ARTEN.find(x=>x.id==="notenschluss").muster;
+  for(const k of kalListe()){if(!k.an)continue;for(const e of (k.events||[]))if(e.start&&ns.test(e.titel||""))l.push(isoTag(e.start))}
+  return l.filter(d=>d>=a&&d<=b).sort().pop()||"";
+}
 function quartale(sj){
-  const j=+sj;if(!j)return null;const g=grosseFerien(sj).slice(0,3);if(g.length<3)return null;
-  return [[`${j}-08-01`,g[0].bis],[plusT(g[0].bis,1),g[1].bis],[plusT(g[1].bis,1),g[2].bis],[plusT(g[2].bis,1),`${j+1}-07-31`]];
+  const j=+sj;if(!j)return null;const g=grosseFerien(sj).slice(0,3),ns=notenschluss(sj),hj=notenschluss(sj,true);
+  if(g.length<3&&!ns&&!hj)return null;
+  const e=g.length<3?[`${j}-10-31`,`${j+1}-01-31`,`${j+1}-04-30`]:[g[0].bis,g[1].bis,g[2].bis];
+  if(hj)e[1]=hj;
+  const ende4=ns||`${j+1}-07-31`;
+  return [[`${j}-08-01`,e[0]],[plusT(e[0],1),e[1]],[plusT(e[1],1),e[2]],[plusT(e[2],1),ende4]];
 }
 function schuljahrVon(iso){const [y,m]=iso.split("-").map(Number);return m>=8?y:y-1}
 function letzterSchultag(iso){let d=plusT(iso,-1);for(let i=0;i<4;i++){const w=new Date(d+"T12:00").getDay();if(w!==0&&w!==6)break;d=plusT(d,-1)}return d}
-function ferienErinnerungen(von,bis){
-  const fl=ferienListe(),heute=isoTag(new Date()),out=[];
-  fl.forEach((f,i)=>{
-    if(tageZw(f.von,f.bis)<4)return;  // nur große Ferien (Herbst, Weihnachten, Ostern, Sommer)
-    const tag=letzterSchultag(f.von);
-    const tage=Math.round((new Date(tag+"T00:00")-new Date(heute+"T00:00"))/864e5);
-    if(tage>21||tage<-2||new Date(tag+"T12:00")<von||new Date(tag+"T12:00")>bis)return;
-    const sj=schuljahrVon(f.von),q=quartale(sj);
-    const qn=q?q.findIndex(x=>f.von>=x[0]&&f.von<=x[1])+1:0;
-    const ab=q&&qn?q[qn-1][0]:i>0?plusT(fl[i-1].bis,1):plusT(f.von,-70);
+/* Anlässe für die Mitarbeitsnote: vor Herbst- und Osterferien; 2. und 4. Quartal zum Notenschluss
+   (ohne bekannten Notenschluss: vor den Weihnachts- bzw. Sommerferien). */
+function mmAnlaesse(){
+  const fl=ferienListe().filter(f=>tageZw(f.von,f.bis)>=4),out=[];
+  fl.forEach((f,i)=>{const sj=schuljahrVon(f.von);
+    if(f.von>=`${sj+1}-06-01`&&notenschluss(sj))return;  // Sommer: stattdessen Notenschluss
+    if(f.von>=`${sj}-12-01`&&f.von<=`${sj+1}-02-15`&&notenschluss(sj,true))return;  // Weihnachten/Halbjahr: stattdessen Halbjahres-Notenschluss
     const name=/ferien/i.test(f.name)?f.name.replace(/^\s*(die\s+)?/i,""):"Ferien";
+    out.push({tag:letzterSchultag(f.von),grenze:f.von,sj,titelEnde:`vor den ${name}`,quelle:"Erinnerung (Ferienbeginn "+datumDE(f.von)+")",vorher:i>0?plusT(fl[i-1].bis,1):plusT(f.von,-70)})});
+  const jetzt=schuljahrVon(isoTag(new Date()));
+  [jetzt,jetzt-1].forEach(sj=>[true,false].forEach(h=>{const ns=notenschluss(sj,h);if(ns)out.push({tag:ns,grenze:plusT(ns,1),sj,titelEnde:h?"bis zum Notenschluss (Halbjahr)":"bis zum Notenschluss",quelle:"Erinnerung (Notenschluss "+datumDE(ns)+")",vorher:plusT(ns,-70)})}));
+  return out;
+}
+function ferienErinnerungen(von,bis){
+  const heute=isoTag(new Date()),out=[];
+  for(const x of mmAnlaesse()){
+    const tage=tageZw(heute,x.tag);
+    if(tage>21||tage<-2||new Date(x.tag+"T12:00")<von||new Date(x.tag+"T12:00")>bis)continue;
+    const q=quartale(x.sj);const qn=q?q.findIndex(r=>x.tag>=r[0]&&x.tag<=r[1])+1:0;
+    const ab=q&&qn?q[qn-1][0]:x.vorher;
     for(const g of (ordner.gruppen||[])){
       const info=gruppeInfo(g);let wenig=0,ohne=0;
-      g.akten.forEach(a=>{const n=(typeof notenAusAkte==="function"?notenAusAkte(a.text).mm:[]).filter(e=>!e.alt&&e.d>=ab&&e.d<f.von).length;if(n<2)wenig++;if(!n)ohne++});
-      out.push({iso:tag,zeit:"",titel:`Mitarbeitsnote${qn?` ${qn}. Quartal`:""} vor den ${name}`,quelle:"Erinnerung (Ferienbeginn "+datumDE(f.von)+")",weg:false,
-        _mm:{ab,ferien:f.von,wenig,ohne,alle:g.akten.length},_gruppe:{id:g.id,oberstufe:info.oberstufe}})}
-  });
+      g.akten.forEach(a=>{const n=(typeof notenAusAkte==="function"?notenAusAkte(a.text).mm:[]).filter(e=>!e.alt&&e.d>=ab&&e.d<x.grenze).length;if(n<2)wenig++;if(!n)ohne++});
+      out.push({iso:x.tag,zeit:"",titel:`Mitarbeitsnote${qn?` ${qn}. Quartal`:""} ${x.titelEnde}`,quelle:x.quelle,weg:false,
+        _mm:{ab,wenig,ohne,alle:g.akten.length},_gruppe:{id:g.id,oberstufe:info.oberstufe}})}
+  }
   return out;
 }
 
@@ -251,5 +274,5 @@ function zeigen(){
 }
 
 const knopf=$("#w-erkennen");if(knopf)knopf.addEventListener("click",zeigen);
-window.saErkennung={zeigen,quartale,_test:{ferienListe,ferienErinnerungen,ARTEN,gruppeErkennen,gruppeInfo,nummer,erkennen,schritt,woerter}};
+window.saErkennung={zeigen,quartale,notenschluss,_test:{mmAnlaesse,ferienListe,ferienErinnerungen,ARTEN,gruppeErkennen,gruppeInfo,nummer,erkennen,schritt,woerter}};
 })();
