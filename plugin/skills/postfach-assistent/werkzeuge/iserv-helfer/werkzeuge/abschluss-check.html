@@ -6,13 +6,16 @@
 <title>Abschluss-Check – Welchen Abschluss schaffe ich?</title>
 <style>
 :root{
-  --ink:#1d2733; --muted:#5d6b7a; --line:#dfe4ea; --bg:#f5f7f9; --card:#fff;
-  --pri:#24476B; --pri-soft:#E7EEF6;
-  --ok:#1E7A4C; --ok-soft:#E3F3EA; --warn:#A86A00; --warn-soft:#FBF0D9; --bad:#B23A3A; --bad-soft:#FBE7E7;
+  /* Design „Graphit & Heft“ (Paul, 20.11.2026), wie Startseite und Pseudonymisierer */
+  --ink:#efe8da; --muted:#aaa196; --line:#38342f; --bg:#191816; --card:#22201d;
+  --pri:#8fb3e8; --pri-soft:#232c3a; --on-pri:#101a2b; --rand:#e9786a;
+  --ok:#8fcf9f; --ok-soft:#1f3326; --warn:#e9b65f; --warn-soft:#362b1a; --bad:#f28b7d; --bad-soft:#3a1d1a;
+  --f-display:"Lora",Georgia,"Cambria",serif;
+  color-scheme:dark;
   --r:14px;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:"Atkinson Hyperlegible",system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:16px;line-height:1.45}
+body{margin:0;font-family:"Work Sans","Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:16px;line-height:1.45}
 header{background:var(--pri);color:#fff;padding:22px 20px 18px}
 header .wrap{max-width:1180px;margin:0 auto;display:flex;gap:18px;align-items:flex-start}
 .logo{flex:none;background:#fff;border-radius:12px;padding:6px 8px;line-height:0}
@@ -83,6 +86,23 @@ td.def{color:var(--bad);font-weight:700;text-align:center}
 #mbar{display:none}
 @media (max-width:900px){#mbar{display:flex;position:fixed;left:10px;right:10px;bottom:10px;z-index:5;gap:.6rem;align-items:center;justify-content:space-between;padding:.65rem .9rem;border-radius:12px;color:#fff;background:var(--pri);box-shadow:0 6px 20px rgba(0,0,0,.2);border:0;font:inherit;text-align:left}
 #mbar.ok{background:var(--ok)}#mbar.warn{background:var(--warn)}#mbar.bad{background:var(--bad)}body{padding-bottom:70px}}
+/* Graphit & Heft: Überschreibungen der hellen Grundfarben */
+body{background:repeating-linear-gradient(0deg,transparent 0 31px,rgba(143,179,232,.05) 31px 32px),var(--bg);background-attachment:fixed}
+header{background:var(--card);color:var(--ink);border-top:4px solid var(--rand);border-bottom:1px solid var(--line)}
+header h1,.card h2,.hero .v{font-family:var(--f-display)}
+header p{color:var(--muted);opacity:1}
+.privacy{background:var(--pri-soft);color:var(--pri)}
+.card{border-left:4px solid var(--line);border-radius:4px var(--r) var(--r) 4px}
+.card.legal{border-left-color:var(--rand);background:var(--card)}
+.step{background:var(--rand);color:#1f0d0a;font-weight:700}
+.seg,select,input[type=text],.btn{background:var(--bg);color:var(--ink)}
+.seg button.on,.grades button.on,.btn.pri{background:var(--pri);color:var(--on-pri);font-weight:700}
+.grades button[data-v="5"].on,.grades button[data-v="6"].on{background:var(--bad);color:#1f0d0a}
+.hero.ok{border-color:#2f5a3d}.hero.warn{border-color:#6b5426}.hero.bad{border-color:#6b2e28}
+.hero.empty{background:var(--card)}
+.badge{background:var(--bg)}
+.ico{color:#151412}.ico.bad{background:#4a453e;color:var(--ink)}
+summary{color:var(--pri)}
 </style>
 </head>
 <body>
