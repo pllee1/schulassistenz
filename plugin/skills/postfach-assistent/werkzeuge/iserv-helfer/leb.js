@@ -140,20 +140,39 @@
     zeigen(`<div class="was">Bereitgelegt: <b>${esc(p.titel)}</b><br>${esc(p.gruppe)} · ${esc(ART[p.leistungsart] || "")} · ${esc(datumDE(p.datum))}</div>
       <div class="row"><button class="b" id="fill">Formular vorausfüllen</button></div>
       <p class="info">Setzt Leistungsart, Datum und Bezeichnung. Gewichtung und Notiz bleiben, wie sie sind. Gespeichert wird erst, wenn du „Speichern“ klickst.</p><div id="msg"></div>`);
-    $("#fill").addEventListener("click", () => {
-      const setze = (el, v) => { if (!el || v == null || v === "") return false; el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); el.style.outline = "3px solid #e0b45c"; return true; };
-      const n = [setze(artSel, p.leistungsart), setze(document.querySelector('input[name="datum"]'), datumDE(p.datum)), setze(document.querySelector('input[name="bezeichnung"]'), p.bezeichnung)].filter(Boolean).length;
-      $("#msg").innerHTML = `<div class="ok">${n} Felder ausgefüllt (gelb umrandet). Bitte prüfen und dann selbst „Speichern“ klicken. Danach „Bewerten“ öffnen.</div>`;
+    const warte = ms => new Promise(r => setTimeout(r, ms));
+    const setze = (el, v) => { if (!el || v == null || v === "") return false; el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); el.style.outline = "3px solid #e0b45c"; return true; };
+    const bezFeld = () => document.querySelector('input[name="bezeichnung"]');
+    // LEB-online setzt beim Wechsel der Leistungsart die Bezeichnung auf den Namen der Leistungsart (auch verzögert).
+    // Deshalb erst die Art setzen, warten, dann Datum und Bezeichnung, und die Bezeichnung danach noch eine Weile festhalten.
+    async function fuellen() {
+      const a = setze(artSel, p.leistungsart);
+      await warte(900);
+      const n = [a, setze(document.querySelector('input[name="datum"]'), datumDE(p.datum)), setze(bezFeld(), p.bezeichnung)].filter(Boolean).length;
+      const bis = Date.now() + 4000;
+      const halten = setInterval(() => { const b = bezFeld(); if (Date.now() > bis) return clearInterval(halten); if (b && b.value !== String(p.bezeichnung) && document.activeElement !== b) setze(b, p.bezeichnung); }, 200);
+      return n;
+    }
+    $("#fill").addEventListener("click", async () => {
+      $("#fill").disabled = true;
+      const n = await fuellen();
+      $("#fill").disabled = false;
+      $("#msg").innerHTML = `<div class="ok">${n} Felder ausgefüllt (gelb umrandet). Bitte prüfen, ob die Bezeichnung „${esc(p.bezeichnung)}“ stimmt, und dann selbst „Speichern“ klicken. Danach „Bewerten“ öffnen.</div>`;
     });
     const bez = document.querySelector('input[name="bezeichnung"]');
     if (window.name === "sa-anlegen" && bez && !bez.value.trim()) {
-      $("#fill").click();
+      $("#fill").disabled = true;
+      await fuellen();
+      await warte(1500);
+      if (bezFeld().value !== String(p.bezeichnung)) { setze(bezFeld(), p.bezeichnung); await warte(800); }
+      $("#fill").disabled = false;
+      $("#msg").innerHTML = `<div class="ok">Ausgefüllt (gelb umrandet).</div>`;
       // Direkter Weg (Pauls Freigabe 20.11.): Anlegen speichert der Helfer selbst, die Noten prüft und speichert Paul.
       const merk = "saAngelegt" + p.zeit;
       let schon = false; try { schon = sessionStorage.getItem(merk) === "1"; } catch { }
       let gibtEs = false; try { gibtEs = !!window.opener && tabelleZeilen(window.opener.document).some(x => bezNorm(x.bezeichnung) === bezNorm(p.bezeichnung || p.titel)); } catch { }
       const knopf = [...(bez.form || document).querySelectorAll('input[type="submit"],button,input[type="button"]')].find(b => /speichern/i.test(b.value || b.textContent || ""));
-      const voll = artSel.value === String(p.leistungsart) && bez.value === String(p.bezeichnung) && !!(document.querySelector('input[name="datum"]') || {}).value;
+      const voll = artSel.value === String(p.leistungsart) && bezFeld().value === String(p.bezeichnung) && !!(document.querySelector('input[name="datum"]') || {}).value;
       if (schon || gibtEs || !knopf || !voll) {
         $("#msg").insertAdjacentHTML("beforeend", `<div class="info">${gibtEs ? "Diese Bezeichnung gibt es in der Liste schon, deshalb speichert der Helfer nicht selbst." : schon ? "Wurde schon einmal gespeichert, der Helfer speichert nicht noch einmal." : "Bitte prüfen und selbst „Speichern“ klicken."}</div>`);
         return;
@@ -161,7 +180,9 @@
       try { sessionStorage.setItem(merk, "1"); } catch { }
       try { await chrome.storage.session.set({ saLebAngelegt: { zeit: Date.now(), bez: p.bezeichnung || p.titel, gruppe: p.gruppe } }); } catch { }
       $("#msg").innerHTML = `<div class="ok">Angelegt wird gespeichert … Danach öffnet sich „Bewerten“ mit den Noten. Die Noten prüfst und speicherst du selbst.</div>`;
-      setTimeout(() => knopf.click(), 500);
+      await warte(300);
+      if (bezFeld().value !== String(p.bezeichnung)) { $("#msg").innerHTML = `<div class="warn">LEB-online hat die Bezeichnung geändert. Bitte „${esc(p.bezeichnung)}“ eintragen und selbst „Speichern“ klicken.</div>`; try { sessionStorage.removeItem(merk); } catch { } return; }
+      knopf.click();
     }
   }
 
