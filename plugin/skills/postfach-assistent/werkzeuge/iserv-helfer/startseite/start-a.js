@@ -2094,7 +2094,7 @@ function lebWerte(q,daten,ed){const w={};const ganz=v=>Math.min(6,Math.max(1,Mat
     else es=gilt(d.mmAlle||[]).filter(e=>(!ed.von||e.d>=ed.von)&&(!ed.bis||e.d<=ed.bis));
     if(q.typ==="mm"){const fq=gilt(d.mq||[]).filter(e=>(!ed.von||e.d>=ed.von)&&(!ed.bis||e.d<=ed.bis));
       if(fq.length){const e=fq[fq.length-1];w[d.k]={note:ganz(e.v),info:"Quartalsnote festgelegt"};return}}
-    if(!es.length)return;
+    if(!es.length){if(q.typ==="mm"){const n=gilt(d.mmAlle||[]).length;if(n)w[d.k]={note:null,aussen:n,info:`keine Note im Zeitraum (${n} außerhalb)`}}return}
     if(q.typ==="mm"){const m=mittel(es.map(e=>e.v));w[d.k]={note:ganz(m),info:`Ø ${komma(m,2)} aus ${es.length} ${es.length===1?"Note":"Noten"}`}}
     else{const e=es[es.length-1];w[d.k]={note:ganz(e.v),info:e.was}}});
   return w}
@@ -2178,7 +2178,7 @@ async function zeigeNoten(gidStart,opt){
         <div class="actions"><button class="btn primary small" id="na-ok">Übernehmen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div></div>`}
     // Nach LEB-online: Quelle wählen, Vorschau, Paket für den Helfer bereitlegen
     const lebQ=lebQuellen(daten,kaSp,kaVon,gilt);
-    if(ed&&ed.typ==="leb"){const q=lebQ.find(x=>x.id===ed.q)||lebQ[0];ed.q=q?q.id:null;
+    if(ed&&ed.typ==="leb"){const q=lebQ.find(x=>x.id===ed.q)||lebQ.find(x=>x.id==="mm")||lebQ[0];ed.q=q?q.id:null;
       if(q){if(ed.art==null)ed.art=q.art;if(q.id==="mm"&&!ed.von){const v=lebQuartal(sj,heuteISO());ed.von=v[0];ed.bis=v[1]}if(ed.bez==null)ed.bez=q.id==="mm"?lebMmBez(sj,ed.von):q.titel}
       const werte=q?lebWerte(q,daten,ed):{};
       const quartale=[1,2,3,4].map(n=>{const v=lebQuartal(sj,null,n);return `<option value="${v[0]}|${v[1]}"${ed.von===v[0]&&ed.bis===v[1]?" selected":""}>${n}. Quartal (${datumDE(v[0])}–${datumDE(v[1])})</option>`}).join("");
@@ -2187,6 +2187,8 @@ async function zeigeNoten(gidStart,opt){
         <label>Leistungsart in LEB <select id="lb-art"><option value="1"${+ed.art===1?" selected":""}>mündlich/fachspezifisch</option><option value="2"${+ed.art===2?" selected":""}>schriftlich</option></select></label>
         <label>Bezeichnung <input id="lb-bez" value="${esc(ed.bez||"")}" autocomplete="off"></label>
         ${q&&q.id==="mm"?`<label>Zeitraum <select id="lb-quartal"><option value="">eigener Zeitraum</option>${quartale}</select></label><label>von <input id="lb-von" type="date" value="${esc(ed.von)}"></label><label>bis <input id="lb-bis" type="date" value="${esc(ed.bis)}"></label>`:""}</div>
+        ${(()=>{const ohne=reihe.filter(k=>!(werte[k]&&werte[k].note!=null));if(!ohne.length||!q)return "";const aus=ohne.filter(k=>werte[k]&&werte[k].aussen);
+          return `<p class="hinweis-warn"><strong>${ohne.length} von ${reihe.length} Kindern haben bei „${esc(q.titel)}“ keine Note</strong> (${esc(ohne.join(", "))}). Sie bleiben in LEB-online leer.${aus.length?` ${aus.length} davon haben Mitarbeitsnoten außerhalb des Zeitraums: Zeitraum prüfen.`:q.id!=="mm"&&lebQ.some(x=>x.id==="mm")?" Für die Mitarbeitsnote oben bei „Was“ die mündliche Note wählen.":""}</p>`})()}
         <div class="r-tab-wrap"><table class="r-tab n-tab"><thead><tr><th>Kürzel</th>${zeigN?"<th>Name (nur hier)</th>":""}<th>Note für LEB</th><th>aus</th></tr></thead><tbody>${reihe.map(k=>{const w=werte[k];return `<tr><td class="m">${esc(k)}</td>${zeigN?`<td>${esc(nameVon(k))}</td>`:""}<td class="m b">${w&&w.note!=null?w.note:"–"}</td><td>${w?esc(w.info):""}</td></tr>`}).join("")}</tbody></table></div>
         <div class="actions"><button class="btn primary small" id="lb-direkt" title="Legt die Noten bereit und öffnet LEB-online gleich bei dieser Klasse bzw. diesem Kurs">Direkt in LEB-online</button><button class="btn ghost small" id="lb-ok">Nur bereitlegen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div>
         <p class="note">Ganze Noten 1–6 (gerundet wie der Zeugnisvorschlag). Der Helfer bekommt die Noten zusammen mit den Namen aus deiner Kürzelliste, nur in diesem Browser und höchstens 12 Stunden. Dann in LEB-online unter Noten PLUS die Leistungsüberprüfung anlegen (der Helfer füllt vor) und „Bewerten“ öffnen: Der Helfer-Kasten oben rechts trägt die Noten ein. „Speichern“ klickst du selbst.</p>`
