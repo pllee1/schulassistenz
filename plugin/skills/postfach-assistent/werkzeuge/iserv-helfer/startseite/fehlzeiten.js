@@ -114,6 +114,40 @@ const SPALTEN={
   verp:[/^verp(\.|asst)?\s*unterricht/i],
   wu:[/^externe id$/i,/^abwesenheitsgrund/i]
 };
+// Vermerke (IServ-Klassenbuch › Statistik › Vermerke): Spaltennamen sind noch nicht an einer echten Datei geprüft, daher tolerant.
+const VERMERK_SPALTEN={
+  name:[/^sch(ü|ue)ler/i,/^name$/i],
+  datum:[/^datum$/i,/^date$/i,/^tag$/i],
+  text:[/^vermerk$/i,/^sch(ü|ue)lervermerk/i,/^bemerkung/i,/^text$/i,/^inhalt$/i,/^kommentar/i,/^beschreibung/i,/^notiz/i],
+  art:[/^art$/i,/^vermerkart/i,/^kategorie/i,/^typ$/i,/^vermerktyp/i,/^grund$/i],
+  fehl:[/^fehlstunden/i,/^fehlmin/i]
+};
+function vermerkSpalten(zeilen,ohneName){
+  for(let i=0;i<Math.min(15,zeilen.length);i++){const h=(zeilen[i]||[]).map(x=>String(x??"").trim());const s={};
+    for(const [k,res] of Object.entries(VERMERK_SPALTEN))s[k]=h.findIndex(x=>res.some(r=>r.test(x)));
+    if(s.fehl<0&&s.datum>=0&&(s.text>=0||s.art>=0)&&(s.name>=0||ohneName))return {kopf:i,s}}
+  return null;
+}
+// Freitext: Namen aus allen Kürzellisten durch Kürzel ersetzen (ganzer Name zuerst, dann einzelne Vor-/Nachnamen;
+// mehrdeutige einzelne Namen werden zu [Name]). Was danach noch wie ein Name aussieht, markiert die Vorschau.
+let namenWoerter=null;
+async function namenWoerterLaden(){
+  const voll=[],einzel=new Map();
+  for(const g of ordner.gruppen){const m=await namenLesen(g.id);
+    for(const [k,n] of Object.entries(m)){const vor=String(n.vor||"").trim(),nach=String(n.nach||"").trim();
+      for(const v of [`${vor} ${nach}`,`${nach} ${vor}`,`${nach}, ${vor}`])if(vor&&nach)voll.push([v,k]);
+      for(const w of `${vor} ${nach}`.split(/[\s-]+/))if(w.length>=3){const key=w.toLowerCase();if(!einzel.has(key))einzel.set(key,new Set());einzel.get(key).add(k)}}}
+  voll.sort((a,b)=>b[0].length-a[0].length);namenWoerter={voll,einzel};return namenWoerter;
+}
+const reEsc=x=>x.replace(/[-/\\^$*+?.()|[\]{}]/g,"\\$&");
+function textPseudo(t){
+  if(!namenWoerter)return t;let x=String(t||"");
+  for(const [v,k] of namenWoerter.voll)x=x.replace(new RegExp(`(^|[^\\p{L}])${reEsc(v)}(?![\\p{L}])`,"giu"),(m,a)=>a+k);
+  x=x.replace(/\p{Lu}\p{L}{2,}/gu,w=>{const l=namenWoerter.einzel.get(w.toLowerCase());if(!l)return w;return l.size===1?[...l][0]:"[Name]"});
+  return x;
+}
+const nameRest=t=>nameVerdacht(String(t||""));
+
 // Weitere Spalten, falls WebUntis den Status anders benennt (der Reihe nach)
 const STATUS_WEITERE=[/status/i,/^entschuldigt$/i,/^entsch\.?$/i,/^unentsch/i,/^entschuldigung$/i];
 function spaltenFinden(zeilen,ohneName){
@@ -190,11 +224,22 @@ const klasseNorm=k=>String(k||"").trim().replace(/^klasse\s*/i,"");
 async function verarbeiten(eingabe){
   const dateien=Array.isArray(eingabe)?eingabe:[{buf:eingabe,name:""}];
   const r=regeln();const namen=await alleNamen();
-  const aehnlich=new Map(),daten=[],fehlend=new Map(),klassen=new Map(),doppelt=new Map(),gesehen=new Set();const hinweise=[],herkunft=new Set(),stWerte=new Map();let spName="",kopfLetzt=[];let summen=0,ohneKopf=0,pdf=0;
+  const aehnlich=new Map(),daten=[],fehlend=new Map(),klassen=new Map(),doppelt=new Map(),gesehen=new Set();const hinweise=[],herkunft=new Set(),stWerte=new Map(),vermerke=[];let spName="",kopfLetzt=[];let summen=0,ohneKopf=0,pdf=0;
   for(const datei of dateien){
   const buf=await datei.buf;
   if(String.fromCharCode(...new Uint8Array(buf,0,Math.min(5,buf.byteLength)))==="%PDF-"){pdf++;continue}
-  const zeilen=await tabelleLesen(buf);const ausDatei=nameAusDatei(datei.name);const sp=spaltenFinden(zeilen,!!ausDatei);
+  const zeilen=await tabelleLesen(buf);const ausDatei=nameAusDatei(datei.name);
+  const vs=vermerkSpalten(zeilen,!!ausDatei);
+  if(vs){const {kopf,s}=vs;herkunft.add("IServ-Klassenbuch");
+    for(const z of zeilen.slice(kopf+1)){if(!z)continue;
+      const name=(s.name>=0?String(z[s.name]??"").trim():"")||(ausDatei?ausDatei.name:"");const iso=datumISO(z[s.datum]);
+      const text=s.text>=0?String(z[s.text]??"").replace(/\s+/g," ").trim():"",art=s.art>=0?String(z[s.art]??"").replace(/\s+/g," ").trim():"";
+      if(!name||!iso||(!text&&!art))continue;
+      const treffer=namen.get(norm(name))||namen.get("§"+tokenKey(name))||namen.get("~"+ohneAkzent(tokenKey(name)))||[];
+      const schl=["v",tokenKey(name),iso,art,text].join("|");if(gesehen.has(schl))continue;gesehen.add(schl);
+      vermerke.push({name,treffer,iso,art,text});if(!treffer.length)fehlend.set(name,(fehlend.get(name)||0)+1)}
+    continue}
+  const sp=spaltenFinden(zeilen,!!ausDatei);
   if(!sp){if(zeilen.slice(0,15).some(z=>(z||[]).some(x=>/^fehltage$/i.test(String(x??"").trim()))))summen++;else ohneKopf++;continue}
   const {kopf,s,kopfzeile}=sp;
   if(s.name<0&&!ausDatei){ohneKopf++;continue}
@@ -225,13 +270,13 @@ async function verarbeiten(eingabe){
   if(pdf)hinweise.push(`${pdf===1?"Eine PDF-Datei wurde":pdf+" PDF-Dateien wurden"} übersprungen. Bitte beim Export „Excel“ oder „CSV“ wählen.`);
   if(summen&&daten.length)hinweise.push(`${summen===1?"Eine Summen-Datei":summen+" Summen-Dateien"} (Fehlzeiten_Summe) übersprungen: Die Summen rechnet die Seite aus den Abwesenheiten selbst.`);
   if(ohneKopf)hinweise.push(`${ohneKopf===1?"Eine Datei hat":ohneKopf+" Dateien haben"} keine passende Kopfzeile (Schüler bzw. Dateiname und Datum) und wurde${ohneKopf===1?"":"n"} übersprungen.`);
-  if(!daten.length){
+  if(!daten.length&&!vermerke.length){
     if(pdf&&!summen&&!ohneKopf)throw new Error("PDF-Dateien kann die Seite nicht lesen. Bitte beim Export „Excel“ oder „CSV“ wählen.");
     if(summen&&!ohneKopf)throw new Error("Das ist nur die Summe (Fehlzeiten_Summe). Für die Ampel braucht die Seite die Abwesenheiten: im IServ-Klassenbuch unter Statistik › Abwesenheiten exportieren.");
     throw new Error(dateien.length>1?"In den Dateien stehen keine Fehlzeilen (Name und Datum).":"In der Datei fehlt die Kopfzeile mit Schülername und Datum (oder es stehen keine Fehlzeiten darin). Ist es der Bericht „Abwesenheiten“ aus WebUntis bzw. aus dem IServ-Klassenbuch (Statistik)?");}
   const statusInfo={spalte:spName||null,werte:[...stWerte].sort((a,b)=>b[1]-a[1]).slice(0,8).map(([w,n])=>[w.slice(0,30),n]),erkannt:daten.filter(d=>d.status!=="offen").length,
     kopf:kopfLetzt.filter(Boolean).map(x=>x.slice(0,30))};
-  return {daten,fehlend,klassen,doppelt,regeln:r,aehnlich,hinweise,dateien:dateien.length-pdf,herkunft:[...herkunft].join(" + "),statusInfo};
+  return {daten,fehlend,klassen,doppelt,regeln:r,aehnlich,hinweise,dateien:dateien.length-pdf,herkunft:[...herkunft].join(" + "),statusInfo,vermerke};
 }
 function gruppeVorschlag(erg){
   const kl=[...erg.klassen.entries()].sort((a,b)=>b[1]-a[1])[0];
@@ -401,7 +446,7 @@ function zeichnen(meldung){
       <div class="actions"><button class="btn primary small" id="fzr-ok">Übernehmen</button>${r.lokal?`<button class="btn ghost small" id="fzr-weg">Zurück auf ${r.ausProfil?"Profil":"Standard"} (${fmt(r.profil.schwelle)} Std., ${r.profil.frist} ${r.profil.einheit==="kalendertage"?"Kalendertage":"Schultage"})</button>`:""}</div>
       <p class="note">Gilt sofort für alle Lerngruppen und nur in diesem Browser. Dauerhaft für Claude steht die Regel in deinem Profil (regeln.fehlzeiten).</p>
     </details>${tabelle}
-    <div id="fz-akte"></div>
+    <div id="fz-akte"></div>${vermerkeHTML()}
     ${F.zeilen?"":`<p class="note">Für ${esc(F.gid||"diese Lerngruppe")} ist noch kein Stand gespeichert.</p>`}
     <p class="note">${esc(regelText)}</p>
     <p class="note">Datenschutz: Gespeichert und an Claude gegeben werden nur Kürzel, Datum, Stunden und Status. Namen, Externe Id, Abwesenheitsgründe, Texte, Lehrkräfte und Fächer („Verp. Unterricht“) werden verworfen. Ablage: ${esc(sdPfad("ausgaben/fehlzeiten/"+DATEI(F.gid||"<gruppe>")))}.</p>
@@ -417,7 +462,8 @@ function zeichnen(meldung){
     zeichnen("Schwellen übernommen.")});
   if($("#fzr-weg"))$("#fzr-weg").addEventListener("click",()=>{store.set("fz-regeln",null);zeichnen("Wieder die Werte aus dem "+(regeln().ausProfil?"Profil":"Standard")+".")});
   $("#fz-gruppe").addEventListener("change",async e=>{const g=e.target.value;store.set("fz-gruppe",g);
-    if(F.roh){const p=pseudoZeilen(F.roh,g);F={...F,gid:g,zeilen:p.zeilen,ohne:p.ohne,namen:await namenLesen(g)};}
+    if(F.roh&&F.roh.daten.length){const p=pseudoZeilen(F.roh,g);F={...F,gid:g,zeilen:p.zeilen,ohne:p.ohne,vermerke:vermerkeFuer(F.roh,g),namen:await namenLesen(g)};}
+    else if(F.roh){const st=await standLesen(g);F={...F,gid:g,zeilen:st?st.zeilen:null,stand:st&&st.stand,zeitraum:st&&st.zeitraum,herkunft:st&&st.quelle,vermerke:vermerkeFuer(F.roh,g),namen:await namenLesen(g)}}
     else{const s=await standLesen(g);F=s?{gid:g,zeilen:s.zeilen,stand:s.stand,zeitraum:s.zeitraum,quelle:"gespeicherter Stand",herkunft:s.quelle,neu:false,namen:await namenLesen(g)}:{gid:g,zeilen:null}}
     zeichnen()});
   const ausListe=l=>[...l].map(f=>({buf:f.arrayBuffer(),name:f.name}));
@@ -428,6 +474,7 @@ function zeichnen(meldung){
   if($("#fz-holen"))$("#fz-holen").addEventListener("click",holen);
   if($("#fz-kb"))$("#fz-kb").addEventListener("click",holenIServ);
   if($("#fz-akten"))$("#fz-akten").addEventListener("click",aktenVorschau);
+  vermerkeVerdrahten();
   if($("#fz-speichern"))$("#fz-speichern").addEventListener("click",speichern);
   if($("#fz-claude"))$("#fz-claude").addEventListener("click",anClaude);
   slot.querySelectorAll("[data-inf]").forEach(b=>b.addEventListener("click",()=>informiertFragen(b.dataset.inf)));
@@ -435,11 +482,18 @@ function zeichnen(meldung){
 }
 async function einlesen(bufP,quelle,zeitraum){
   const g=$("#fz-guard");g.hidden=true;$("#fz-toast").textContent="Lese …";
-  try{const erg=await verarbeiten(Array.isArray(bufP)?bufP:[{buf:bufP,name:""}]);const gid=F.gid&&erg.daten.some(d=>d.treffer.some(t=>t.gruppe===F.gid))?F.gid:gruppeVorschlag(erg);
+  try{const erg=await verarbeiten(Array.isArray(bufP)?bufP:[{buf:bufP,name:""}]);
+    const alle=[...erg.daten,...erg.vermerke];const gid=F.gid&&alle.some(d=>d.treffer.some(t=>t.gruppe===F.gid))?F.gid:gruppeVorschlag({...erg,daten:alle});
+    if(erg.vermerke.length)await namenWoerterLaden();
+    if(!erg.daten.length){   // nur Vermerke: gespeicherten Fehlzeiten-Stand behalten
+      const st=await standLesen(gid);
+      F={...(st?{gid,zeilen:st.zeilen,stand:st.stand,zeitraum:st.zeitraum,quelle:"gespeicherter Stand",herkunft:st.quelle,neu:false}:{gid,zeilen:null}),
+        roh:erg,vermerke:vermerkeFuer(erg,gid),fehlend:erg.fehlend,aehnlich:erg.aehnlich,hinweise:erg.hinweise,namen:await namenLesen(gid)};
+      zeichnen(`${erg.vermerke.length} Vermerke gelesen. Unten auswählen, was in die Akten soll.`);return}
     const p=pseudoZeilen(erg,gid);
     const tage=erg.daten.map(d=>d.iso).sort();const daten=`${datumDE(tage[0])}–${datumDE(tage[tage.length-1])}`;
-    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,hinweise:erg.hinweise,herkunft:erg.herkunft,fehlend:erg.fehlend,aehnlich:erg.aehnlich,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()],statusInfo:erg.statusInfo};
-    zeichnen(`${erg.daten.length} Zeilen${erg.dateien>1?" aus "+erg.dateien+" Dateien":""} gelesen. Noch nicht gespeichert.`)}
+    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,hinweise:erg.hinweise,herkunft:erg.herkunft,fehlend:erg.fehlend,aehnlich:erg.aehnlich,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()],statusInfo:erg.statusInfo,vermerke:vermerkeFuer(erg,gid)};
+    zeichnen(`${erg.daten.length} Zeilen${erg.vermerke.length?" und "+erg.vermerke.length+" Vermerke":""}${erg.dateien>1?" aus "+erg.dateien+" Dateien":""} gelesen. Noch nicht gespeichert.`)}
   catch(e){$("#fz-toast").textContent="";g.hidden=false;g.textContent=(e.message||String(e))+(F.antwortNeu?" ("+F.antwortNeu+")":"");F.antwortNeu=""}
 }
 let wartenTimer=null;
@@ -478,7 +532,7 @@ async function holenIServ(){
   const g=$("#fz-guard");g.hidden=true;
   try{const a=await kbRuf("warten",{host:iservHost()});if(!a.ok)throw new Error(a.fehler||"Der Helfer antwortet nicht.");
     kbDateien=[];const box=$("#fz-lernen");
-    box.innerHTML=`<div class="fz-warn"><b>${a.geoeffnet?"Das IServ-Klassenbuch ist in einem neuen Tab geöffnet.":"Öffne jetzt in IServ das Modul Klassenbuch."}</b> Dort <b>Statistik › Abwesenheiten</b> wählen, oben Klasse bzw. Gruppe und als Zeitraum das ganze Schuljahr einstellen, dann rechts über der Liste auf das Download-Symbol und <b>Excel</b> oder <b>CSV</b> klicken. Exportierst du je Kind eine Datei, einfach alle nacheinander (oder alle angehakt) exportieren.<br>Der Helfer übernimmt die Dateien direkt hierher, sie landen nicht im Download-Ordner. Er wartet 10 Minuten. <span id="fz-wstat"></span> <button class="btn small ghost" id="fz-wab">Fertig</button></div>`;
+    box.innerHTML=`<div class="fz-warn"><b>${a.geoeffnet?"Das IServ-Klassenbuch ist in einem neuen Tab geöffnet.":"Öffne jetzt in IServ das Modul Klassenbuch."}</b> Dort <b>Statistik › Abwesenheiten</b> wählen, oben Klasse bzw. Gruppe und als Zeitraum das ganze Schuljahr einstellen, dann rechts über der Liste auf das Download-Symbol und <b>Excel</b> oder <b>CSV</b> klicken. Exportierst du je Kind eine Datei, einfach alle nacheinander (oder alle angehakt) exportieren. Vermerke gehen genauso: Statistik › Vermerke › Download.<br>Der Helfer übernimmt die Dateien direkt hierher, sie landen nicht im Download-Ordner. Er wartet 10 Minuten. <span id="fz-wstat"></span> <button class="btn small ghost" id="fz-wab">Fertig</button></div>`;
     $("#fz-wab").addEventListener("click",()=>{kbRuf("abbrechen").catch(()=>{});wartenEnde()});
     const start=Date.now();if(wartenTimer)clearInterval(wartenTimer);
     wartenTimer=setInterval(async()=>{
@@ -527,6 +581,53 @@ function aktenVorschau(){
       await ordnerLesen(ordnerHandle);renderOrdner();box.innerHTML="";zeichnen(`${n} ${n===1?"Akte":"Akten"} ergänzt (Bereich Termine).`)}
     catch(e){g.hidden=false;g.textContent=(e&&e.message)||"Eintragen hat nicht geklappt."}});
 }
+/* ---------- Vermerke (IServ-Klassenbuch) in die Akten ---------- */
+function vermerkeFuer(erg,gid){
+  return (erg.vermerke||[]).map(v=>{const t=v.treffer.find(x=>x.gruppe===gid);if(!t)return null;const text=textPseudo(v.text),art=textPseudo(v.art);
+    return {k:t.kuerzel,iso:v.iso,art,text,verdacht:nameRest(text),an:true}}).filter(Boolean)
+    .sort((a,b)=>a.k.localeCompare(b.k,"de",{numeric:true})||a.iso.localeCompare(b.iso));
+}
+const vInhalt=v=>!v.art?v.text:!v.text||v.text.toLowerCase().includes(v.art.toLowerCase())?(v.text||v.art):`${v.art}: ${v.text}`;
+function vermerkZeilen(modus){
+  const an=(F.vermerke||[]).filter(v=>v.an&&vInhalt(v));const out=[];
+  if(modus==="einzeln"){for(const v of an)out.push({k:v.k,inhalt:`Vermerk im Klassenbuch: ${vInhalt(v)}`,datum:v.iso});return out}
+  const pro=new Map();for(const v of an){if(!pro.has(v.k))pro.set(v.k,[]);pro.get(v.k).push(v)}
+  for(const [k,l] of pro){const zaehl=new Map();for(const v of l){const x=vInhalt(v);zaehl.set(x,(zaehl.get(x)||0)+1)}
+    const d=l.map(v=>v.iso).sort();
+    out.push({k,datum:heuteISO(),inhalt:`Vermerke im Klassenbuch ${d[0]===d[d.length-1]?datumDE(d[0]):datumDE(d[0])+"–"+datumDE(d[d.length-1])}: ${[...zaehl].map(([x,n])=>n>1?`${x} (${n}×)`:x).join("; ")}`})}
+  return out;
+}
+function vermerkeHTML(){
+  const V=F.vermerke;if(!V||!V.length)return "";const modus=store.get("fz-vermerk-modus","zusammen");
+  const pro=new Map();V.forEach((v,i)=>{if(!pro.has(v.k))pro.set(v.k,[]);pro.get(v.k).push([v,i])});
+  const verd=V.filter(v=>v.an&&v.verdacht).length;
+  return `<div class="fz-vm"><h4 style="margin:14px 0 4px">Vermerke aus dem Klassenbuch (${V.length})</h4>
+    <p class="note" style="margin:0 0 6px">Namen in den Texten sind schon durch Kürzel ersetzt. Du kannst jeden Text noch ändern oder abwählen. Lehrkräfte, Stunden und Fächer werden nicht übernommen.</p>
+    ${verd?`<div class="fz-warn"><b>${verd===1?"1 Text enthält":verd+" Texte enthalten"} vielleicht noch einen Namen</b> (gelb markiert). Bitte prüfen und ändern, bevor du sie übernimmst.</div>`:""}
+    <div class="fz-tab-wrap"><table class="fz-tab"><thead><tr><th></th><th>Kürzel</th><th>Datum</th><th>Vermerk</th></tr></thead><tbody>${[...pro].map(([k,l])=>l.map(([v,i],j)=>`<tr><td><input type="checkbox" data-vm-an="${i}"${v.an?" checked":""} aria-label="übernehmen"></td><td>${j?"":`<span class="k">${esc(k)}</span>`}</td><td class="z" style="text-align:left">${datumDE(v.iso)}</td><td><input type="text" data-vm-t="${i}" value="${esc(vInhalt(v))}" style="width:100%;${v.verdacht?"outline:2px solid var(--warn)":""}"></td></tr>`).join("")).join("")}</tbody></table></div>
+    <div class="fz-ja" style="margin-top:6px"><label class="r-skala"><input type="radio" name="fz-vm-modus" value="zusammen"${modus!=="einzeln"?" checked":""}> je Kind eine Zeile (mit Anzahl)</label><label class="r-skala"><input type="radio" name="fz-vm-modus" value="einzeln"${modus==="einzeln"?" checked":""}> jeder Vermerk eine Zeile</label>
+    <button class="btn small primary" id="fz-vm-ok">Ausgewählte in die Akten</button></div>
+    <p class="note">Ziel: Bereich „Arbeits- und Sozialverhalten“ der Akte, als Beleg mit Quelle IServ-Klassenbuch. Was schon in der Akte steht, wird nicht doppelt geschrieben.</p></div>`;
+}
+function vermerkeVerdrahten(){
+  const slot=$("#panel-slot");if(!slot||!F.vermerke)return;
+  slot.querySelectorAll("[data-vm-an]").forEach(c=>c.addEventListener("change",()=>{F.vermerke[+c.dataset.vmAn].an=c.checked}));
+  slot.querySelectorAll("[data-vm-t]").forEach(c=>c.addEventListener("input",()=>{const v=F.vermerke[+c.dataset.vmT];v.art="";v.text=c.value.trim();v.verdacht=nameRest(v.text);c.style.outline=v.verdacht?"2px solid var(--warn)":""}));
+  slot.querySelectorAll('[name="fz-vm-modus"]').forEach(r=>r.addEventListener("change",()=>store.set("fz-vermerk-modus",r.value)));
+  const ok=$("#fz-vm-ok");if(ok)ok.addEventListener("click",vermerkeSchreiben);
+}
+async function vermerkeSchreiben(){
+  const g=$("#fz-guard");g.hidden=true;const modus=store.get("fz-vermerk-modus","zusammen");const l=vermerkZeilen(modus);
+  if(!l.length){$("#fz-toast").textContent="Kein Vermerk ausgewählt.";return}
+  try{const sd=await sdSchreib();const gd=await (await sd.getDirectoryHandle("lerngruppen")).getDirectoryHandle(F.gid);let n=0,ohne=0;const akten=new Set();
+    for(const x of l){let fh;try{fh=await gd.getFileHandle(x.k+".md")}catch{ohne++;continue}
+      let t=await (await fh.getFile()).text();if(t.includes(`| ${x.inhalt} |`))continue;
+      t=abschnittErgaenzen(t,"Arbeits- und Sozialverhalten",`- ${x.datum} | Beleg | ${x.inhalt} | Quelle: IServ-Klassenbuch (Startseite) | bestätigt`);
+      const w=await fh.createWritable();await w.write(t);await w.close();n++;akten.add(x.k)}
+    await ordnerLesen(ordnerHandle);renderOrdner();F.vermerke=null;
+    zeichnen(`${n} ${n===1?"Eintrag":"Einträge"} in ${akten.size} ${akten.size===1?"Akte":"Akten"} geschrieben (Arbeits- und Sozialverhalten).${ohne?` ${ohne} ohne Akte übersprungen.`:""}`)}
+  catch(e){g.hidden=false;g.textContent=(e&&e.message)||"Eintragen hat nicht geklappt."}
+}
 async function speichern(){
   const g=$("#fz-guard");g.hidden=true;
   try{await standSpeichern(F.gid,F.zeilen,(F.herkunft&&!(F.quelle||"").includes(F.herkunft)?F.herkunft+", ":"")+F.quelle,F.zeitraum);F.neu=false;F.roh=null;F.fehlend=null;F.ohne=0;await seitenleiste();zeichnen("Gespeichert (nur Kürzel). Die Ampel steht jetzt im Reiter „Fehlzeiten“ der Lerngruppe.")}
@@ -560,5 +661,5 @@ ${gelb.map(z).join("\n")||"(niemand)"}
 Bitte prüfe die Auswertung und sag mir, was als Nächstes zu tun ist. Entwürfe für Elternbriefe nur nach Rückfrage.`});
 }
 
-window.saFehlzeiten={zeigen,aktualisieren:()=>seitenleiste().catch(()=>{}),_test:{nameAusDatei,aktenSummen:()=>aktenSummen(),setF:x=>{F=x},tabelleLesen,verarbeiten,ampel,regeln,fristEnde,datumISO,pseudoZeilen,cfbStream,biffZeilen}};
+window.saFehlzeiten={zeigen,aktualisieren:()=>seitenleiste().catch(()=>{}),_test:{nameAusDatei,textPseudo,namenWoerterLaden,vermerkeFuer,aktenSummen:()=>aktenSummen(),setF:x=>{F=x},tabelleLesen,verarbeiten,ampel,regeln,fristEnde,datumISO,pseudoZeilen,cfbStream,biffZeilen}};
 })();
