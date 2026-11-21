@@ -127,7 +127,8 @@ function render(){
     $("#all-h").textContent="Werkzeuge";$("#wz-hinweis").hidden=false;
     WZ_GRUPPEN.forEach(([id,name,farbe])=>{const ks=ALLE.filter(k=>wzGruppe(k)===id);if(!ks.length)return;
       const box=document.createElement("section");box.className="wz-gruppe";box.style.setProperty("--c",farbe);
-      box.innerHTML=`<h3>${esc(name)}</h3>`;ks.forEach(k=>box.appendChild(kachel(k)));area.appendChild(box)});
+      box.dataset.g=id;const zu=(store.get("klapp-zu",[])||[]).includes("wz-"+id);if(zu)box.classList.add("zu");
+      box.innerHTML=`<h3 class="klapp-t" role="button" tabindex="0" aria-expanded="${!zu}" data-klapp="wz-${esc(id)}">${esc(name)}</h3>`;ks.forEach(k=>box.appendChild(kachel(k)));area.appendChild(box)});
   }
 }
 function merke(k){if(!k||k.id==="frei"||k.id==="live")return;recent=[k.id,...recent.filter(x=>x!==k.id)].slice(0,6);store.set("recent",recent)}
@@ -2093,20 +2094,20 @@ function lebWerte(q,daten,ed){const w={};const ganz=v=>Math.min(6,Math.max(1,Mat
     else es=gilt(d.mmAlle||[]).filter(e=>(!ed.von||e.d>=ed.von)&&(!ed.bis||e.d<=ed.bis));
     if(q.typ==="mm"){const fq=gilt(d.mq||[]).filter(e=>(!ed.von||e.d>=ed.von)&&(!ed.bis||e.d<=ed.bis));
       if(fq.length){const e=fq[fq.length-1];w[d.k]={note:ganz(e.v),info:"Quartalsnote festgelegt"};return}}
-    if(!es.length)return;
+    if(!es.length){if(q.typ==="mm"){const n=gilt(d.mmAlle||[]).length;if(n)w[d.k]={note:null,aussen:n,info:`keine Note im Zeitraum (${n} außerhalb)`}}return}
     if(q.typ==="mm"){const m=mittel(es.map(e=>e.v));w[d.k]={note:ganz(m),info:`Ø ${komma(m,2)} aus ${es.length} ${es.length===1?"Note":"Noten"}`}}
     else{const e=es[es.length-1];w[d.k]={note:ganz(e.v),info:e.was}}});
   return w}
 /* Für andere Teile der Startseite (z. B. „Was steht an?“): Notenübersicht mit vorgewähltem LEB-Panel öffnen */
 window.saLebOeffnen=(gid,quelleId,o)=>{if(quelleId)store.set("leb-quelle-"+gid,quelleId);return zeigeNoten(gid,{leb:quelleId||store.get("leb-quelle-"+gid,null),sofort:!!(o&&o.sofort)})};
-function lebMmBez(sj,von){const n=[1,2,3,4].find(i=>lebQuartal(sj,null,i)[0]===von);return n?`mündlich ${n}. Quartal`:"mündlich"}
+function lebMmBez(sj,von,bis){if(bis&&von===`${sj}-08-01`&&!(lebQuartal(sj,null,1)[1]===bis))return `mündlich bis ${datumDE(bis)}`;const n=[1,2,3,4].find(i=>lebQuartal(sj,null,i)[0]===von);return n?`mündlich ${n}. Quartal`:"mündlich"}
 function lebQuartal(sj,datum,nr){const j=+sj,fq=window.saErkennung&&saErkennung.quartale?saErkennung.quartale(sj):null,b=fq||[[`${j}-08-01`,`${j}-10-31`],[`${j}-11-01`,`${j+1}-01-31`],[`${j+1}-02-01`,`${j+1}-04-30`],[`${j+1}-05-01`,`${j+1}-07-31`]];
   if(nr)return b[nr-1];return b.find(x=>datum>=x[0]&&datum<=x[1])||b[0]}
 async function zeigeNoten(gidStart,opt){
   const slot=$("#panel-slot");const gruppen=ordner.gruppen.map(g=>g.id);if(!gruppen.length)return;
   let gid=gidStart&&gruppen.includes(gidStart)?gidStart:store.get("noten-gruppe",gruppen[0]);if(!gruppen.includes(gid))gid=gruppen[0];
   let sofortFertig=false,autoLauf=false;
-  let namen={},ed=opt&&opt.leb?{typ:"leb",q:opt.leb}:null,meldung="",bearb=store.get("noten-bearbeiten",false),reg=[];
+  let namen={},ed=opt&&("leb" in opt)?{typ:"leb",q:opt.leb||null}:null,meldung="",bearb=store.get("noten-bearbeiten",false),reg=[];
   const opsK=()=>"noten-aend-"+gid;const ops=()=>store.get(opsK(),[])||[];const opsSetzen=l=>store.set(opsK(),l.length?l:null);
   const zeichnen=async()=>{
     const g=ordner.gruppen.find(x=>x.id===gid);store.set("noten-gruppe",gid);
@@ -2177,7 +2178,7 @@ async function zeigeNoten(gidStart,opt){
         <div class="actions"><button class="btn primary small" id="na-ok">Übernehmen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div></div>`}
     // Nach LEB-online: Quelle wählen, Vorschau, Paket für den Helfer bereitlegen
     const lebQ=lebQuellen(daten,kaSp,kaVon,gilt);
-    if(ed&&ed.typ==="leb"){const q=lebQ.find(x=>x.id===ed.q)||lebQ[0];ed.q=q?q.id:null;
+    if(ed&&ed.typ==="leb"){const q=lebQ.find(x=>x.id===ed.q)||lebQ.find(x=>x.id==="mm")||lebQ[0];ed.q=q?q.id:null;
       if(q){if(ed.art==null)ed.art=q.art;if(q.id==="mm"&&!ed.von){const v=lebQuartal(sj,heuteISO());ed.von=v[0];ed.bis=v[1]}if(ed.bez==null)ed.bez=q.id==="mm"?lebMmBez(sj,ed.von):q.titel}
       const werte=q?lebWerte(q,daten,ed):{};
       const quartale=[1,2,3,4].map(n=>{const v=lebQuartal(sj,null,n);return `<option value="${v[0]}|${v[1]}"${ed.von===v[0]&&ed.bis===v[1]?" selected":""}>${n}. Quartal (${datumDE(v[0])}–${datumDE(v[1])})</option>`}).join("");
@@ -2185,7 +2186,9 @@ async function zeigeNoten(gidStart,opt){
         ${lebQ.length?`<div class="n-felder"><label>Was <select id="lb-q">${lebQ.map(x=>`<option value="${esc(x.id)}"${x.id===ed.q?" selected":""}>${esc(x.titel)}</option>`).join("")}</select></label>
         <label>Leistungsart in LEB <select id="lb-art"><option value="1"${+ed.art===1?" selected":""}>mündlich/fachspezifisch</option><option value="2"${+ed.art===2?" selected":""}>schriftlich</option></select></label>
         <label>Bezeichnung <input id="lb-bez" value="${esc(ed.bez||"")}" autocomplete="off"></label>
-        ${q&&q.id==="mm"?`<label>Zeitraum <select id="lb-quartal"><option value="">eigener Zeitraum</option>${quartale}</select></label><label>von <input id="lb-von" type="date" value="${esc(ed.von)}"></label><label>bis <input id="lb-bis" type="date" value="${esc(ed.bis)}"></label>`:""}</div>
+        ${q&&q.id==="mm"?`<label>Zeitraum <select id="lb-quartal"><option value="">eigener Zeitraum</option><option value="${sj}-08-01|${heuteISO()}"${ed.von===`${sj}-08-01`&&ed.bis===heuteISO()?" selected":""}>Schuljahresbeginn bis heute</option>${quartale}</select></label><label>von <input id="lb-von" type="date" value="${esc(ed.von)}"></label><label>bis <input id="lb-bis" type="date" value="${esc(ed.bis)}"></label>`:""}</div>
+        ${(()=>{const ohne=reihe.filter(k=>!(werte[k]&&werte[k].note!=null));if(!ohne.length||!q)return "";const aus=ohne.filter(k=>werte[k]&&werte[k].aussen);
+          return `<p class="hinweis-warn"><strong>${ohne.length} von ${reihe.length} Kindern haben bei „${esc(q.titel)}“ keine Note</strong> (${esc(ohne.join(", "))}). Sie bleiben in LEB-online leer.${aus.length?` ${aus.length} davon haben Mitarbeitsnoten außerhalb des Zeitraums: Zeitraum prüfen.`:q.id!=="mm"&&lebQ.some(x=>x.id==="mm")?" Für die Mitarbeitsnote oben bei „Was“ die mündliche Note wählen.":""}</p>`})()}
         <div class="r-tab-wrap"><table class="r-tab n-tab"><thead><tr><th>Kürzel</th>${zeigN?"<th>Name (nur hier)</th>":""}<th>Note für LEB</th><th>aus</th></tr></thead><tbody>${reihe.map(k=>{const w=werte[k];return `<tr><td class="m">${esc(k)}</td>${zeigN?`<td>${esc(nameVon(k))}</td>`:""}<td class="m b">${w&&w.note!=null?w.note:"–"}</td><td>${w?esc(w.info):""}</td></tr>`}).join("")}</tbody></table></div>
         <div class="actions"><button class="btn primary small" id="lb-direkt" title="Legt die Noten bereit und öffnet LEB-online gleich bei dieser Klasse bzw. diesem Kurs">Direkt in LEB-online</button><button class="btn ghost small" id="lb-ok">Nur bereitlegen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div>
         <p class="note">Ganze Noten 1–6 (gerundet wie der Zeugnisvorschlag). Der Helfer bekommt die Noten zusammen mit den Namen aus deiner Kürzelliste, nur in diesem Browser und höchstens 12 Stunden. Dann in LEB-online unter Noten PLUS die Leistungsüberprüfung anlegen (der Helfer füllt vor) und „Bewerten“ öffnen: Der Helfer-Kasten oben rechts trägt die Noten ein. „Speichern“ klickst du selbst.</p>`
@@ -2225,7 +2228,7 @@ async function zeigeNoten(gidStart,opt){
     if($("#lb-q"))$("#lb-q").addEventListener("change",e=>{ed={typ:"leb",q:e.target.value};store.set("leb-quelle-"+gid,e.target.value);zeichnen()});
     if($("#lb-art"))$("#lb-art").addEventListener("change",e=>{ed.art=+e.target.value});
     if($("#lb-bez"))$("#lb-bez").addEventListener("input",e=>{ed.bez=e.target.value});
-    if($("#lb-quartal"))$("#lb-quartal").addEventListener("change",e=>{if(!e.target.value)return;[ed.von,ed.bis]=e.target.value.split("|");ed.bez=lebMmBez(sj,ed.von);zeichnen()});
+    if($("#lb-quartal"))$("#lb-quartal").addEventListener("change",e=>{if(!e.target.value)return;[ed.von,ed.bis]=e.target.value.split("|");ed.bez=lebMmBez(sj,ed.von,ed.bis);zeichnen()});
     ["#lb-von","#lb-bis"].forEach(s=>{if($(s))$(s).addEventListener("change",e=>{ed[s==="#lb-von"?"von":"bis"]=e.target.value;zeichnen()})});
     const lebLos=async direkt=>{
       const q=lebQ.find(x=>x.id===ed.q);if(!q)return;const bez=ohnePipe($("#lb-bez").value);const p=textPruefen(bez,namen);if(p)return fehler(p);

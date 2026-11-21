@@ -83,7 +83,9 @@ function gruppeZeigen(gid,reiter,ausAdresse){
   const info=[feld("fach")+(feld("kurs")?" "+feld("kurs"):""),`${g.akten.length} Kinder`,g.offen?`${g.offen} offene ${g.offen===1?"Punkt":"Punkte"}`:""].filter(Boolean).join(" · ");
   kopf.innerHTML=`<h2>${esc(g.id)}</h2><span class="info">${esc(info)}</span><span class="sp"></span><button class="btn live-btn" id="lg-live">● Live-Beobachtung</button><button class="btn primary" id="lg-leb" title="Noten für LEB-online auswählen und eintragen lassen; speichern tust du in LEB-online selbst">Nach LEB-online</button>`;
   $("#lg-live").addEventListener("click",()=>{store.set("letzte-gruppe",g.id);rasterStarten(g.id,null)});
-  $("#lg-leb").addEventListener("click",()=>{S.notenOpt={leb:store.get("leb-quelle-"+g.id,null)};if(S.reiter==="noten")reiterZeigen();else gruppeZeigen(g.id,"noten")});
+  if(typeof skalaStandard==="function"&&skalaStandard(g.id,g.gruppeText)==="np")$("#lg-leb").hidden=true;
+  $("#lg-leb").addEventListener("click",async()=>{S.notenOpt={leb:store.get("leb-quelle-"+g.id,null)};if(S.reiter==="noten")await reiterZeigen();else await gruppeZeigen(g.id,"noten");
+    for(let i=0;i<20;i++){const b=document.querySelector("#lg-inhalt .n-edit");if(b){b.scrollIntoView({block:"nearest",behavior:"smooth"});break}await new Promise(r=>setTimeout(r,100))}});
   reit.innerHTML=REITER.map(([id,n])=>`<button role="tab" aria-selected="${id===S.reiter}" data-r="${id}">${esc(n)}</button>`).join("");
   reit.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>gruppeZeigen(g.id,b.dataset.r)));
   const ks=CLAUDE_GRUPPE.map(id=>ALLE.find(k=>k.id===id)).filter(Boolean);
@@ -254,6 +256,18 @@ document.addEventListener("dblclick",async e=>{
     catch(err){vI.disabled=nI.disabled=false;toast(/NoModification|InvalidState|locked|gesperrt/i.test(String(err&&(err.name+err.message)))?"Die Kürzelliste ist gerade gesperrt (in Excel geöffnet?). Bitte Excel schließen und nochmal Enter.":(err&&err.message)||"Speichern hat nicht geklappt.",true)}
   });
 },true);
+
+/* ---------- Ein-/Ausklappen ---------- */
+const klappZu=()=>store.get("klapp-zu",[])||[];
+function klappen(t){const key=t.dataset.klapp;
+  if(key==="nx"){store.set("nx-zu",!store.get("nx-zu",false));try{saErkennung.naechstes()}catch{}return}
+  const box=t.closest(".klappbar,.wz-gruppe");if(!box)return;const zu=!box.classList.contains("zu");
+  box.classList.toggle("zu",zu);t.setAttribute("aria-expanded",String(!zu));
+  const l=klappZu().filter(x=>x!==key);if(zu)l.push(key);store.set("klapp-zu",l)}
+document.addEventListener("click",e=>{const t=e.target.closest(".klapp-t[data-klapp]");if(t){e.preventDefault();klappen(t);return}
+  const ter=e.target.closest("#woche .ter");if(ter&&!e.target.closest("button,a"))ter.classList.toggle("auf")});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches(".klapp-t[data-klapp]")){e.preventDefault();klappen(e.target)}});
+document.querySelectorAll(".klappbar .klapp-t[data-klapp]").forEach(t=>{const zu=klappZu().includes(t.dataset.klapp);t.closest(".klappbar").classList.toggle("zu",zu);t.setAttribute("aria-expanded",String(!zu))});
 
 window.saAnsicht={gruppe:(gid,reiter)=>gruppeZeigen(gid,reiter||store.get("lg-reiter","akten")),suchZiele,geheZu,nameSpeichern};
 render();anwenden();hinweisePruefen();

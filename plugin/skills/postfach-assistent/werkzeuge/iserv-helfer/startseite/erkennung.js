@@ -352,9 +352,10 @@ function naechstes(){
   sec.hidden=false;
   const zu=store.get("nx-zu",false);
   const alle=nxKarten(),karten=alle,mehr=0;
-  const kopf=`<div class="nx-kopf"><h3 id="nx-h">Als Nächstes</h3>${alle.length?`<span class="nx-zahl">${alle.length}</span>`:""}<span class="sp"></span>
+  const kopf=`<div class="nx-kopf"><h3 id="nx-h" class="klapp-t" role="button" tabindex="0" aria-expanded="${!zu}" data-klapp="nx">Als Nächstes</h3>${alle.length?`<span class="nx-zahl">${alle.length}</span>`:""}<span class="sp"></span>
     ${alle.length>3?`<span class="note nx-hinweis">seitlich scrollen ›</span>`:""}<button class="linkbtn" id="nx-alle">Alle Termine ansehen</button>
     <button class="btn ghost small" id="nx-zu" aria-expanded="${!zu}">${zu?"Einblenden":"Ausblenden"}</button></div>`;
+  sec.classList.toggle("zu",!!zu);
   if(zu){sec.innerHTML=kopf;nxVerdrahten(sec,[]);return}
   const karte=(t,i)=>{
     const dringend=t.tage<=3;
