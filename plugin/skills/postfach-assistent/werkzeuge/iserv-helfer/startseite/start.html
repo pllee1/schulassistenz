@@ -489,6 +489,20 @@ h2.t,.tag-kopf h2,.wz-kopf h2,.lg-kopf h2{font-family:var(--f-display);font-weig
 .nm-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok);border-radius:10px;padding:8px 14px;font-size:13.5px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
 .nm-toast.fehler{background:var(--err-soft);color:var(--err);border-color:var(--err)}
 @media (max-width:900px){.heute-grid,.lg{grid-template-columns:1fr}.lg-leiste{position:static}}
+
+/* Ein-/Ausklappen (0.23.1) */
+.klapp-t{cursor:pointer;user-select:none;border-radius:6px}
+.klapp-t::after{content:"";display:inline-block;width:7px;height:7px;margin:0 0 3px 9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);opacity:.55;transition:transform .15s}
+.zu>.klapp-t::after,.zu>.klapp-kopf .klapp-t::after,.zu .nx-kopf .klapp-t::after{transform:rotate(-45deg);margin-bottom:1px}
+.klapp-t:hover::after{opacity:1}
+.klapp-t:focus-visible{outline:2px solid var(--accent,#8fb3e8);outline-offset:2px}
+.klappbar.zu>:not(.klapp-kopf){display:none!important}
+.klappbar.zu .klapp-kopf>:not(.klapp-t){display:none!important}
+.wz-gruppe.zu>.tile{display:none}
+.wz-gruppe.zu{padding-bottom:4px}
+#woche .ter{cursor:pointer;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+#woche .ter:not(.auf){padding-bottom:0;border-bottom:4px solid transparent}
+#woche .ter.auf{display:block;overflow:visible}
 </style>
 </head>
 <body>
@@ -518,13 +532,13 @@ h2.t,.tag-kopf h2,.wz-kopf h2,.lg-kopf h2{font-family:var(--f-display);font-weig
   <section class="ansicht" id="v-heute" data-v="heute" aria-label="Heute">
     <div class="heute-grid">
       <div class="heute-links">
-        <section class="karte" id="tag-sec" aria-labelledby="tag-h">
-          <div class="tag-kopf"><h2 id="tag-h">Heute</h2><span class="kw" id="tag-kw"></span></div>
+        <section class="karte klappbar" id="tag-sec" aria-labelledby="tag-h">
+          <div class="tag-kopf klapp-kopf"><h2 id="tag-h" class="klapp-t" role="button" tabindex="0" data-klapp="tag">Heute</h2><span class="kw" id="tag-kw"></span></div>
           <div id="tag-liste" class="tl"></div>
         </section>
-        <section id="woche-sec" aria-labelledby="woche-h">
-          <div class="woche-kopf">
-            <h3 id="woche-h">Woche</h3><span class="kw w-nav" id="woche-kw"></span><span class="sp"></span>
+        <section id="woche-sec" class="klappbar" aria-labelledby="woche-h">
+          <div class="woche-kopf klapp-kopf">
+            <h3 id="woche-h" class="klapp-t" role="button" tabindex="0" data-klapp="woche">Woche</h3><span class="kw w-nav" id="woche-kw"></span><span class="sp"></span>
             <button class="btn ghost small w-nav" id="w-zurueck" aria-label="Vorige Woche">‹</button>
             <button class="btn ghost small w-nav" id="w-heute">Aktuell</button>
             <button class="btn ghost small w-nav" id="w-vor" aria-label="Nächste Woche">›</button>
@@ -539,8 +553,8 @@ h2.t,.tag-kopf h2,.wz-kopf h2,.lg-kopf h2{font-family:var(--f-display);font-weig
             <div id="kal-sec" hidden aria-label="Kalender"></div>
           </div>
         </section>
-        <section aria-labelledby="fav-h" class="schnell-sec">
-          <h3 id="fav-h">Schnellstart</h3>
+        <section aria-labelledby="fav-h" class="schnell-sec klappbar">
+          <h3 id="fav-h" class="klapp-t klapp-kopf" role="button" tabindex="0" data-klapp="schnell">Schnellstart</h3>
           <div class="tiles schnell" id="favs"></div>
         </section>
       </div>

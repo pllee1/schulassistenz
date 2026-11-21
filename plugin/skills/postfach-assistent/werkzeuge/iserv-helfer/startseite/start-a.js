@@ -127,7 +127,8 @@ function render(){
     $("#all-h").textContent="Werkzeuge";$("#wz-hinweis").hidden=false;
     WZ_GRUPPEN.forEach(([id,name,farbe])=>{const ks=ALLE.filter(k=>wzGruppe(k)===id);if(!ks.length)return;
       const box=document.createElement("section");box.className="wz-gruppe";box.style.setProperty("--c",farbe);
-      box.innerHTML=`<h3>${esc(name)}</h3>`;ks.forEach(k=>box.appendChild(kachel(k)));area.appendChild(box)});
+      box.dataset.g=id;const zu=(store.get("klapp-zu",[])||[]).includes("wz-"+id);if(zu)box.classList.add("zu");
+      box.innerHTML=`<h3 class="klapp-t" role="button" tabindex="0" aria-expanded="${!zu}" data-klapp="wz-${esc(id)}">${esc(name)}</h3>`;ks.forEach(k=>box.appendChild(kachel(k)));area.appendChild(box)});
   }
 }
 function merke(k){if(!k||k.id==="frei"||k.id==="live")return;recent=[k.id,...recent.filter(x=>x!==k.id)].slice(0,6);store.set("recent",recent)}
@@ -2106,7 +2107,7 @@ async function zeigeNoten(gidStart,opt){
   const slot=$("#panel-slot");const gruppen=ordner.gruppen.map(g=>g.id);if(!gruppen.length)return;
   let gid=gidStart&&gruppen.includes(gidStart)?gidStart:store.get("noten-gruppe",gruppen[0]);if(!gruppen.includes(gid))gid=gruppen[0];
   let sofortFertig=false,autoLauf=false;
-  let namen={},ed=opt&&opt.leb?{typ:"leb",q:opt.leb}:null,meldung="",bearb=store.get("noten-bearbeiten",false),reg=[];
+  let namen={},ed=opt&&("leb" in opt)?{typ:"leb",q:opt.leb||null}:null,meldung="",bearb=store.get("noten-bearbeiten",false),reg=[];
   const opsK=()=>"noten-aend-"+gid;const ops=()=>store.get(opsK(),[])||[];const opsSetzen=l=>store.set(opsK(),l.length?l:null);
   const zeichnen=async()=>{
     const g=ordner.gruppen.find(x=>x.id===gid);store.set("noten-gruppe",gid);
