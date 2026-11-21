@@ -420,3 +420,86 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
     return true;
   }
 });
+
+/* IServ-Klassenbuch: Statistik-Export für die Akten (ab 0.25).
+   Gleicher Weg wie bei WebUntis: Die Startseite meldet „warten“ und öffnet das Klassenbuch in IServ. Die Lehrkraft klickt dort
+   wie gewohnt auf Exportieren (auch mehrere Dateien, z. B. eine je Kind). Der Helfer hält diese Downloads an (nur IServ,
+   nur Tabellen/PDF, nur innerhalb von 10 Minuten nach „warten“),
+   holt die Datei selbst über die Anmeldung im Browser und löscht den Download, damit keine Datei mit Klarnamen im
+   Download-Ordner liegen bleibt. Klappt das Selbst-Holen nicht (z. B. weil IServ die Datei nur auf ein Formular hin erzeugt),
+   lässt er den Download weiterlaufen und sagt Bescheid. Die Datei liegt nur im Arbeitsspeicher (storage.session), bis die
+   Startseite sie abholt; die Startseite ersetzt die Namen lokal durch Kürzel. Der Helfer schreibt nichts in IServ. */
+const KB_RE = /^https:\/\/[a-z0-9.-]+\/iserv\//i;
+const kbFormat = (url, datei, mime) => {
+  const f = ((datei || "").match(/\.([a-z0-9]+)$/i) || [])[1] || ((url || "").match(/[?&](?:format|type|_format)=([a-z]+)/i) || [])[1] || "";
+  if (f) return f.toLowerCase();
+  if (/pdf/i.test(mime || "")) return "pdf"; if (/csv/i.test(mime || "")) return "csv";
+  if (/spreadsheetml/i.test(mime || "")) return "xlsx"; if (/excel/i.test(mime || "")) return "xls"; if (/opendocument\.spreadsheet/i.test(mime || "")) return "ods";
+  return "";
+};
+// Download abbrechen; war er schon fertig, die Datei von der Festplatte löschen, dann aus der Liste entfernen.
+function kbWeg(id) {
+  chrome.downloads.cancel(id, () => { void chrome.runtime.lastError;
+    chrome.downloads.search({ id }, l => { const x = (l || [])[0];
+      const raus = () => chrome.downloads.erase({ id }, () => void chrome.runtime.lastError);
+      if (x && x.state === "complete" && x.exists !== false) chrome.downloads.removeFile(id, () => { void chrome.runtime.lastError; raus(); }); else raus(); }); });
+}
+// Mehrere Downloads kurz nacheinander: nacheinander in die Liste schreiben, damit keiner verloren geht.
+let kbKette = Promise.resolve();
+const kbAblegen = datei => (kbKette = kbKette.then(async () => {
+  const { saKbDateien } = await sess.get("saKbDateien");
+  await sess.set({ saKbDateien: [...(saKbDateien || []), datei].slice(-80), saKbWarten: Date.now() });   // Warten verlängert sich mit jeder Datei
+}).catch(() => {}));
+async function kbDownload(d) {
+  const url = d.finalUrl || d.url || "";
+  if (!KB_RE.test(url) && !KB_RE.test(d.referrer || "")) return;
+  const { saKbWarten } = await sess.get("saKbWarten");
+  if (!saKbWarten || Date.now() - saKbWarten > WU_WARTEN_MS) return;
+  const fmt = kbFormat(url, d.filename, d.mime);
+  if (fmt && !/^(csv|xls|xlsx|ods|txt|tsv|pdf)$/.test(fmt)) return;
+  if (d.referrer && KB_RE.test(d.referrer)) chrome.storage.local.set({ saKbSeite: d.referrer });
+  chrome.downloads.pause(d.id, () => void chrome.runtime.lastError);
+  const weiter = async text => { chrome.downloads.resume(d.id, () => void chrome.runtime.lastError); await sess.set({ saKbFehler: text }); };
+  try {
+    if (/^(blob|data):/i.test(url)) return weiter("IServ hat die Datei im Browser erzeugt. Sie liegt jetzt im Download-Ordner: bitte hierher ziehen und danach dort löschen.");
+    const r = await fetch(url, { credentials: "include", cache: "no-store" });
+    const typ = r.headers.get("content-type") || "";
+    const buf = r.ok ? await r.arrayBuffer() : null;
+    if (!buf || /text\/html/i.test(typ)) return weiter("IServ gibt die Datei nicht ein zweites Mal heraus" + (r.ok ? "" : " (" + r.status + ")") + ". Sie liegt jetzt im Download-Ordner: bitte hierher ziehen und danach dort löschen.");
+    kbWeg(d.id);
+    const cd = r.headers.get("content-disposition") || "";
+    let name = ((cd.match(/filename\*=UTF-8''([^;]+)/i) || [])[1] || "");
+    try { name = decodeURIComponent(name); } catch (e) {}
+    name = name || ((cd.match(/filename="?([^";]+)"?/i) || [])[1] || "") || (d.filename || "").split(/[\\/]/).pop() || decodeURIComponent((new URL(url).pathname.split("/").pop()) || "");
+    await kbAblegen({ daten: b64aus(buf), typ, format: fmt || kbFormat(name, "", typ), name, zeit: Date.now() });
+  } catch (e) {
+    await weiter("Abfangen hat nicht geklappt (" + String((e && e.message) || e) + "). Die Datei liegt im Download-Ordner: bitte hierher ziehen und danach dort löschen.");
+  }
+}
+if (chrome.downloads && chrome.downloads.onCreated) chrome.downloads.onCreated.addListener(d => { kbDownload(d).catch(() => {}); });
+async function kbExport(m) {
+  if (m.op === "warten") {
+    await sess.remove(["saKbDateien", "saKbFehler"]); await sess.set({ saKbWarten: Date.now() });
+    const { saKbSeite, saKalHost } = await chrome.storage.local.get(["saKbSeite", "saKalHost"]);
+    const h = m.host || saKalHost || ""; const host = /^https:\/\/[a-z0-9.-]+$/i.test(h) ? h : ((h.match(/^https:\/\/[a-z0-9.-]+/i) || [])[0] || "");
+    const ziel = saKbSeite || (host ? host + "/iserv/classbook" : "");
+    if (ziel) chrome.tabs.create({ url: ziel });
+    return { ok: true, seite: !!saKbSeite, geoeffnet: !!ziel };
+  }
+  if (m.op === "abholen") {
+    await kbKette;
+    const d = await sess.get(["saKbDateien", "saKbFehler", "saKbWarten"]);
+    const wartet = !!d.saKbWarten && Date.now() - d.saKbWarten < WU_WARTEN_MS;
+    if (d.saKbDateien && d.saKbDateien.length) { await sess.remove("saKbDateien"); return { ok: true, fertig: true, dateien: d.saKbDateien, wartet }; }
+    if (d.saKbFehler) { await sess.remove("saKbFehler"); return { ok: false, fehler: d.saKbFehler, wartet }; }
+    return { ok: true, fertig: false, wartet };
+  }
+  if (m.op === "abbrechen") { await sess.remove(["saKbWarten", "saKbDateien", "saKbFehler"]); return { ok: true }; }
+  if (m.op === "vergessen") { await chrome.storage.local.remove("saKbSeite"); return { ok: true }; }
+  return { ok: false, fehler: "Unbekannter Befehl" };
+}
+chrome.runtime.onMessage.addListener((m, sender, antwort) => {
+  if (m.cmd !== "kb-export") return;
+  kbExport(m).then(antwort).catch(e => antwort({ ok: false, fehler: "Helfer-Fehler (" + String((e && e.message) || e) + ")." }));
+  return true;
+});

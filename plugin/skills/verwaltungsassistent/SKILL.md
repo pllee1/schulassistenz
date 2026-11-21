@@ -17,7 +17,7 @@ Bewusst schmal begonnen. Weitere Aufgaben (Bestellungen, Abrechnungen, Aufsichts
 
 ## 1. Exporte ohne Namen hochladen
 
-**Fehlzeiten aus WebUntis (und ähnlichen Exporten) zuerst über die Startseite:** Kachel „Fehlzeiten-Ampel“. Die Startseite liest den Export lokal, ersetzt Namen über die Kürzellisten und speichert nur Kürzel, Datum, Fehlstunden, Fehlminuten, Status (entschuldigt/unentschuldigt/offen, „zählt als entschuldigt“ schon angewandt) und Verspätung ja/nein in `<Schülerdaten>/ausgaben/fehlzeiten/fehlzeiten-<gruppe>.tsv` (Tab-getrennt, erste Zeile Kommentar mit Stand und Quelle). Abwesenheitsgründe, Texte und Schüler-IDs sind dort schon entfernt. Diese Datei direkt einlesen (Abschnitt 2), ohne weitere Pseudonymisierung. Den Schulassistenz-Helfer kann die Startseite den Export auf Knopfdruck aus WebUntis holen lassen. Die Ampel dort rechnet nach denselben Regeln wie Abschnitt 2. Weicht Claudes Ergebnis ab, den Unterschied nennen.
+**Fehlzeiten aus WebUntis, dem IServ-Klassenbuch (Statistik › Abwesenheiten, auch als Dateien je Kind) und ähnlichen Exporten zuerst über die Startseite:** Kachel „Fehlzeiten-Ampel“. Die Startseite liest den Export lokal, ersetzt Namen über die Kürzellisten und speichert nur Kürzel, Datum, Fehlstunden, Fehlminuten, Status (entschuldigt/unentschuldigt/offen, „zählt als entschuldigt“ schon angewandt) und Verspätung ja/nein (beim IServ-Klassenbuch zusätzlich Spalte Fehltage, die IServ selbst zählt) in `<Schülerdaten>/ausgaben/fehlzeiten/fehlzeiten-<gruppe>.tsv` (Tab-getrennt, erste Zeile Kommentar mit Stand und Quelle). Abwesenheitsgründe, Texte und Schüler-IDs sind dort schon entfernt. Diese Datei direkt einlesen (Abschnitt 2), ohne weitere Pseudonymisierung. Den Schulassistenz-Helfer kann die Startseite den Export auf Knopfdruck aus WebUntis holen lassen. Die Ampel dort rechnet nach denselben Regeln wie Abschnitt 2. Weicht Claudes Ergebnis ab, den Unterschied nennen.
 
 Andere Exporte:
 
@@ -61,7 +61,7 @@ Die Regeln stehen im Profil unter `regeln.fehlzeiten` (siehe **schulprofil**). F
 
 Keine Gründe für Fehlzeiten erfassen oder vermuten (Gesundheit ist besondere Kategorie). Häufen sich Fehlzeiten so, dass Schulpflicht oder Kindeswohl berührt sein könnten: nur auf das Verfahren der Schule hinweisen, nichts selbst einordnen.
 
-Ist die lernstandsakte freigegeben: nach Bestätigung die Zahl der Fehltage je Halbjahr in die Kind-Akte schreiben (Bereich Leistungen oder Termine, nicht die einzelnen Tage).
+Ist die lernstandsakte freigegeben: nach Bestätigung die Zahl der Fehltage je Halbjahr in die Kind-Akte schreiben (Bereich Leistungen oder Termine, nicht die einzelnen Tage). Die Startseite schreibt solche Zeilen selbst („In die Akten übernehmen …“ in der Fehlzeiten-Ampel): `Fehlzeiten-Stand <Datum> (seit <Datum>): <n> ganze Fehltage (…) | Quelle: IServ-Klassenbuch bzw. WebUntis (Startseite, Fehlzeiten)`. Vorhandene Zeilen dieser Form nicht noch einmal schreiben.
 
 **Benachrichtigung festhalten:** Sagt die Lehrkraft, dass sie Eltern informiert hat (oder gibt Daten aus der Vergangenheit an), nach Bestätigung in die Kind-Akte schreiben, Bereich Termine: `2026-11-18 | Beleg | Eltern über Fehlzeiten informiert (unentschuldigt bis dahin: 12 Std.) | Quelle: Lehrkraft | bestätigt`. Ab diesem Datum zählt die Schwelle neu. Bei „noch nie“ nichts eintragen.
 

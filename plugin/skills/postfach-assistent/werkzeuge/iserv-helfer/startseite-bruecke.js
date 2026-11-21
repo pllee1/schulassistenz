@@ -37,6 +37,14 @@
     catch (err) { antwort = { ok: false, fehler: "Helfer nicht erreichbar. Bitte die Seite neu laden (F5)." }; }
     window.postMessage({ sa: "wu-export-antwort", id: e.data.id, ...(antwort || { ok: false, fehler: "Keine Antwort" }) }, "*");
   });
+  // IServ-Klassenbuch: Statistik-Export für die Akten
+  window.addEventListener("message", async e => {
+    if (e.source !== window || !e.data || e.data.sa !== "kb-export") return;
+    let antwort;
+    try { antwort = await chrome.runtime.sendMessage({ cmd: "kb-export", op: e.data.op, host: e.data.host }); }
+    catch (err) { antwort = { ok: false, fehler: "Helfer nicht erreichbar. Bitte die Seite neu laden (F5)." }; }
+    window.postMessage({ sa: "kb-export-antwort", id: e.data.id, ...(antwort || { ok: false, fehler: "Keine Antwort" }) }, "*");
+  });
   // Alte Startseite (Datei): Browserdaten an den Helfer übergeben und auf die neue Startseite hinweisen
   if (location.protocol === "file:") {
     const daten = {};
