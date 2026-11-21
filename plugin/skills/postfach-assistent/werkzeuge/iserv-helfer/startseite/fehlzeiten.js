@@ -120,8 +120,16 @@ const VERMERK_SPALTEN={
   datum:[/^datum$/i,/^date$/i,/^tag$/i],
   text:[/^vermerk$/i,/^sch(ü|ue)lervermerk/i,/^bemerkung/i,/^text$/i,/^inhalt$/i,/^kommentar/i,/^beschreibung/i,/^notiz/i],
   art:[/^art$/i,/^vermerkart/i,/^kategorie/i,/^typ$/i,/^vermerktyp/i,/^grund$/i],
+  fach:[/^fach$/i,/^f(ä|ae)cher$/i,/^unterricht$/i,/^verp(\.|asst)?\s*unterricht/i,/^kurs$/i,/^stunde$/i],
   fehl:[/^fehlstunden/i,/^fehlmin/i]
 };
+// Fach aus „1. De in Klasse 2b  (MI)“ (IServ, mehrere Zeilen möglich) oder einfach „Deutsch“; die Lehrkraft in Klammern fällt weg.
+function fachAus(v){
+  const zeilen=String(v??"").split(/\n|;/).map(x=>x.trim()).filter(Boolean);const out=[];
+  for(const z of zeilen){let m=z.match(/^\d+\.\s*(.+?)\s+in\s+/i);let f=m?m[1]:/^\d+\.\s*std/i.test(z)||/^\d+$/.test(z)?"":z.replace(/\s*\([^)]*\)\s*$/,"");
+    f=f.trim();if(f&&f!=="-"&&f.length<=30&&!out.includes(f))out.push(f)}
+  return out.join("/");
+}
 function vermerkSpalten(zeilen,ohneName){
   for(let i=0;i<Math.min(15,zeilen.length);i++){const h=(zeilen[i]||[]).map(x=>String(x??"").trim());const s={};
     for(const [k,res] of Object.entries(VERMERK_SPALTEN))s[k]=h.findIndex(x=>res.some(r=>r.test(x)));
@@ -233,11 +241,12 @@ async function verarbeiten(eingabe){
   if(vs){const {kopf,s}=vs;herkunft.add("IServ-Klassenbuch");
     for(const z of zeilen.slice(kopf+1)){if(!z)continue;
       const name=(s.name>=0?String(z[s.name]??"").trim():"")||(ausDatei?ausDatei.name:"");const iso=datumISO(z[s.datum]);
+      const fach=s.fach>=0?fachAus(z[s.fach]):"";
       const text=s.text>=0?String(z[s.text]??"").replace(/\s+/g," ").trim():"",art=s.art>=0?String(z[s.art]??"").replace(/\s+/g," ").trim():"";
       if(!name||!iso||(!text&&!art))continue;
       const treffer=namen.get(norm(name))||namen.get("§"+tokenKey(name))||namen.get("~"+ohneAkzent(tokenKey(name)))||[];
       const schl=["v",tokenKey(name),iso,art,text].join("|");if(gesehen.has(schl))continue;gesehen.add(schl);
-      vermerke.push({name,treffer,iso,art,text});if(!treffer.length)fehlend.set(name,(fehlend.get(name)||0)+1)}
+      vermerke.push({name,treffer,iso,art,text,fach});if(!treffer.length)fehlend.set(name,(fehlend.get(name)||0)+1)}
     continue}
   const sp=spaltenFinden(zeilen,!!ausDatei);
   if(!sp){if(zeilen.slice(0,15).some(z=>(z||[]).some(x=>/^fehltage$/i.test(String(x??"").trim()))))summen++;else ohneKopf++;continue}
@@ -584,10 +593,10 @@ function aktenVorschau(){
 /* ---------- Vermerke (IServ-Klassenbuch) in die Akten ---------- */
 function vermerkeFuer(erg,gid){
   return (erg.vermerke||[]).map(v=>{const t=v.treffer.find(x=>x.gruppe===gid);if(!t)return null;const text=textPseudo(v.text),art=textPseudo(v.art);
-    return {k:t.kuerzel,iso:v.iso,art,text,verdacht:nameRest(text),an:true}}).filter(Boolean)
+    return {k:t.kuerzel,iso:v.iso,art,text,fach:v.fach||"",verdacht:nameRest(text),an:true}}).filter(Boolean)
     .sort((a,b)=>a.k.localeCompare(b.k,"de",{numeric:true})||a.iso.localeCompare(b.iso));
 }
-const vInhalt=v=>!v.art?v.text:!v.text||v.text.toLowerCase().includes(v.art.toLowerCase())?(v.text||v.art):`${v.art}: ${v.text}`;
+const vInhalt=v=>{const t=!v.art?v.text:!v.text||v.text.toLowerCase().includes(v.art.toLowerCase())?(v.text||v.art):`${v.art}: ${v.text}`;return v.fach?`${v.fach} – ${t}`:t};
 function vermerkZeilen(modus){
   const an=(F.vermerke||[]).filter(v=>v.an&&vInhalt(v));const out=[];
   if(modus==="einzeln"){for(const v of an)out.push({k:v.k,inhalt:`Vermerk im Klassenbuch: ${vInhalt(v)}`,datum:v.iso});return out}
@@ -602,7 +611,7 @@ function vermerkeHTML(){
   const pro=new Map();V.forEach((v,i)=>{if(!pro.has(v.k))pro.set(v.k,[]);pro.get(v.k).push([v,i])});
   const verd=V.filter(v=>v.an&&v.verdacht).length;
   return `<div class="fz-vm"><h4 style="margin:14px 0 4px">Vermerke aus dem Klassenbuch (${V.length})</h4>
-    <p class="note" style="margin:0 0 6px">Namen in den Texten sind schon durch Kürzel ersetzt. Du kannst jeden Text noch ändern oder abwählen. Lehrkräfte, Stunden und Fächer werden nicht übernommen.</p>
+    <p class="note" style="margin:0 0 6px">Namen in den Texten sind schon durch Kürzel ersetzt. Du kannst jeden Text noch ändern oder abwählen. Das Fach steht vorn; Lehrkräfte und Stunden werden nicht übernommen.</p>
     ${verd?`<div class="fz-warn"><b>${verd===1?"1 Text enthält":verd+" Texte enthalten"} vielleicht noch einen Namen</b> (gelb markiert). Bitte prüfen und ändern, bevor du sie übernimmst.</div>`:""}
     <div class="fz-tab-wrap"><table class="fz-tab"><thead><tr><th></th><th>Kürzel</th><th>Datum</th><th>Vermerk</th></tr></thead><tbody>${[...pro].map(([k,l])=>l.map(([v,i],j)=>`<tr><td><input type="checkbox" data-vm-an="${i}"${v.an?" checked":""} aria-label="übernehmen"></td><td>${j?"":`<span class="k">${esc(k)}</span>`}</td><td class="z" style="text-align:left">${datumDE(v.iso)}</td><td><input type="text" data-vm-t="${i}" value="${esc(vInhalt(v))}" style="width:100%;${v.verdacht?"outline:2px solid var(--warn)":""}"></td></tr>`).join("")).join("")}</tbody></table></div>
     <div class="fz-ja" style="margin-top:6px"><label class="r-skala"><input type="radio" name="fz-vm-modus" value="zusammen"${modus!=="einzeln"?" checked":""}> je Kind eine Zeile (mit Anzahl)</label><label class="r-skala"><input type="radio" name="fz-vm-modus" value="einzeln"${modus==="einzeln"?" checked":""}> jeder Vermerk eine Zeile</label>
@@ -612,7 +621,7 @@ function vermerkeHTML(){
 function vermerkeVerdrahten(){
   const slot=$("#panel-slot");if(!slot||!F.vermerke)return;
   slot.querySelectorAll("[data-vm-an]").forEach(c=>c.addEventListener("change",()=>{F.vermerke[+c.dataset.vmAn].an=c.checked}));
-  slot.querySelectorAll("[data-vm-t]").forEach(c=>c.addEventListener("input",()=>{const v=F.vermerke[+c.dataset.vmT];v.art="";v.text=c.value.trim();v.verdacht=nameRest(v.text);c.style.outline=v.verdacht?"2px solid var(--warn)":""}));
+  slot.querySelectorAll("[data-vm-t]").forEach(c=>c.addEventListener("input",()=>{const v=F.vermerke[+c.dataset.vmT];v.art="";v.fach="";v.text=c.value.trim();v.verdacht=nameRest(v.text);c.style.outline=v.verdacht?"2px solid var(--warn)":""}));
   slot.querySelectorAll('[name="fz-vm-modus"]').forEach(r=>r.addEventListener("change",()=>store.set("fz-vermerk-modus",r.value)));
   const ok=$("#fz-vm-ok");if(ok)ok.addEventListener("click",vermerkeSchreiben);
 }
