@@ -2,7 +2,9 @@
    Gehört zum Plugin und wird bei Updates ersetzt. Wird nach dem Hauptskript geladen und nutzt dessen Funktionen
    (ordner, sdRoot, sdSchreib, namenLesen, xlsxZeilen, abschnittErgaenzen, oeffne, store, esc, $ …).
 
-   Ablauf: WebUntis-Export „Abwesenheiten“ (xls, xlsx, csv) per Schulassistenz-Helfer holen oder als Datei hineinziehen.
+   Ablauf: WebUntis-Export „Abwesenheiten“ oder IServ-Klassenbuch › Statistik › Abwesenheiten (xls, xlsx, csv) per
+   Schulassistenz-Helfer holen oder als Datei(en) hineinziehen. IServ exportiert auch je Kind eine Datei
+   (<Nachname>_<Vornamen>_Klasse_<k>_Abwesenheiten.xlsx, ohne Namensspalte): Dann kommt der Name aus dem Dateinamen.
    Die Datei wird nur in diesem Fenster gelesen. Namen werden über die Kürzellisten durch Kürzel ersetzt.
    Behalten werden nur Kürzel, Datum, Stunden, Minuten, Status und „Verspätung ja/nein“.
    Verworfen werden Namen, Externe Id, Abwesenheitsgründe, Texte, Lehrkraft und Fach.
@@ -97,6 +99,8 @@ async function tabelleLesen(buf){
 /* ---------- Spalten, Datum, Namen ---------- */
 const norm=s=>String(s??"").normalize("NFKC").toLowerCase().replace(/[\u00ad\u200b-\u200d\ufeff]/g,"").replace(/[\u2010-\u2015\u2212]/g,"-").replace(/[,.;()]/g," ").replace(/\s*-\s*/g,"-").replace(/\s+/g," ").trim();
 const tokenKey=s=>norm(s).split(/[\s-]+/).filter(Boolean).sort().join(" ");
+// Ohne Akzente (Dateinamen aus dem IServ-Klassenbuch schreiben z. B. „Dundar“ statt „Dündar“, „Gurcin“ statt „Gürçin“)
+const ohneAkzent=s=>String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ß/g,"ss").replace(/æ/g,"ae").replace(/ø/g,"o").replace(/ł/g,"l");
 const SPALTEN={
   name:[/^sch(ü|ue)ler/i,/^name$/i,/^langname$/i,/^schüler\*innen$/i],
   klasse:[/^klasse/i],
@@ -104,12 +108,16 @@ const SPALTEN={
   std:[/^fehlstd/i,/^fehlstunden/i,/^stunden$/i],
   min:[/^fehlmin/i,/^minuten$/i],
   grund:[/^abwesenheitsgrund/i,/^grund$/i],
-  status:[/^status$/i,/^entschuldigungsstatus/i]
+  status:[/^status$/i,/^entschuldigungsstatus/i],
+  zeitraum:[/^zeitraum$/i],
+  tage:[/^fehltage$/i],
+  verp:[/^verp(\.|asst)?\s*unterricht/i],
+  wu:[/^externe id$/i,/^abwesenheitsgrund/i]
 };
-function spaltenFinden(zeilen){
+function spaltenFinden(zeilen,ohneName){
   for(let i=0;i<Math.min(15,zeilen.length);i++){const h=(zeilen[i]||[]).map(x=>String(x??"").trim());const s={};
     for(const [k,res] of Object.entries(SPALTEN))s[k]=h.findIndex(x=>res.some(r=>r.test(x)));
-    if(s.name>=0&&s.datum>=0)return {kopf:i,s}}
+    if(s.datum>=0&&(s.name>=0||ohneName))return {kopf:i,s}}
   return null;
 }
 function datumISO(v){
@@ -130,7 +138,7 @@ async function alleNamen(){
       const nachnamen=nach?[nach]:letzterNach?[letzterNach,""]:[""];if(nach)letzterNach=nach;
       const e={gruppe:g.id,kuerzel:k,anzeige:[n.vor,n.nach].filter(Boolean).join(" ")};
       for(const nn of nachnamen){const varianten=new Set([`${nn} ${vor}`.trim(),`${vor} ${nn}`.trim()]);const v1=vor.split(" ")[0];if(v1&&v1!==vor){varianten.add(`${nn} ${v1}`.trim());varianten.add(`${v1} ${nn}`.trim())}
-        for(const v of varianten){add(v,e);add("§"+tokenKey(v),e)}}}}
+        for(const v of varianten){add(v,e);add("§"+tokenKey(v),e);add("~"+ohneAkzent(tokenKey(v)),e)}}}}
   return ziel;
 }
 
@@ -161,31 +169,56 @@ const schuljahrBeginn=()=>{const d=new Date();const j=d.getMonth()>=7?d.getFullY
   const sommer=ferien().filter(([a,b])=>b>=`${j}-07-01`&&b<=`${j}-09-30`).map(x=>x[1]).sort().pop();return sommer?plusTage(sommer,1):`${j}-08-01`};
 
 /* ---------- Datei → pseudonymisierte Zeilen ---------- */
-async function verarbeiten(buf){
-  const zeilen=await tabelleLesen(buf);const sp=spaltenFinden(zeilen);
-  if(!sp)throw new Error("In der Datei fehlt die Kopfzeile mit Schülername und Datum. Ist es der Bericht „Abwesenheiten“ (pro Schüler) aus WebUntis?");
-  const {kopf,s}=sp;const r=regeln();const namen=await alleNamen();
-  const aehnlich=new Map(),daten=[],fehlend=new Map(),klassen=new Map(),doppelt=new Map();
+// IServ-Klassenbuch: Export je Kind heißt <Nachname>_<Vornamen>_Klasse_<k>_Abwesenheiten.xlsx (bzw. _Fehlzeiten_Summe)
+function nameAusDatei(n){
+  n=String(n||"").split(/[\\/]/).pop().replace(/\.[a-z0-9]+$/i,"").replace(/\s*\(\d+\)$/,"");
+  let m=n.match(/^(.+?)_Klasse_([^_]+)_(Abwesenheiten|Fehlzeiten|Vermerke)/i);if(m)return {name:m[1].replace(/_+/g," ").trim(),kl:m[2]};
+  m=n.match(/^(.+?)_(Abwesenheiten|Fehlzeiten)/i);if(m&&/_/.test(m[1]))return {name:m[1].replace(/_+/g," ").trim(),kl:""};
+  return null;
+}
+const klasseNorm=k=>String(k||"").trim().replace(/^klasse\s*/i,"");
+async function verarbeiten(eingabe){
+  const dateien=Array.isArray(eingabe)?eingabe:[{buf:eingabe,name:""}];
+  const r=regeln();const namen=await alleNamen();
+  const aehnlich=new Map(),daten=[],fehlend=new Map(),klassen=new Map(),doppelt=new Map(),gesehen=new Set();const hinweise=[],herkunft=new Set();let summen=0,ohneKopf=0,pdf=0;
+  for(const datei of dateien){
+  const buf=await datei.buf;
+  if(String.fromCharCode(...new Uint8Array(buf,0,Math.min(5,buf.byteLength)))==="%PDF-"){pdf++;continue}
+  const zeilen=await tabelleLesen(buf);const ausDatei=nameAusDatei(datei.name);const sp=spaltenFinden(zeilen,!!ausDatei);
+  if(!sp){if(zeilen.slice(0,15).some(z=>(z||[]).some(x=>/^fehltage$/i.test(String(x??"").trim()))))summen++;else ohneKopf++;continue}
+  const {kopf,s}=sp;
+  if(s.name<0&&!ausDatei){ohneKopf++;continue}
+  if(s.verp>=0||ausDatei)herkunft.add("IServ-Klassenbuch");else if(s.wu>=0)herkunft.add("WebUntis");
   for(const z of zeilen.slice(kopf+1)){if(!z)continue;
-    const name=String(z[s.name]??"").trim();const iso=datumISO(z[s.datum]);if(!name||!iso)continue;
-    const kl=s.klasse>=0?String(z[s.klasse]??"").trim():"";if(kl)klassen.set(kl,(klassen.get(kl)||0)+1);
+    const name=(s.name>=0?String(z[s.name]??"").trim():"")||(ausDatei?ausDatei.name:"");const iso=datumISO(z[s.datum]);if(!name||!iso)continue;
+    const kl=klasseNorm(s.klasse>=0?String(z[s.klasse]??""):(ausDatei?ausDatei.kl:""));if(kl)klassen.set(kl,(klassen.get(kl)||0)+1);
     const std=s.std>=0?zahl(z[s.std]):1,min=s.min>=0?zahl(z[s.min]):0;
     const grund=s.grund>=0?norm(z[s.grund]):"";const st=s.status>=0?norm(z[s.status]):"";
+    if(/keine fehlzeit/.test(st+" "+grund)||(s.std>=0&&std===0&&min===0))continue;   // IServ: „Sonstige Abwesenheit (keine Fehlzeit)“
+    const ft=s.tage>=0?zahl(z[s.tage]):null;
     let status=/nicht|unent/.test(st)?"unentschuldigt":/entsch/.test(st)?"entschuldigt":"offen";
     if(status!=="entschuldigt"&&grund&&r.entschuldigt.includes(grund))status="entschuldigt";
-    const verspaetung=(std===0&&min>0&&min<45)||/versp(ä|ae)t/.test(grund);
-    const treffer=namen.get(norm(name))||namen.get("§"+tokenKey(name))||[];
-    daten.push({name,treffer,iso,std,min,status,verspaetung,kl});
+    const zr=s.zeitraum>=0?norm(z[s.zeitraum]):"";
+    const verspaetung=(std===0&&min>0&&min<45)||/versp(ä|ae)t/.test(grund)||(std===0&&/zu sp(ä|ae)t/.test(zr));
+    const schluessel=[tokenKey(name),iso,std,min,status,zr].join("|");if(gesehen.has(schluessel))continue;gesehen.add(schluessel);
+    const treffer=namen.get(norm(name))||namen.get("§"+tokenKey(name))||namen.get("~"+ohneAkzent(tokenKey(name)))||[];
+    daten.push({name,treffer,iso,std,min,status,verspaetung,kl,ft});
     if(!treffer.length)fehlend.set(name,(fehlend.get(name)||0)+1);
     if(!treffer.length&&!aehnlich.has(name)){const t=new Set(tokenKey(name).split(" "));const kand=new Map();for(const [key,l] of namen)if(key.startsWith("§")&&key.slice(1).split(" ").some(x=>x.length>2&&t.has(x)))for(const e of l)kand.set(e.gruppe+"/"+e.kuerzel,e);aehnlich.set(name,[...kand.values()].slice(0,4))}
     else if(new Set(treffer.map(t=>t.gruppe)).size<treffer.length)doppelt.set(name,treffer);
-  }
-  if(!daten.length)throw new Error("In der Datei stehen keine Fehlzeilen (Name und Datum).");
-  return {daten,fehlend,klassen,doppelt,regeln:r,aehnlich};
+  }}
+  if(pdf)hinweise.push(`${pdf===1?"Eine PDF-Datei wurde":pdf+" PDF-Dateien wurden"} übersprungen. Bitte beim Export „Excel“ oder „CSV“ wählen.`);
+  if(summen&&daten.length)hinweise.push(`${summen===1?"Eine Summen-Datei":summen+" Summen-Dateien"} (Fehlzeiten_Summe) übersprungen: Die Summen rechnet die Seite aus den Abwesenheiten selbst.`);
+  if(ohneKopf)hinweise.push(`${ohneKopf===1?"Eine Datei hat":ohneKopf+" Dateien haben"} keine passende Kopfzeile (Schüler bzw. Dateiname und Datum) und wurde${ohneKopf===1?"":"n"} übersprungen.`);
+  if(!daten.length){
+    if(pdf&&!summen&&!ohneKopf)throw new Error("PDF-Dateien kann die Seite nicht lesen. Bitte beim Export „Excel“ oder „CSV“ wählen.");
+    if(summen&&!ohneKopf)throw new Error("Das ist nur die Summe (Fehlzeiten_Summe). Für die Ampel braucht die Seite die Abwesenheiten: im IServ-Klassenbuch unter Statistik › Abwesenheiten exportieren.");
+    throw new Error(dateien.length>1?"In den Dateien stehen keine Fehlzeilen (Name und Datum).":"In der Datei fehlt die Kopfzeile mit Schülername und Datum (oder es stehen keine Fehlzeiten darin). Ist es der Bericht „Abwesenheiten“ aus WebUntis bzw. aus dem IServ-Klassenbuch (Statistik)?");}
+  return {daten,fehlend,klassen,doppelt,regeln:r,aehnlich,hinweise,dateien:dateien.length-pdf,herkunft:[...herkunft].join(" + ")};
 }
 function gruppeVorschlag(erg){
   const kl=[...erg.klassen.entries()].sort((a,b)=>b[1]-a[1])[0];
-  if(kl){const k=kl[0].toLowerCase().replace(/\s+/g,"");const passend=ordner.gruppen.filter(g=>g.id.toLowerCase()===k||g.id.toLowerCase().startsWith(k+"-"));
+  if(kl){const k=klasseNorm(kl[0]).toLowerCase().replace(/\s+/g,"");const passend=ordner.gruppen.filter(g=>g.id.toLowerCase()===k||g.id.toLowerCase().startsWith(k+"-"));
     if(passend.length){const treffer=g=>erg.daten.filter(d=>d.treffer.some(t=>t.gruppe===g.id)).length;return passend.sort((a,b)=>treffer(b)-treffer(a))[0].id}}
   const gezaehlt=new Map();for(const d of erg.daten)for(const t of d.treffer)gezaehlt.set(t.gruppe,(gezaehlt.get(t.gruppe)||0)+1);
   const best=[...gezaehlt.entries()].sort((a,b)=>b[1]-a[1])[0];return best?best[0]:(ordner.gruppen[0]||{}).id||"";
@@ -193,7 +226,7 @@ function gruppeVorschlag(erg){
 function pseudoZeilen(erg,gid){
   const out=[];let ohne=0;
   for(const d of erg.daten){const t=d.treffer.find(x=>x.gruppe===gid);if(!t){if(d.treffer.length)ohne++;continue}
-    out.push({k:t.kuerzel,iso:d.iso,std:d.std,min:d.min,status:d.status,verspaetung:d.verspaetung})}
+    out.push({k:t.kuerzel,iso:d.iso,std:d.std,min:d.min,status:d.status,verspaetung:d.verspaetung,ft:d.ft})}
   out.sort((a,b)=>a.k.localeCompare(b.k,"de",{numeric:true})||a.iso.localeCompare(b.iso));return {zeilen:out,ohne};
 }
 
@@ -238,16 +271,17 @@ const tag=f=>f.von===f.bis?datumDE(f.von):`${datumDE(f.von)}–${datumDE(f.bis)}
 const DATEI=gid=>`fehlzeiten-${gid}.tsv`;
 async function standSpeichern(gid,zeilen,quelle,zeitraum){
   const root=await sdSchreib();const a=await root.getDirectoryHandle("ausgaben",{create:true});const f=await a.getDirectoryHandle("fehlzeiten",{create:true});
+  const mitTage=zeilen.some(z=>z.ft!=null);
   const kopf=`# Fehlzeiten ${gid} · Stand ${heuteISO()} · Quelle: ${quelle}${zeitraum?" · Zeitraum "+zeitraum:""} · nur Kürzel (Startseite, Fehlzeiten-Ampel)`;
-  const t=[kopf,"Kuerzel\tDatum\tFehlstd\tFehlmin\tStatus\tVerspaetung",...zeilen.map(z=>[z.k,z.iso,z.std,z.min,z.status,z.verspaetung?"ja":"nein"].join("\t"))].join("\n")+"\n";
+  const t=[kopf,"Kuerzel\tDatum\tFehlstd\tFehlmin\tStatus\tVerspaetung"+(mitTage?"\tFehltage":""),...zeilen.map(z=>[z.k,z.iso,z.std,z.min,z.status,z.verspaetung?"ja":"nein",...(mitTage?[z.ft??""]:[])].join("\t"))].join("\n")+"\n";
   await schreibe(f,DATEI(gid),t);
 }
 async function standLesen(gid){
   try{const root=sdRoot();if(!root)return null;const f=await (await root.getDirectoryHandle("ausgaben")).getDirectoryHandle("fehlzeiten");
     const t=await lies(await f.getFileHandle(DATEI(gid)));if(!t)return null;const z=t.split(/\r?\n/);
-    const stand=((z[0]||"").match(/Stand (\d{4}-\d{2}-\d{2})/)||[])[1]||"";const zeitraum=((z[0]||"").match(/Zeitraum ([^·]+)/)||[])[1]||"";
-    const zeilen=z.slice(2).filter(Boolean).map(x=>{const [k,iso,std,min,status,v]=x.split("\t");return {k,iso,std:zahl(std),min:zahl(min),status,verspaetung:v==="ja"}});
-    return {stand,zeitraum:zeitraum.trim(),zeilen}}catch{return null}
+    const stand=((z[0]||"").match(/Stand (\d{4}-\d{2}-\d{2})/)||[])[1]||"";const quelle=((z[0]||"").match(/Quelle: ([^·]+)/)||[])[1]||"";const zeitraum=((z[0]||"").match(/Zeitraum ([^·]+)/)||[])[1]||"";
+    const zeilen=z.slice(2).filter(Boolean).map(x=>{const [k,iso,std,min,status,v,ft]=x.split("\t");return {k,iso,std:zahl(std),min:zahl(min),status,verspaetung:v==="ja",ft:ft==null||ft===""?null:zahl(ft)}});
+    return {stand,zeitraum:zeitraum.trim(),quelle:quelle.trim(),zeilen}}catch{return null}
 }
 
 /* ---------- Helfer: Export aus WebUntis holen ---------- */
@@ -255,6 +289,16 @@ function wuRuf(op,extra){return new Promise((ok,nein)=>{const id=Math.random().t
   const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.8 geladen? Seite neu laden (F5)."))},60000);
   function h(e){if(e.source!==window||!e.data||e.data.sa!=="wu-export-antwort"||e.data.id!==id)return;clearTimeout(t);window.removeEventListener("message",h);ok(e.data)}
   window.addEventListener("message",h);window.postMessage({sa:"wu-export",op,id,...(extra||{})},"*")})}
+function kbRuf(op,extra){return new Promise((ok,nein)=>{const id=Math.random().toString(36).slice(2);
+  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.24 geladen? Seite neu laden (F5)."))},60000);
+  function h(e){if(e.source!==window||!e.data||e.data.sa!=="kb-export-antwort"||e.data.id!==id)return;clearTimeout(t);window.removeEventListener("message",h);ok(e.data)}
+  window.addEventListener("message",h);window.postMessage({sa:"kb-export",op,id,...(extra||{})},"*")})}
+const helferAb=(a,b)=>{const v=helferVersion().split(".").map(Number);return v.length>1&&(v[0]>a||(v[0]===a&&v[1]>=b))};
+// Woher kommen die Fehlzeiten? meine-einstellungen.js: klassenbuch: "webuntis" | "iserv" | "beide". Ohne Angabe: WebUntis, wenn
+// eine WebUntis-Adresse eingetragen ist, sonst beide Knöpfe.
+const quellen=()=>{const k=String(E.klassenbuch||"").toLowerCase();if(k==="iserv")return {wu:false,kb:true};if(k==="webuntis")return {wu:true,kb:false};
+  if(k==="beide")return {wu:true,kb:true};return E.webuntis?{wu:true,kb:false}:{wu:true,kb:true}};
+const iservHost=()=>{for(const v of [E.iserv,E.schuelerdaten,E.schulordner&&E.schulordner.web]){const m=String(v||"").match(/^https:\/\/[a-z0-9.-]+/i);if(m&&!/webuntis\.com$/i.test(m[0]))return m[0]}return ""};
 const helferVersion=()=>document.documentElement.getAttribute("data-sa-helfer")||"";
 const helferKann=()=>{const v=helferVersion().split(".").map(Number);return v.length>1&&(v[0]>0||v[1]>=8)};
 
@@ -294,7 +338,7 @@ async function zeigen(gid){
   const slot=$("#panel-slot");
   if(ordner.zustand!=="an"||!sdRoot()){slot.innerHTML=`<div class="panel"><h4>Fehlzeiten-Ampel</h4><p>Dafür braucht die Seite deine Akten und Kürzellisten. Bitte unter „Lerngruppen“ zuerst den Datenordner${sdExtern()?" und den Schülerdaten-Ordner":""} verbinden.</p><div class="actions"><button class="btn ghost" id="p-close">Schließen</button></div></div>`;$("#p-close").addEventListener("click",()=>slot.innerHTML="");return}
   if(!F||(gid&&F.gid!==gid)){const g=gid||store.get("fz-gruppe","")||((ordner.gruppen.find(x=>/^\d+[a-z]/i.test(x.id))||ordner.gruppen[0]||{}).id);
-    const s=g?await standLesen(g):null;F=s?{gid:g,zeilen:s.zeilen,stand:s.stand,zeitraum:s.zeitraum,quelle:"gespeicherter Stand",neu:false}:{gid:g,zeilen:null}}
+    const s=g?await standLesen(g):null;F=s?{gid:g,zeilen:s.zeilen,stand:s.stand,zeitraum:s.zeitraum,quelle:"gespeicherter Stand",herkunft:s.quelle,neu:false}:{gid:g,zeilen:null}}
   zeichnen();slot.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 function zeichnen(meldung){
@@ -311,31 +355,37 @@ function zeichnen(meldung){
       return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td><td class="z">${fmt(x.unent)}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td><td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
   }
   const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (Lerngruppe › Akten › „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>{const a=(F.aehnlich&&F.aehnlich.get(n))||[];return `<li>${esc(n)} (${c} Zeilen)${a.length?` · ähnlich in der Kürzelliste: ${a.map(e=>`${esc(e.kuerzel)} ${esc(e.anzeige)} (${esc(e.gruppe)})`).join(", ")}. Steht dort der Name anders geschrieben oder fehlt der Nachname?`:""}</li>`}).join("")}</ul></div>`:"";
-  const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> Ist in WebUntis als Zeitraum „Aktuelles Schuljahr“ eingestellt? Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung.</div>`:"";
+  const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> Ist beim Export als Zeitraum das ganze Schuljahr eingestellt (WebUntis: „Aktuelles Schuljahr“, IServ-Klassenbuch: „Von“ = erster Schultag)? Kinder ohne Fehlzeiten haben im IServ-Klassenbuch keine Zeilen, das ist in Ordnung. Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung.</div>`:"";
   const klasseHinweis=F.neu&&F.klassen&&F.klassen.length===1&&!F.gid.toLowerCase().startsWith(F.klassen[0].toLowerCase())?`<div class="fz-warn">Die Datei ist für die Klasse ${esc(F.klassen[0])}, angezeigt wird ${esc(F.gid)}. Oben unter „Lerngruppe“ kannst du wechseln.</div>`:"";
   const ohne=F.ohne?`<div class="fz-warn">${F.ohne} Zeilen gehören zu Kindern aus anderen Lerngruppen und sind hier nicht enthalten. Andere Lerngruppe wählen, um sie zu sehen.</div>`:"";
-  const helfer=helferKann()?`<button class="btn primary" id="fz-holen">Aus WebUntis holen</button>`:"";
+  const q=quellen();
+  const helfer=(helferKann()&&q.wu?`<button class="btn primary" id="fz-holen">Aus WebUntis holen</button>`:"")+(helferAb(0,24)&&q.kb?`<button class="btn ${helferKann()&&q.wu?"ghost":"primary"}" id="fz-kb">Aus dem IServ-Klassenbuch holen</button>`:"");
+  const hinw=F.neu&&F.hinweise&&F.hinweise.length?`<div class="fz-warn">${F.hinweise.map(esc).join("<br>")}</div>`:"";
   slot.innerHTML=`<div class="panel" role="region" aria-label="Fehlzeiten-Ampel"><div class="p-kopf"><h4>Fehlzeiten-Ampel</h4><span class="sp"></span><label class="r-skala">Lerngruppe <select id="fz-gruppe">${gruppenOpt}</select></label><label class="r-skala"><input type="checkbox" id="fz-namen"${zeigeNamen?" checked":""}> Namen zeigen</label></div>
-    <div class="actions" style="margin-top:0">${helfer}<label class="btn ${helfer?"ghost":"primary"}">Export-Datei wählen<input type="file" id="fz-datei" accept=".xls,.xlsx,.csv,.txt,.tsv,.htm,.html" hidden></label><span class="toast" id="fz-toast">${esc(meldung||"")}</span></div>
-    <div class="fz-drop" id="fz-drop">WebUntis-Export „Abwesenheiten“ hierher ziehen (.xls, .xlsx oder .csv). Die Datei wird nur in diesem Fenster gelesen.</div>
+    <div class="actions" style="margin-top:0">${helfer}<label class="btn ${helfer?"ghost":"primary"}">Export-Datei(en) wählen<input type="file" id="fz-datei" accept=".xls,.xlsx,.csv,.txt,.tsv,.htm,.html,.pdf" multiple hidden></label><span class="toast" id="fz-toast">${esc(meldung||"")}</span></div>
+    <div class="fz-drop" id="fz-drop">Export „Abwesenheiten“ aus WebUntis oder dem IServ-Klassenbuch hierher ziehen (.xls, .xlsx oder .csv, auch mehrere Dateien auf einmal, z. B. eine je Kind). Die Dateien werden nur in diesem Fenster gelesen.</div>
     <p class="guard" id="fz-guard" hidden></p>
     <div id="fz-lernen"></div>
-    ${kurz}${klasseHinweis}${fehl}${ohne}${sum}${tabelle}
+    ${hinw}${kurz}${klasseHinweis}${fehl}${ohne}${sum}${tabelle}
+    <div id="fz-akte"></div>
     ${F.zeilen?"":`<p class="note">Für ${esc(F.gid||"diese Lerngruppe")} ist noch kein Stand gespeichert.</p>`}
     <p class="note">${esc(regelText)}</p>
-    <p class="note">Datenschutz: Gespeichert und an Claude gegeben werden nur Kürzel, Datum, Stunden und Status. Namen, Externe Id, Abwesenheitsgründe, Texte und Lehrkräfte werden verworfen. Ablage: ${esc(sdPfad("ausgaben/fehlzeiten/"+DATEI(F.gid||"<gruppe>")))}.</p>
-    <div class="actions">${F.zeilen&&F.neu?`<button class="btn primary" id="fz-speichern">Stand speichern</button>`:""}${F.zeilen?`<button class="btn ghost" id="fz-claude">Mit Claude abgleichen</button>`:""}<button class="btn ghost" id="p-close">Schließen</button></div></div>`;
+    <p class="note">Datenschutz: Gespeichert und an Claude gegeben werden nur Kürzel, Datum, Stunden und Status. Namen, Externe Id, Abwesenheitsgründe, Texte, Lehrkräfte und Fächer („Verp. Unterricht“) werden verworfen. Ablage: ${esc(sdPfad("ausgaben/fehlzeiten/"+DATEI(F.gid||"<gruppe>")))}.</p>
+    <div class="actions">${F.zeilen&&F.neu?`<button class="btn primary" id="fz-speichern">Stand speichern</button>`:""}${F.zeilen&&F.zeilen.length?`<button class="btn ghost" id="fz-akten" title="Je Kind eine Zeile mit den Summen in die Akte (Bereich Termine), nicht die einzelnen Tage">In die Akten übernehmen …</button>`:""}${F.zeilen?`<button class="btn ghost" id="fz-claude">Mit Claude abgleichen</button>`:""}<button class="btn ghost" id="p-close">Schließen</button></div></div>`;
   $("#p-close").addEventListener("click",()=>{slot.innerHTML=""});
   $("#fz-namen").addEventListener("change",e=>{store.set("namen-zeigen",e.target.checked);zeichnen()});
   $("#fz-gruppe").addEventListener("change",async e=>{const g=e.target.value;store.set("fz-gruppe",g);
     if(F.roh){const p=pseudoZeilen(F.roh,g);F={...F,gid:g,zeilen:p.zeilen,ohne:p.ohne,namen:await namenLesen(g)};}
-    else{const s=await standLesen(g);F=s?{gid:g,zeilen:s.zeilen,stand:s.stand,zeitraum:s.zeitraum,quelle:"gespeicherter Stand",neu:false,namen:await namenLesen(g)}:{gid:g,zeilen:null}}
+    else{const s=await standLesen(g);F=s?{gid:g,zeilen:s.zeilen,stand:s.stand,zeitraum:s.zeitraum,quelle:"gespeicherter Stand",herkunft:s.quelle,neu:false,namen:await namenLesen(g)}:{gid:g,zeilen:null}}
     zeichnen()});
-  const datei=$("#fz-datei");datei.addEventListener("change",()=>{if(datei.files[0])einlesen(datei.files[0].arrayBuffer(),"Datei "+datei.files[0].name)});
+  const ausListe=l=>[...l].map(f=>({buf:f.arrayBuffer(),name:f.name}));
+  const datei=$("#fz-datei");datei.addEventListener("change",()=>{if(datei.files.length)einlesen(ausListe(datei.files),datei.files.length===1?"Datei "+datei.files[0].name:datei.files.length+" Dateien")});
   const drop=$("#fz-drop");["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("ueber")}));
   ["dragleave","drop"].forEach(t=>drop.addEventListener(t,()=>drop.classList.remove("ueber")));
-  drop.addEventListener("drop",e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)einlesen(f.arrayBuffer(),"Datei "+f.name)});
+  drop.addEventListener("drop",e=>{e.preventDefault();const l=e.dataTransfer.files;if(l.length)einlesen(ausListe(l),l.length===1?"Datei "+l[0].name:l.length+" Dateien")});
   if($("#fz-holen"))$("#fz-holen").addEventListener("click",holen);
+  if($("#fz-kb"))$("#fz-kb").addEventListener("click",holenIServ);
+  if($("#fz-akten"))$("#fz-akten").addEventListener("click",aktenVorschau);
   if($("#fz-speichern"))$("#fz-speichern").addEventListener("click",speichern);
   if($("#fz-claude"))$("#fz-claude").addEventListener("click",anClaude);
   slot.querySelectorAll("[data-inf]").forEach(b=>b.addEventListener("click",()=>informiertFragen(b.dataset.inf)));
@@ -343,11 +393,11 @@ function zeichnen(meldung){
 }
 async function einlesen(bufP,quelle,zeitraum){
   const g=$("#fz-guard");g.hidden=true;$("#fz-toast").textContent="Lese …";
-  try{const erg=await verarbeiten(await bufP);const gid=F.gid&&erg.daten.some(d=>d.treffer.some(t=>t.gruppe===F.gid))?F.gid:gruppeVorschlag(erg);
+  try{const erg=await verarbeiten(Array.isArray(bufP)?bufP:[{buf:bufP,name:""}]);const gid=F.gid&&erg.daten.some(d=>d.treffer.some(t=>t.gruppe===F.gid))?F.gid:gruppeVorschlag(erg);
     const p=pseudoZeilen(erg,gid);
     const tage=erg.daten.map(d=>d.iso).sort();const daten=`${datumDE(tage[0])}–${datumDE(tage[tage.length-1])}`;
-    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,fehlend:erg.fehlend,aehnlich:erg.aehnlich,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()]};
-    zeichnen(`${erg.daten.length} Zeilen gelesen. Noch nicht gespeichert.`)}
+    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,hinweise:erg.hinweise,herkunft:erg.herkunft,fehlend:erg.fehlend,aehnlich:erg.aehnlich,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()]};
+    zeichnen(`${erg.daten.length} Zeilen${erg.dateien>1?" aus "+erg.dateien+" Dateien":""} gelesen. Noch nicht gespeichert.`)}
   catch(e){$("#fz-toast").textContent="";g.hidden=false;g.textContent=(e.message||String(e))+(F.antwortNeu?" ("+F.antwortNeu+")":"");F.antwortNeu=""}
 }
 let wartenTimer=null;
@@ -380,9 +430,64 @@ async function holenUeberTab(){
     },1500);
   }catch(e){g.hidden=false;g.textContent=e.message||String(e)}
 }
+/* ---------- IServ-Klassenbuch über den Helfer (ab 0.24) ---------- */
+let kbDateien=[];
+async function holenIServ(){
+  const g=$("#fz-guard");g.hidden=true;
+  try{const a=await kbRuf("warten",{host:iservHost()});if(!a.ok)throw new Error(a.fehler||"Der Helfer antwortet nicht.");
+    kbDateien=[];const box=$("#fz-lernen");
+    box.innerHTML=`<div class="fz-warn"><b>${a.geoeffnet?"Das IServ-Klassenbuch ist in einem neuen Tab geöffnet.":"Öffne jetzt in IServ das Modul Klassenbuch."}</b> Dort <b>Statistik › Abwesenheiten</b> wählen, oben Klasse bzw. Gruppe und als Zeitraum das ganze Schuljahr einstellen, dann rechts über der Liste auf das Download-Symbol und <b>Excel</b> oder <b>CSV</b> klicken. Exportierst du je Kind eine Datei, einfach alle nacheinander (oder alle angehakt) exportieren.<br>Der Helfer übernimmt die Dateien direkt hierher, sie landen nicht im Download-Ordner. Er wartet 10 Minuten. <span id="fz-wstat"></span> <button class="btn small ghost" id="fz-wab">Fertig</button></div>`;
+    $("#fz-wab").addEventListener("click",()=>{kbRuf("abbrechen").catch(()=>{});wartenEnde()});
+    const start=Date.now();if(wartenTimer)clearInterval(wartenTimer);
+    wartenTimer=setInterval(async()=>{
+      if(!document.body.contains(box)||Date.now()-start>30*6e4){kbRuf("abbrechen").catch(()=>{});wartenEnde();return}
+      let r;try{r=await kbRuf("abholen")}catch{return}
+      if(!r.ok){const w=$("#fz-wstat");if(w)w.innerHTML="<b>"+esc(r.fehler||"Abholen hat nicht geklappt.")+"</b>";if(!r.wartet&&wartenTimer){clearInterval(wartenTimer);wartenTimer=null}return}
+      if(r.fertig&&r.dateien&&r.dateien.length){
+        for(const d of r.dateien)kbDateien.push({buf:Promise.resolve(davBuf(d.daten)),name:d.name||""});
+        const w=$("#fz-wstat");if(w)w.innerHTML=`<b>${kbDateien.length} ${kbDateien.length===1?"Datei":"Dateien"} übernommen.</b> Weitere exportieren oder „Fertig“.`;
+        await einlesen(kbDateien.slice(),"IServ-Klassenbuch über den Helfer","");
+        const w2=$("#fz-wstat");if(w2)w2.innerHTML=`<b>${kbDateien.length} ${kbDateien.length===1?"Datei":"Dateien"} übernommen.</b> Weitere exportieren oder „Fertig“.`;return}
+      if(!r.wartet)wartenEnde();
+    },1500);
+  }catch(e){g.hidden=false;g.textContent=e.message||String(e)}
+}
+
+/* ---------- Summen in die Akten (Bereich Termine, je Kind eine Zeile, nach Bestätigung) ---------- */
+function aktenSummen(){
+  const pro=new Map();
+  for(const z of F.zeilen){if(!pro.has(z.k))pro.set(z.k,[]);pro.get(z.k).push(z)}
+  const g=ordner.gruppen.find(x=>x.id===F.gid);const daten=F.zeilen.map(z=>z.iso).sort();
+  const von=F.datenVon||daten[0],bis=F.stand||heuteISO();const out=[];
+  for(const [k,l] of pro){
+    const nv=l.filter(z=>!z.verspaetung),summe=st=>nv.filter(z=>z.status===st).reduce((s,z)=>s+z.std,0);
+    const std=nv.reduce((s,z)=>s+z.std,0),versp=l.filter(z=>z.verspaetung).length;if(!std&&!versp)continue;
+    const mitFt=l.some(z=>z.ft!=null),tage=mitFt?l.reduce((s,z)=>s+(z.ft||0),0):new Set(nv.filter(z=>z.std>0).map(z=>z.iso)).size;
+    const teile=[mitFt?`${fmt(tage)} ${tage===1?"Fehltag":"Fehltage"}`:`${tage} ${tage===1?"Tag":"Tage"} mit Fehlstunden`,`${fmt(std)} Std.`];
+    const det=[["unentschuldigt",summe("unentschuldigt")],["entschuldigt",summe("entschuldigt")],["offen",summe("offen")]].filter(x=>x[1]).map(x=>`${x[0]} ${fmt(x[1])}`);
+    const inhalt=`Fehlzeiten-Stand ${datumDE(bis)} (Einträge seit ${datumDE(von)}): ${teile.join(", ")}${det.length?" ("+det.join(", ")+")":""}${versp?`, ${versp} ${versp===1?"Verspätung":"Verspätungen"}`:""}`;
+    const hk=F.herkunft||F.quelle||"";const zeile=`- ${bis} | Beleg | ${inhalt} | Quelle: ${/iserv/i.test(hk)?"IServ-Klassenbuch":/webuntis/i.test(hk)?"WebUntis":"Fehlzeiten-Export"} (Startseite, Fehlzeiten) | bestätigt`;
+    const akte=g&&g.akten.find(a=>a.kuerzel===k);const schon=akte&&akte.text.includes(`| ${inhalt} |`);
+    out.push({k,zeile,inhalt,akte:!!akte,schon});
+  }
+  return out.sort((a,b)=>a.k.localeCompare(b.k,"de",{numeric:true}));
+}
+function aktenVorschau(){
+  const box=$("#fz-akte");if(!box)return;const l=aktenSummen();const neu=l.filter(x=>x.akte&&!x.schon);
+  box.innerHTML=`<div class="fz-warn" style="border-left-color:var(--accent);background:transparent;border:1px solid var(--line);border-left-width:4px"><b>In die Akten übernehmen (Bereich Termine)</b><br>Je Kind eine Zeile mit den Summen, nicht die einzelnen Tage und keine Gründe.${F.neu?" Der Stand ist noch nicht gespeichert; die Akten-Zeile entsteht trotzdem aus den gelesenen Zahlen.":""}
+    <ul>${l.map(x=>`<li><span class="k" style="font-family:var(--f-mono);font-weight:600">${esc(x.k)}</span> ${esc(x.inhalt)}${!x.akte?" <i>(keine Akte, wird übersprungen)</i>":x.schon?" <i>(steht schon in der Akte)</i>":""}</li>`).join("")}</ul>
+    <div class="fz-ja"><button class="btn small primary" id="fz-akte-ok"${neu.length?"":" disabled"}>${neu.length} ${neu.length===1?"Akte":"Akten"} ergänzen</button><button class="btn small ghost" id="fz-akte-ab">Abbrechen</button></div></div>`;
+  $("#fz-akte-ab").addEventListener("click",()=>{box.innerHTML=""});
+  $("#fz-akte-ok").addEventListener("click",async()=>{const g=$("#fz-guard");
+    try{const sd=await sdSchreib();const gd=await (await sd.getDirectoryHandle("lerngruppen")).getDirectoryHandle(F.gid);let n=0;
+      for(const x of neu){const fh=await gd.getFileHandle(x.k+".md");let t=await (await fh.getFile()).text();if(t.includes(`| ${x.inhalt} |`))continue;
+        t=abschnittErgaenzen(t,"Termine",x.zeile);const w=await fh.createWritable();await w.write(t);await w.close();n++}
+      await ordnerLesen(ordnerHandle);renderOrdner();box.innerHTML="";zeichnen(`${n} ${n===1?"Akte":"Akten"} ergänzt (Bereich Termine).`)}
+    catch(e){g.hidden=false;g.textContent=(e&&e.message)||"Eintragen hat nicht geklappt."}});
+}
 async function speichern(){
   const g=$("#fz-guard");g.hidden=true;
-  try{await standSpeichern(F.gid,F.zeilen,F.quelle,F.zeitraum);F.neu=false;F.roh=null;F.fehlend=null;F.ohne=0;await seitenleiste();zeichnen("Gespeichert (nur Kürzel). Die Ampel steht jetzt im Reiter „Fehlzeiten“ der Lerngruppe.")}
+  try{await standSpeichern(F.gid,F.zeilen,(F.herkunft&&!(F.quelle||"").includes(F.herkunft)?F.herkunft+", ":"")+F.quelle,F.zeitraum);F.neu=false;F.roh=null;F.fehlend=null;F.ohne=0;await seitenleiste();zeichnen("Gespeichert (nur Kürzel). Die Ampel steht jetzt im Reiter „Fehlzeiten“ der Lerngruppe.")}
   catch(e){g.hidden=false;g.textContent=e.message||"Speichern hat nicht geklappt."}
 }
 function informiertFragen(k){
@@ -413,5 +518,5 @@ ${gelb.map(z).join("\n")||"(niemand)"}
 Bitte prüfe die Auswertung und sag mir, was als Nächstes zu tun ist. Entwürfe für Elternbriefe nur nach Rückfrage.`});
 }
 
-window.saFehlzeiten={zeigen,aktualisieren:()=>seitenleiste().catch(()=>{}),_test:{tabelleLesen,verarbeiten,ampel,regeln,fristEnde,datumISO,pseudoZeilen,cfbStream,biffZeilen}};
+window.saFehlzeiten={zeigen,aktualisieren:()=>seitenleiste().catch(()=>{}),_test:{nameAusDatei,aktenSummen:()=>aktenSummen(),setF:x=>{F=x},tabelleLesen,verarbeiten,ampel,regeln,fristEnde,datumISO,pseudoZeilen,cfbStream,biffZeilen}};
 })();

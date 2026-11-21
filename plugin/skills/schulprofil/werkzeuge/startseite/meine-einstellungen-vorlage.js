@@ -23,6 +23,9 @@ window.SA_EINSTELLUNGEN = {
   // schulordner: { web: "https://<eure-iserv-adresse>/webdav/Groups", laufwerk: "S:\\", gruppen: [] },
   // Optional: Adresse eurer WebUntis-Seite für „Aus WebUntis holen“ (Fehlzeiten-Ampel), z. B. "https://<schule>.webuntis.com"
   // webuntis: "",
+  // Optional: Woher kommen die Fehlzeiten? "webuntis", "iserv" (IServ-Klassenbuch) oder "beide". Ohne Angabe: nur WebUntis, wenn oben
+  // eine WebUntis-Adresse steht, sonst beide Knöpfe. iserv = Adresse eurer IServ-Seite, falls sie nicht aus „schuelerdaten“ hervorgeht.
+  // klassenbuch: "iserv", iserv: "https://<eure-iserv-adresse>",
   // Optional: LEB-online („Direkt in LEB-online“). Adresse und je Lerngruppe die Zeile in Noten PLUS (Kurse: kurse_id, Klassen: zeug_klassen_faecher_id).
   // Fehlt eine Zuordnung, fragt der Helfer beim ersten Mal nach (Zeile anklicken).
   // leb: { adresse: "https://<schule>.leb-server11.de", ziele: { "10-ma-e": { bereich: "kurse", id: "1400" } } },
