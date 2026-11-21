@@ -102,7 +102,7 @@ async function pdfZeilen(buf){
     zeilen.sort((a,b)=>b.y-a.y);zeilen.forEach(z=>z.i.sort((a,b)=>a.x-b.x));
     for(const z of zeilen){const txt=z.i.map(i=>i.t).join(" ").replace(/\s+/g," ").trim();
       if(/Abwesenheitsgrund/.test(txt)&&/Status/.test(txt)){spalten=z.i.map(i=>({t:i.t,m:i.x+i.w/2}));gesehen=true;continue}
-      let m=txt.match(/^(.+?)\s*\(\d{4,}\)$/);if(m){name=m[1].trim();continue}
+      let m=txt.match(/^(.+?)\s*\(\d{4,}\)$/);if(m){name=m[1].replace(/^\s*sch(ü|ue)ler(\*?innen)?\s*:?\s*/i,"").trim();continue}
       m=txt.match(/^Klasse\s+(\S+)$/);if(m){klasse=m[1];continue}
       m=txt.match(/^(\S+)\s+\d{2}\.\d{2}\.\d{4}\s+\d{1,2}:\d{2}$/);if(m){ich=m[1];continue}
       m=txt.match(/^(?:Mo|Di|Mi|Do|Fr|Sa|So)\.?\s+(\d{2}\.\d{2}\.\d{2,4})\s+(\d+)\s+(\d+):(\d{2})/);
