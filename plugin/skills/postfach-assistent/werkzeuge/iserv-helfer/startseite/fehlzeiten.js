@@ -465,6 +465,8 @@ function zeichnen(meldung){
   const namen=F.namen||{};const zeigeNamen=store.get("namen-zeigen",true);
   const gruppenOpt=ordner.gruppen.map(g=>`<option value="${esc(g.id)}"${g.id===F.gid?" selected":""}>${esc(g.id)}</option>`).join("");
   const regelText=`Regeln${r.lokal?" (eigene Werte, in diesem Browser)":r.ausProfil?" aus dem Profil":" (Standard, nicht im Profil)"}: Eltern ab ${fmt(r.schwelle)} unentschuldigten Stunden${r.ab==="letzte_benachrichtigung"?" seit der letzten Benachrichtigung":r.ab==="halbjahr"?" je Halbjahr":" im Schuljahr"}; Entschuldigung bis ${r.frist} ${r.einheit==="kalendertage"?"Kalendertage":"Schultage"} nach dem letzten Fehltag${ferien().length?"":" (Ferien und Feiertage nicht berücksichtigt, eintragbar in meine-einstellungen.js unter ferien)"}; ${r.fristUnent?"danach zählen offene Stunden als unentschuldigt; ":""}Verspätungen zählen ${r.verspaetung?"":"nicht "}zur Schwelle${r.entschuldigt.length?"; als entschuldigt gilt auch: "+(r.entschuldigtText||r.entschuldigt).join(", "):""}.`;
+  const inTagen=store.get("fz-anzeige","stunden")==="tage";const tageMap=inTagen&&F.zeilen?ganzeTage(F.zeilen):null;
+  const einheitHTML=F.zeilen?`<div class="seg" role="group" aria-label="Anzeige in"><button class="btn small${inTagen?" ghost":" primary"}" data-anz="stunden">Stunden</button><button class="btn small${inTagen?" primary":" ghost"}" data-anz="tage">Ganze Tage</button></div>`:"";
   // Klassenleitung: alle Fächer; sonst der eigene Unterricht bzw. nur das Fach dieser Lerngruppe (braucht die WebUntis-PDF mit Lehrkraft und Fach)
   const kl=(store.get("fz-klassenleitung",[])||[]).includes(F.gid);const hatMein=!!(F.zeilen&&F.zeilen.some(z=>z.mein!==undefined));
   const meineFaecher=hatMein?[...new Set(F.zeilen.filter(z=>z.mein&&z.fach).map(z=>z.fach))].sort((a,b)=>a.localeCompare(b,"de")):[];
@@ -474,15 +476,15 @@ function zeichnen(meldung){
   let sicht=hatMein?(store.get("fz-sicht-"+F.gid,null)||(kl?"alle":vorFach?"fach:"+vorFach:"mein")):"alle";
   if(sicht.startsWith("fach:")&&!meineFaecher.includes(sicht.slice(5)))sicht="mein";
   const sichtFilter=z=>sicht==="alle"?true:sicht==="mein"?z.mein:z.mein&&z.fach===sicht.slice(5);
-  const sichtHTML=F.zeilen?`<div class="fz-sicht"><label class="r-skala"><input type="checkbox" id="fz-kl"${kl?" checked":""}> Meine Klasse (Klassenleitung)</label>${hatMein?`<div class="seg" role="group" aria-label="Welche Fehlzeiten zählen"><button class="btn small${sicht==="alle"?" primary":" ghost"}" data-sicht="alle">Alle Fächer</button><button class="btn small${sicht==="mein"?" primary":" ghost"}" data-sicht="mein">Mein Unterricht${F.ich?" ("+esc(F.ich)+")":""}</button>${meineFaecher.length>1?`<label class="r-skala">nur <select id="fz-fach"><option value="">Fach wählen</option>${meineFaecher.map(f=>`<option${sicht==="fach:"+f?" selected":""}>${esc(f)}</option>`).join("")}</select></label>`:""}</div>`:`<span class="note">Für die Trennung nach Fach die WebUntis-PDF „Fehlzeiten pro Schüler*in“ hochladen (sie enthält Fach und Lehrkraft je Stunde).</span>`}</div>
+  const sichtHTML=F.zeilen?`<div class="fz-sicht">${einheitHTML}<label class="r-skala"><input type="checkbox" id="fz-kl"${kl?" checked":""}> Meine Klasse (Klassenleitung)</label>${hatMein?`<div class="seg" role="group" aria-label="Welche Fehlzeiten zählen"><button class="btn small${sicht==="alle"?" primary":" ghost"}" data-sicht="alle">Alle Fächer</button><button class="btn small${sicht==="mein"?" primary":" ghost"}" data-sicht="mein">Mein Unterricht${F.ich?" ("+esc(F.ich)+")":""}</button>${meineFaecher.length>1?`<label class="r-skala">nur <select id="fz-fach"><option value="">Fach wählen</option>${meineFaecher.map(f=>`<option${sicht==="fach:"+f?" selected":""}>${esc(f)}</option>`).join("")}</select></label>`:""}</div>`:`<span class="note">Für die Trennung nach Fach die WebUntis-PDF „Fehlzeiten pro Schüler*in“ hochladen (sie enthält Fach und Lehrkraft je Stunde).</span>`}</div>
     ${hatMein?`<p class="note fz-sicht-info">${sicht==="alle"?"Gezählt werden alle Fehlstunden in allen Fächern (Sicht der Klassenleitung).":sicht==="mein"?`Gezählt werden nur Stunden, in denen ${esc(F.ich||"du")} als Lehrkraft eingetragen ist.`:`Gezählt werden nur deine Stunden im Fach ${esc(sicht.slice(5))}.`}</p>`:""}`:"";
   let tabelle="",sum="";
   if(F.zeilen){
     const a=ampel(F.zeilen.filter(sichtFilter),F.gid,r,heute);F.ampel=a;const n=f=>a.filter(x=>x.farbe===f).length;
     sum=`<div class="fz-sum"><span><span class="fz-dot rot"></span><b>${n("rot")}</b> Eltern informieren</span><span><span class="fz-dot gelb"></span><b>${n("gelb")}</b> Entschuldigung fällig oder Schwelle droht</span><span><span class="fz-dot gruen"></span><b>${n("gruen")}</b> ohne Handlungsbedarf</span>${F.stand?`<span class="note">Stand ${datumDE(F.stand)}${F.zeitraum?" · "+esc(F.zeitraum):""}</span>`:""}</div>`;
-    tabelle=`<div class="fz-tab-wrap"><table class="fz-tab"><thead><tr><th></th><th>Kürzel</th><th style="text-align:right">unentsch.</th><th style="text-align:right">offen</th><th style="text-align:right">entsch.</th><th style="text-align:right">zu spät</th><th>Nächster Schritt</th></tr></thead><tbody>${a.map(x=>{
+    tabelle=`<div class="fz-tab-wrap"><table class="fz-tab"><thead><tr><th></th><th>Kürzel</th><th style="text-align:right">unentsch.${inTagen?"<br>Tage":""}</th><th style="text-align:right">offen${inTagen?"<br>Tage":""}</th><th style="text-align:right">entsch.${inTagen?"<br>Tage":""}</th><th style="text-align:right">zu spät</th><th>Nächster Schritt</th></tr></thead><tbody>${a.map(x=>{
       const nm=zeigeNamen&&namen[x.k]?`<div class="nm">${esc([namen[x.k].vor,namen[x.k].nach].filter(Boolean).join(" "))}</div>`:"";
-      return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td><td class="z">${fmt(x.unent)}${x.ausFrist?`<div class="nm">davon ${fmt(x.ausFrist)} Frist abgelaufen</div>`:""}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td><td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
+      return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td>${inTagen?(()=>{const t=tageMap.get(x.k)||{unentschuldigt:0,entschuldigt:0,offen:0};return `<td class="z">${fmt(t.unentschuldigt)}<div class="nm">${fmt(x.unent)} Std.</div></td><td class="z">${fmt(t.offen)}<div class="nm">${fmt(x.offenStd)} Std.</div></td><td class="z">${fmt(t.entschuldigt)}<div class="nm">${fmt(x.ent)} Std.</div></td>`})():`<td class="z">${fmt(x.unent)}${x.ausFrist?`<div class="nm">davon ${fmt(x.ausFrist)} Frist abgelaufen</div>`:""}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td>`}<td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
   }
   const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (Lerngruppe › Akten › „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>{const a=(F.aehnlich&&F.aehnlich.get(n))||[];return `<li>${esc(n)} (${c} Zeilen)${a.length?` · ähnlich in der Kürzelliste: ${a.map(e=>`${esc(e.kuerzel)} ${esc(e.anzeige)} (${esc(e.gruppe)})`).join(", ")}. Steht dort der Name anders geschrieben oder fehlt der Nachname?`:""}</li>`}).join("")}</ul></div>`:"";
   const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> Ist beim Export als Zeitraum das ganze Schuljahr eingestellt (WebUntis: „Aktuelles Schuljahr“, IServ-Klassenbuch: „Von“ = erster Schultag)? Kinder ohne Fehlzeiten haben im IServ-Klassenbuch keine Zeilen, das ist in Ordnung. Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung.</div>`:"";
@@ -508,7 +510,7 @@ function zeichnen(meldung){
       </div>
       <div class="actions"><button class="btn primary small" id="fzr-ok">Übernehmen</button>${r.lokal?`<button class="btn ghost small" id="fzr-weg">Zurück auf ${r.ausProfil?"Profil":"Standard"} (${fmt(r.profil.schwelle)} Std., ${r.profil.frist} ${r.profil.einheit==="kalendertage"?"Kalendertage":"Schultage"})</button>`:""}</div>
       <p class="note">Gilt sofort für alle Lerngruppen und nur in diesem Browser. Dauerhaft für Claude steht die Regel in deinem Profil (regeln.fehlzeiten).</p>
-    </details>${tabelle}
+    </details>${tabelle}${inTagen&&F.zeilen?`<p class="note">Ganze Tage: Tage, an denen das Kind den ganzen Schultag gefehlt hat (im IServ-Export aus der Spalte „Fehltage“, sonst: so viele Stunden wie das Kind mit den meisten Fehlstunden an dem Tag, mindestens 4). Gezählt werden dabei immer alle Fächer. Die Farben der Ampel richten sich weiter nach den Stunden.</p>`:""}
     <div id="fz-akte"></div>${vermerkeHTML()}
     ${F.zeilen?"":`<p class="note">Für ${esc(F.gid||"diese Lerngruppe")} ist noch kein Stand gespeichert.</p>`}
     <p class="note">${esc(regelText)}</p>
@@ -518,6 +520,7 @@ function zeichnen(meldung){
   $("#fz-namen").addEventListener("change",e=>{store.set("namen-zeigen",e.target.checked);zeichnen()});
   if($("#fz-kl"))$("#fz-kl").addEventListener("change",e=>{const l=(store.get("fz-klassenleitung",[])||[]).filter(x=>x!==F.gid);if(e.target.checked)l.push(F.gid);store.set("fz-klassenleitung",l);store.set("fz-sicht-"+F.gid,null);
     zeichnen(e.target.checked?`${F.gid} ist als deine Klasse markiert: Es zählen alle Fächer.`:"")});
+  slot.querySelectorAll("[data-anz]").forEach(b=>b.addEventListener("click",()=>{store.set("fz-anzeige",b.dataset.anz);zeichnen()}));
   slot.querySelectorAll("[data-sicht]").forEach(b=>b.addEventListener("click",()=>{store.set("fz-sicht-"+F.gid,b.dataset.sicht);zeichnen()}));
   if($("#fz-fach"))$("#fz-fach").addEventListener("change",e=>{store.set("fz-sicht-"+F.gid,e.target.value?"fach:"+e.target.value:"mein");zeichnen()});
   slot.querySelector(".fz-regeln").addEventListener("toggle",e=>store.set("fz-regeln-offen",e.target.open));
@@ -617,20 +620,29 @@ async function holenIServ(){
 }
 
 /* ---------- Summen in die Akten (Bereich Termine, je Kind eine Zeile, nach Bestätigung) ---------- */
-function aktenSummen(){
-  const pro=new Map();
-  for(const z of F.zeilen){if(!pro.has(z.k))pro.set(z.k,[]);pro.get(z.k).push(z)}
-  const g=ordner.gruppen.find(x=>x.id===F.gid);const daten=F.zeilen.map(z=>z.iso).sort();
-  const von=F.datenVon||daten[0],bis=F.stand||heuteISO();const out=[];
-  // Nur ganze Fehltage (Pauls Regel). IServ liefert sie als Spalte „Fehltage“. Ohne diese Spalte (WebUntis) gilt ein Tag als ganz,
-  // wenn das Kind an dem Tag so viele Stunden fehlt wie das Kind mit den meisten Fehlstunden an diesem Tag (mindestens 4).
-  const tagStd=new Map();for(const z of F.zeilen)if(!z.verspaetung){const key=z.k+"|"+z.iso;tagStd.set(key,(tagStd.get(key)||0)+z.std)}
+// Ganze Fehltage je Kind (Pauls Regel). IServ liefert sie als Spalte „Fehltage“. Ohne diese Spalte (WebUntis) gilt ein Tag als ganz,
+// wenn das Kind an dem Tag so viele Stunden fehlt wie das Kind mit den meisten Fehlstunden an diesem Tag (mindestens 4).
+function ganzeTage(zeilen){
+  const pro=new Map();for(const z of zeilen){if(!pro.has(z.k))pro.set(z.k,[]);pro.get(z.k).push(z)}
+  const tagStd=new Map();for(const z of zeilen)if(!z.verspaetung){const key=z.k+"|"+z.iso;tagStd.set(key,(tagStd.get(key)||0)+z.std)}
   const tagMax=new Map();for(const [key,n] of tagStd){const iso=key.split("|")[1];tagMax.set(iso,Math.max(tagMax.get(iso)||0,n))}
+  const out=new Map();
   for(const [k,l] of pro){
     const mitFt=l.some(z=>z.ft!=null);const tage={unentschuldigt:0,entschuldigt:0,offen:0};
     if(mitFt)for(const z of l)tage[z.status]+=(z.ft||0);
     else{const proTag=new Map();for(const z of l)if(!z.verspaetung){if(!proTag.has(z.iso))proTag.set(z.iso,{std:0,st:{}});const t=proTag.get(z.iso);t.std+=z.std;t.st[z.status]=(t.st[z.status]||0)+z.std}
       for(const [iso,t] of proTag){const max=tagMax.get(iso)||0;if(max>=4&&t.std>=max){const st=Object.entries(t.st).sort((a,b)=>b[1]-a[1])[0][0];tage[st]++}}}
+    out.set(k,tage)}
+  return out;
+}
+function aktenSummen(){
+  const pro=new Map();
+  for(const z of F.zeilen){if(!pro.has(z.k))pro.set(z.k,[]);pro.get(z.k).push(z)}
+  const g=ordner.gruppen.find(x=>x.id===F.gid);const daten=F.zeilen.map(z=>z.iso).sort();
+  const von=F.datenVon||daten[0],bis=F.stand||heuteISO();const out=[];
+  const tageAlle=ganzeTage(F.zeilen);
+  for(const [k,l] of pro){
+    const tage=tageAlle.get(k)||{unentschuldigt:0,entschuldigt:0,offen:0};
     const ganz=tage.unentschuldigt+tage.entschuldigt+tage.offen;if(!ganz)continue;
     const det=Object.entries(tage).filter(x=>x[1]).map(x=>`${x[0]} ${fmt(x[1])}`);
     const inhalt=`Fehlzeiten-Stand ${datumDE(bis)} (seit ${datumDE(von)}): ${fmt(ganz)} ${ganz===1?"ganzer Fehltag":"ganze Fehltage"}${det.length?" ("+det.join(", ")+")":""}`;
