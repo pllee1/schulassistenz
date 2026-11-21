@@ -421,7 +421,7 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   }
 });
 
-/* IServ-Klassenbuch: Statistik-Export für die Akten (ab 0.24).
+/* IServ-Klassenbuch: Statistik-Export für die Akten (ab 0.25).
    Gleicher Weg wie bei WebUntis: Die Startseite meldet „warten“ und öffnet das Klassenbuch in IServ. Die Lehrkraft klickt dort
    wie gewohnt auf Exportieren (auch mehrere Dateien, z. B. eine je Kind). Der Helfer hält diese Downloads an (nur IServ,
    nur Tabellen/PDF, nur innerhalb von 10 Minuten nach „warten“),

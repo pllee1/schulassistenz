@@ -114,10 +114,13 @@ const SPALTEN={
   verp:[/^verp(\.|asst)?\s*unterricht/i],
   wu:[/^externe id$/i,/^abwesenheitsgrund/i]
 };
+// Weitere Spalten, falls WebUntis den Status anders benennt (der Reihe nach)
+const STATUS_WEITERE=[/status/i,/^entschuldigt$/i,/^entsch\.?$/i,/^unentsch/i,/^entschuldigung$/i];
 function spaltenFinden(zeilen,ohneName){
   for(let i=0;i<Math.min(15,zeilen.length);i++){const h=(zeilen[i]||[]).map(x=>String(x??"").trim());const s={};
     for(const [k,res] of Object.entries(SPALTEN))s[k]=h.findIndex(x=>res.some(r=>r.test(x)));
-    if(s.datum>=0&&(s.name>=0||ohneName))return {kopf:i,s}}
+    if(s.datum>=0&&(s.name>=0||ohneName)){if(s.status<0)for(const r of STATUS_WEITERE){const j=h.findIndex(x=>r.test(x)&&!/text|nummer|grund/i.test(x));if(j>=0){s.status=j;break}}
+      return {kopf:i,s,kopfzeile:h}}}
   return null;
 }
 function datumISO(v){
@@ -147,7 +150,7 @@ function flowMap(s){const o={};let tiefe=0,cur="";const teile=[];for(const ch of
   for(const t of teile){const i=t.indexOf(":");if(i<0)continue;const k=t.slice(0,i).trim();let v=t.slice(i+1).trim();
     if(/^\[.*\]$/.test(v))v=v.slice(1,-1).split(",").map(x=>x.trim().replace(/^['"]|['"]$/g,"")).filter(x=>x&&!/^</.test(x));else v=v.replace(/^['"]|['"]$/g,"");o[k]=v}return o}
 function regeln(){
-  const t=(ordner.profil&&ordner.profil.text)||"";const r={frist:3,einheit:"schultage",schwelle:5,ab:"letzte_benachrichtigung",verspaetung:false,entschuldigt:[],ausProfil:false};
+  const t=(ordner.profil&&ordner.profil.text)||"";const r={frist:3,einheit:"schultage",schwelle:5,ab:"letzte_benachrichtigung",verspaetung:false,fristUnent:false,entschuldigt:[],ausProfil:false};
   const m=t.match(/^\s*fehlzeiten:\s*\{(.+)\}\s*(#.*)?$/m);
   if(m){const f=flowMap(m[1]);r.ausProfil=true;
     if(f.frist&&!isNaN(parseInt(f.frist,10)))r.frist=parseInt(f.frist,10);
@@ -155,8 +158,15 @@ function regeln(){
     if(f.eltern_ab_unentsch_std&&!isNaN(parseFloat(f.eltern_ab_unentsch_std)))r.schwelle=parseFloat(f.eltern_ab_unentsch_std);
     if(f.schwelle_zaehlt_ab)r.ab=f.schwelle_zaehlt_ab;
     if(f.verspaetung_zaehlt)r.verspaetung=/^(ja|true)/i.test(f.verspaetung_zaehlt);
+    if(f.nach_frist_unentschuldigt)r.fristUnent=/^(ja|true)/i.test(f.nach_frist_unentschuldigt);
     if(Array.isArray(f.zaehlt_als_entschuldigt)){r.entschuldigtText=f.zaehlt_als_entschuldigt;r.entschuldigt=f.zaehlt_als_entschuldigt.map(norm)}}
   else{const a=t.match(/fehlzeiten_eltern_informieren_ab:\s*(\d+)/);if(a){r.schwelle=+a[1];r.ausProfil=true}const b=t.match(/fehlzeiten_entschuldigung_frist:\s*(\d+)/);if(b)r.frist=+b[1]}
+  r.vorwarn=null;r.profil={...r};
+  // Eigene Schwellen (Startseite › Fehlzeiten › „Schwellen anpassen“), nur in diesem Browser
+  const o=store.get("fz-regeln",null);
+  if(o&&typeof o==="object"){r.lokal=true;
+    if(o.schwelle>0)r.schwelle=+o.schwelle;if(o.vorwarn>0&&o.vorwarn<r.schwelle)r.vorwarn=+o.vorwarn;
+    if(o.frist>=0&&o.frist!==""&&o.frist!=null)r.frist=+o.frist;if(o.einheit)r.einheit=o.einheit;if(o.ab)r.ab=o.ab;if(typeof o.verspaetung==="boolean")r.verspaetung=o.verspaetung;if(typeof o.fristUnent==="boolean")r.fristUnent=o.fristUnent}
   return r;
 }
 const ferien=()=>(Array.isArray(E.ferien)?E.ferien:[]).map(x=>Array.isArray(x)?[x[0],x[1]||x[0]]:[x,x]).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x[0]));
@@ -180,14 +190,15 @@ const klasseNorm=k=>String(k||"").trim().replace(/^klasse\s*/i,"");
 async function verarbeiten(eingabe){
   const dateien=Array.isArray(eingabe)?eingabe:[{buf:eingabe,name:""}];
   const r=regeln();const namen=await alleNamen();
-  const aehnlich=new Map(),daten=[],fehlend=new Map(),klassen=new Map(),doppelt=new Map(),gesehen=new Set();const hinweise=[],herkunft=new Set();let summen=0,ohneKopf=0,pdf=0;
+  const aehnlich=new Map(),daten=[],fehlend=new Map(),klassen=new Map(),doppelt=new Map(),gesehen=new Set();const hinweise=[],herkunft=new Set(),stWerte=new Map();let spName="",kopfLetzt=[];let summen=0,ohneKopf=0,pdf=0;
   for(const datei of dateien){
   const buf=await datei.buf;
   if(String.fromCharCode(...new Uint8Array(buf,0,Math.min(5,buf.byteLength)))==="%PDF-"){pdf++;continue}
   const zeilen=await tabelleLesen(buf);const ausDatei=nameAusDatei(datei.name);const sp=spaltenFinden(zeilen,!!ausDatei);
   if(!sp){if(zeilen.slice(0,15).some(z=>(z||[]).some(x=>/^fehltage$/i.test(String(x??"").trim()))))summen++;else ohneKopf++;continue}
-  const {kopf,s}=sp;
+  const {kopf,s,kopfzeile}=sp;
   if(s.name<0&&!ausDatei){ohneKopf++;continue}
+  if(s.status>=0)spName=kopfzeile[s.status];kopfLetzt=kopfzeile;const spUnent=/^unentsch/i.test(s.status>=0?kopfzeile[s.status]:"");
   if(s.verp>=0||ausDatei)herkunft.add("IServ-Klassenbuch");else if(s.wu>=0)herkunft.add("WebUntis");
   for(const z of zeilen.slice(kopf+1)){if(!z)continue;
     const name=(s.name>=0?String(z[s.name]??"").trim():"")||(ausDatei?ausDatei.name:"");const iso=datumISO(z[s.datum]);if(!name||!iso)continue;
@@ -196,7 +207,11 @@ async function verarbeiten(eingabe){
     const grund=s.grund>=0?norm(z[s.grund]):"";const st=s.status>=0?norm(z[s.status]):"";
     if(/keine fehlzeit/.test(st+" "+grund)||(s.std>=0&&std===0&&min===0))continue;   // IServ: „Sonstige Abwesenheit (keine Fehlzeit)“
     const ft=s.tage>=0?zahl(z[s.tage]):null;
-    let status=/nicht|unent/.test(st)?"unentschuldigt":/entsch/.test(st)?"entschuldigt":"offen";
+    if(s.status>=0)stWerte.set(st||"(leer)",(stWerte.get(st||"(leer)")||0)+1);
+    let status=/nicht|unent|^u$/.test(st)?"unentschuldigt":/entsch|^e$/.test(st)?"entschuldigt":"offen";
+    // Ja/Nein-Spalten („Entschuldigt: ja“ bzw. „Unentschuldigt: ja“)
+    if(status==="offen"&&/^(ja|x|1|true|wahr)$/.test(st))status=spUnent?"unentschuldigt":"entschuldigt";
+    else if(status==="offen"&&/^(nein|0|false|falsch)$/.test(st))status=spUnent?"entschuldigt":"unentschuldigt";
     if(status!=="entschuldigt"&&grund&&r.entschuldigt.includes(grund))status="entschuldigt";
     const zr=s.zeitraum>=0?norm(z[s.zeitraum]):"";
     const verspaetung=(std===0&&min>0&&min<45)||/versp(ä|ae)t/.test(grund)||(std===0&&/zu sp(ä|ae)t/.test(zr));
@@ -214,7 +229,9 @@ async function verarbeiten(eingabe){
     if(pdf&&!summen&&!ohneKopf)throw new Error("PDF-Dateien kann die Seite nicht lesen. Bitte beim Export „Excel“ oder „CSV“ wählen.");
     if(summen&&!ohneKopf)throw new Error("Das ist nur die Summe (Fehlzeiten_Summe). Für die Ampel braucht die Seite die Abwesenheiten: im IServ-Klassenbuch unter Statistik › Abwesenheiten exportieren.");
     throw new Error(dateien.length>1?"In den Dateien stehen keine Fehlzeilen (Name und Datum).":"In der Datei fehlt die Kopfzeile mit Schülername und Datum (oder es stehen keine Fehlzeiten darin). Ist es der Bericht „Abwesenheiten“ aus WebUntis bzw. aus dem IServ-Klassenbuch (Statistik)?");}
-  return {daten,fehlend,klassen,doppelt,regeln:r,aehnlich,hinweise,dateien:dateien.length-pdf,herkunft:[...herkunft].join(" + ")};
+  const statusInfo={spalte:spName||null,werte:[...stWerte].sort((a,b)=>b[1]-a[1]).slice(0,8).map(([w,n])=>[w.slice(0,30),n]),erkannt:daten.filter(d=>d.status!=="offen").length,
+    kopf:kopfLetzt.filter(Boolean).map(x=>x.slice(0,30))};
+  return {daten,fehlend,klassen,doppelt,regeln:r,aehnlich,hinweise,dateien:dateien.length-pdf,herkunft:[...herkunft].join(" + "),statusInfo};
 }
 function gruppeVorschlag(erg){
   const kl=[...erg.klassen.entries()].sort((a,b)=>b[1]-a[1])[0];
@@ -243,7 +260,7 @@ function ampel(zeilen,gid,r,heute){
   for(const [k,l] of pro){
     const seit=r.ab==="letzte_benachrichtigung"?benachrichtigt(gid,k):r.ab==="schuljahr"?"":"";
     const zaehlt=z=>!z.verspaetung||r.verspaetung;
-    const unent=l.filter(z=>z.status==="unentschuldigt"&&zaehlt(z)&&(!seit||z.iso>seit)).reduce((s,z)=>s+z.std,0);
+    let unent=l.filter(z=>z.status==="unentschuldigt"&&zaehlt(z)&&(!seit||z.iso>seit)).reduce((s,z)=>s+z.std,0);
     const ent=l.filter(z=>z.status==="entschuldigt"&&!z.verspaetung).reduce((s,z)=>s+z.std,0);
     const versp=l.filter(z=>z.verspaetung).length;
     // offene Fehlzeiten: zusammenhängende Schultage
@@ -252,14 +269,18 @@ function ampel(zeilen,gid,r,heute){
     let offenStd=0,ueberStd=0;const fristen=[];
     for(const b of bloecke){const std=l.filter(z=>z.status==="offen"&&!z.verspaetung&&z.iso>=b.von&&z.iso<=b.bis).reduce((s,z)=>s+z.std,0);
       const ende=fristEnde(b.bis,r);const zustand=heute>ende?"abgelaufen":heute===ende?"heute":"laeuft";offenStd+=std;if(zustand==="abgelaufen")ueberStd+=std;fristen.push({...b,std,ende,zustand})}
-    const farbe=unent>=r.schwelle?"rot":(ueberStd>0||fristen.some(f=>f.zustand==="heute")||unent+ueberStd>=r.schwelle)?"gelb":"gruen";
+    // Regel „nach Ablauf der Frist gilt als unentschuldigt“: überfällige offene Stunden zählen zur Schwelle
+    let ausFrist=0;if(r.fristUnent){ausFrist=fristen.filter(f=>f.zustand==="abgelaufen").reduce((s,f)=>s+l.filter(z=>z.status==="offen"&&!z.verspaetung&&z.iso>=f.von&&z.iso<=f.bis&&(!seit||z.iso>seit)).reduce((a,z)=>a+z.std,0),0);unent+=ausFrist;ueberStd=0}
+    const vor=r.vorwarn!=null&&unent>=r.vorwarn&&unent<r.schwelle;
+    const farbe=unent>=r.schwelle?"rot":(vor||ueberStd>0||fristen.some(f=>f.zustand==="heute")||unent+ueberStd>=r.schwelle)?"gelb":"gruen";
     const schritte=[];
     if(unent>=r.schwelle)schritte.push(`Eltern informieren (${fmt(unent)} unentsch. Std.${seit?" seit "+datumDE(seit):""})`);
     const ab=fristen.filter(f=>f.zustand==="abgelaufen");if(ab.length)schritte.push(`Entschuldigung fehlt: ${ab.map(f=>tag(f)).join(", ")}`);
     const hz=fristen.filter(f=>f.zustand==="heute");if(hz.length)schritte.push(`Frist endet heute: ${hz.map(f=>tag(f)).join(", ")}`);
     const lf=fristen.filter(f=>f.zustand==="laeuft");if(lf.length)schritte.push(`Entschuldigung bis ${lf.map(f=>datumDE(f.ende)).join(", ")} (${lf.map(f=>tag(f)).join(", ")})`);
     if(farbe!=="rot"&&unent+ueberStd>=r.schwelle&&unent<r.schwelle)schritte.push("Schwelle erreicht, falls die offenen Stunden unentschuldigt bleiben");
-    liste.push({k,unent,ent,versp,offenStd,ueberStd,fristen,farbe,seit,schritte});
+    if(vor)schritte.push(`Vorwarnung: ${fmt(unent)} unentsch. Std. (Eltern ab ${fmt(r.schwelle)})`);
+    liste.push({k,unent,ausFrist,ent,versp,offenStd,ueberStd,fristen,farbe,seit,schritte});
   }
   const rang={rot:0,gelb:1,gruen:2};
   return liste.sort((a,b)=>rang[a.farbe]-rang[b.farbe]||b.unent-a.unent||b.ueberStd-a.ueberStd||a.k.localeCompare(b.k,"de",{numeric:true}));
@@ -290,7 +311,7 @@ function wuRuf(op,extra){return new Promise((ok,nein)=>{const id=Math.random().t
   function h(e){if(e.source!==window||!e.data||e.data.sa!=="wu-export-antwort"||e.data.id!==id)return;clearTimeout(t);window.removeEventListener("message",h);ok(e.data)}
   window.addEventListener("message",h);window.postMessage({sa:"wu-export",op,id,...(extra||{})},"*")})}
 function kbRuf(op,extra){return new Promise((ok,nein)=>{const id=Math.random().toString(36).slice(2);
-  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.24 geladen? Seite neu laden (F5)."))},60000);
+  const t=setTimeout(()=>{window.removeEventListener("message",h);nein(new Error("Der Schulassistenz-Helfer antwortet nicht. Ist Version 0.25 geladen? Seite neu laden (F5)."))},60000);
   function h(e){if(e.source!==window||!e.data||e.data.sa!=="kb-export-antwort"||e.data.id!==id)return;clearTimeout(t);window.removeEventListener("message",h);ok(e.data)}
   window.addEventListener("message",h);window.postMessage({sa:"kb-export",op,id,...(extra||{})},"*")})}
 const helferAb=(a,b)=>{const v=helferVersion().split(".").map(Number);return v.length>1&&(v[0]>a||(v[0]===a&&v[1]>=b))};
@@ -306,6 +327,7 @@ const helferKann=()=>{const v=helferVersion().split(".").map(Number);return v.le
 const css=document.createElement("style");
 css.textContent=`.fz-dot{display:inline-block;width:11px;height:11px;border-radius:50%;flex:none;vertical-align:-1px}
 .fz-dot.rot{background:var(--err)}.fz-dot.gelb{background:var(--warn)}.fz-dot.gruen{background:var(--ok)}
+.fz-regeln{margin:6px 0 10px;border:1px solid var(--line);border-radius:10px;padding:6px 12px}.fz-regeln summary{cursor:pointer;font-weight:600;font-size:13.5px}.fz-rg{display:grid;gap:8px;margin:10px 0 4px;font-size:13.5px}.fz-rg input[type=number]{width:70px}.fz-rg input,.fz-rg select{margin:0 4px}
 .fz-tab{width:100%;border-collapse:collapse;font-size:13.5px}.fz-tab th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:4px 6px;border-bottom:1px solid var(--line)}
 .fz-tab td{padding:6px;border-bottom:1px solid var(--line);vertical-align:top}.fz-tab td.z{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .fz-tab .k{font-family:var(--f-mono);font-weight:600;white-space:nowrap}.fz-tab .nm{color:var(--muted);font-size:12.5px}
@@ -345,28 +367,40 @@ function zeichnen(meldung){
   const slot=$("#panel-slot");const r=regeln(),heute=heuteISO();
   const namen=F.namen||{};const zeigeNamen=store.get("namen-zeigen",true);
   const gruppenOpt=ordner.gruppen.map(g=>`<option value="${esc(g.id)}"${g.id===F.gid?" selected":""}>${esc(g.id)}</option>`).join("");
-  const regelText=`Regeln${r.ausProfil?" aus dem Profil":" (Standard, nicht im Profil)"}: Eltern ab ${fmt(r.schwelle)} unentschuldigten Stunden${r.ab==="letzte_benachrichtigung"?" seit der letzten Benachrichtigung":r.ab==="halbjahr"?" je Halbjahr":" im Schuljahr"}; Entschuldigung bis ${r.frist} ${r.einheit==="kalendertage"?"Kalendertage":"Schultage"} nach dem letzten Fehltag${ferien().length?"":" (Ferien und Feiertage nicht berücksichtigt, eintragbar in meine-einstellungen.js unter ferien)"}; Verspätungen zählen ${r.verspaetung?"":"nicht "}zur Schwelle${r.entschuldigt.length?"; als entschuldigt gilt auch: "+(r.entschuldigtText||r.entschuldigt).join(", "):""}.`;
+  const regelText=`Regeln${r.lokal?" (eigene Werte, in diesem Browser)":r.ausProfil?" aus dem Profil":" (Standard, nicht im Profil)"}: Eltern ab ${fmt(r.schwelle)} unentschuldigten Stunden${r.ab==="letzte_benachrichtigung"?" seit der letzten Benachrichtigung":r.ab==="halbjahr"?" je Halbjahr":" im Schuljahr"}; Entschuldigung bis ${r.frist} ${r.einheit==="kalendertage"?"Kalendertage":"Schultage"} nach dem letzten Fehltag${ferien().length?"":" (Ferien und Feiertage nicht berücksichtigt, eintragbar in meine-einstellungen.js unter ferien)"}; ${r.fristUnent?"danach zählen offene Stunden als unentschuldigt; ":""}Verspätungen zählen ${r.verspaetung?"":"nicht "}zur Schwelle${r.entschuldigt.length?"; als entschuldigt gilt auch: "+(r.entschuldigtText||r.entschuldigt).join(", "):""}.`;
   let tabelle="",sum="";
   if(F.zeilen){
     const a=ampel(F.zeilen,F.gid,r,heute);F.ampel=a;const n=f=>a.filter(x=>x.farbe===f).length;
     sum=`<div class="fz-sum"><span><span class="fz-dot rot"></span><b>${n("rot")}</b> Eltern informieren</span><span><span class="fz-dot gelb"></span><b>${n("gelb")}</b> Entschuldigung fällig oder Schwelle droht</span><span><span class="fz-dot gruen"></span><b>${n("gruen")}</b> ohne Handlungsbedarf</span>${F.stand?`<span class="note">Stand ${datumDE(F.stand)}${F.zeitraum?" · "+esc(F.zeitraum):""}</span>`:""}</div>`;
     tabelle=`<div class="fz-tab-wrap"><table class="fz-tab"><thead><tr><th></th><th>Kürzel</th><th style="text-align:right">unentsch.</th><th style="text-align:right">offen</th><th style="text-align:right">entsch.</th><th style="text-align:right">zu spät</th><th>Nächster Schritt</th></tr></thead><tbody>${a.map(x=>{
       const nm=zeigeNamen&&namen[x.k]?`<div class="nm">${esc([namen[x.k].vor,namen[x.k].nach].filter(Boolean).join(" "))}</div>`:"";
-      return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td><td class="z">${fmt(x.unent)}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td><td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
+      return `<tr class="${x.farbe}"><td><span class="fz-dot ${x.farbe}" title="${x.farbe==="rot"?"rot":x.farbe==="gelb"?"gelb":"grün"}"></span></td><td><span class="k">${esc(x.k)}</span>${nm}</td><td class="z">${fmt(x.unent)}${x.ausFrist?`<div class="nm">davon ${fmt(x.ausFrist)} Frist abgelaufen</div>`:""}${x.seit?`<div class="nm">seit ${datumDE(x.seit)}</div>`:""}</td><td class="z">${fmt(x.offenStd)}${x.ueberStd?`<div class="nm">${fmt(x.ueberStd)} überfällig</div>`:""}</td><td class="z">${fmt(x.ent)}</td><td class="z">${x.versp||""}</td><td class="sch">${x.schritte.map(s=>`<div>${esc(s)}</div>`).join("")}${x.unent>0||x.farbe==="rot"?`<div><button class="linkbtn" data-inf="${esc(x.k)}">Eltern informiert …</button></div><div class="fz-ja" data-ja="${esc(x.k)}" hidden></div>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
   }
   const fehl=F.fehlend&&F.fehlend.size?`<div class="fz-warn"><b>${F.fehlend.size===1?"1 Name steht":F.fehlend.size+" Namen stehen"} in keiner Kürzelliste.</b> Ihre Zeilen werden nicht gespeichert und nicht ausgewertet. Trag sie in die Kürzelliste ein (Lerngruppe › Akten › „Kürzel hinzufügen“) und lies die Datei noch einmal ein. Die Namen siehst nur du in diesem Fenster:<ul>${[...F.fehlend.entries()].map(([n,c])=>{const a=(F.aehnlich&&F.aehnlich.get(n))||[];return `<li>${esc(n)} (${c} Zeilen)${a.length?` · ähnlich in der Kürzelliste: ${a.map(e=>`${esc(e.kuerzel)} ${esc(e.anzeige)} (${esc(e.gruppe)})`).join(", ")}. Steht dort der Name anders geschrieben oder fehlt der Nachname?`:""}</li>`}).join("")}</ul></div>`:"";
   const kurz=F.neu&&F.datenVon&&F.datenVon>plusTage(schuljahrBeginn(),45)?`<div class="fz-warn"><b>Die Datei enthält erst Fehlzeiten ab ${datumDE(F.datenVon)}.</b> Ist beim Export als Zeitraum das ganze Schuljahr eingestellt (WebUntis: „Aktuelles Schuljahr“, IServ-Klassenbuch: „Von“ = erster Schultag)? Kinder ohne Fehlzeiten haben im IServ-Klassenbuch keine Zeilen, das ist in Ordnung. Für die Elternschwelle braucht die Ampel alle Fehlzeiten seit Schuljahresbeginn bzw. seit der letzten Benachrichtigung.</div>`:"";
   const klasseHinweis=F.neu&&F.klassen&&F.klassen.length===1&&!F.gid.toLowerCase().startsWith(F.klassen[0].toLowerCase())?`<div class="fz-warn">Die Datei ist für die Klasse ${esc(F.klassen[0])}, angezeigt wird ${esc(F.gid)}. Oben unter „Lerngruppe“ kannst du wechseln.</div>`:"";
+  const si=F.neu&&F.statusInfo;const statusWarn=si&&!si.erkannt?`<div class="fz-warn"><b>In der Datei ist bei keiner Fehlzeit „entschuldigt“ oder „unentschuldigt“ erkennbar.</b> Deshalb steht alles unter „offen“. ${si.spalte?`Gelesen wurde die Spalte „${esc(si.spalte)}“ mit den Werten ${si.werte.map(([w,n])=>`„${esc(w)}“ (${n})`).join(", ")}.`:"Eine Status-Spalte wurde nicht gefunden."} Spalten in der Datei: ${si.kopf.map(esc).join(" · ")}. Schick Claude bitte ein Bildschirmfoto dieses Hinweises (enthält keine Namen).</div>`:"";
   const ohne=F.ohne?`<div class="fz-warn">${F.ohne} Zeilen gehören zu Kindern aus anderen Lerngruppen und sind hier nicht enthalten. Andere Lerngruppe wählen, um sie zu sehen.</div>`:"";
   const q=quellen();
-  const helfer=(helferKann()&&q.wu?`<button class="btn primary" id="fz-holen">Aus WebUntis holen</button>`:"")+(helferAb(0,24)&&q.kb?`<button class="btn ${helferKann()&&q.wu?"ghost":"primary"}" id="fz-kb">Aus dem IServ-Klassenbuch holen</button>`:"");
+  const helfer=(helferKann()&&q.wu?`<button class="btn primary" id="fz-holen">Aus WebUntis holen</button>`:"")+(helferAb(0,25)&&q.kb?`<button class="btn ${helferKann()&&q.wu?"ghost":"primary"}" id="fz-kb">Aus dem IServ-Klassenbuch holen</button>`:"");
   const hinw=F.neu&&F.hinweise&&F.hinweise.length?`<div class="fz-warn">${F.hinweise.map(esc).join("<br>")}</div>`:"";
   slot.innerHTML=`<div class="panel" role="region" aria-label="Fehlzeiten-Ampel"><div class="p-kopf"><h4>Fehlzeiten-Ampel</h4><span class="sp"></span><label class="r-skala">Lerngruppe <select id="fz-gruppe">${gruppenOpt}</select></label><label class="r-skala"><input type="checkbox" id="fz-namen"${zeigeNamen?" checked":""}> Namen zeigen</label></div>
     <div class="actions" style="margin-top:0">${helfer}<label class="btn ${helfer?"ghost":"primary"}">Export-Datei(en) wählen<input type="file" id="fz-datei" accept=".xls,.xlsx,.csv,.txt,.tsv,.htm,.html,.pdf" multiple hidden></label><span class="toast" id="fz-toast">${esc(meldung||"")}</span></div>
     <div class="fz-drop" id="fz-drop">Export „Abwesenheiten“ aus WebUntis oder dem IServ-Klassenbuch hierher ziehen (.xls, .xlsx oder .csv, auch mehrere Dateien auf einmal, z. B. eine je Kind). Die Dateien werden nur in diesem Fenster gelesen.</div>
     <p class="guard" id="fz-guard" hidden></p>
     <div id="fz-lernen"></div>
-    ${hinw}${kurz}${klasseHinweis}${fehl}${ohne}${sum}${tabelle}
+    ${hinw}${kurz}${klasseHinweis}${statusWarn}${fehl}${ohne}${sum}<details class="fz-regeln"${store.get("fz-regeln-offen",false)?" open":""}><summary>Schwellen anpassen${r.lokal?" (eigene Werte aktiv)":""}</summary>
+      <div class="fz-rg">
+        <label>Eltern informieren ab <input type="number" id="fzr-schwelle" min="1" step="0.5" value="${esc(r.schwelle)}"> unentsch. Std.</label>
+        <label>Vorwarnung (gelb) ab <input type="number" id="fzr-vorwarn" min="1" step="0.5" value="${r.vorwarn!=null?esc(r.vorwarn):""}" placeholder="aus"> unentsch. Std.</label>
+        <label>Stunden zählen <select id="fzr-ab"><option value="letzte_benachrichtigung"${r.ab==="letzte_benachrichtigung"?" selected":""}>seit der letzten Benachrichtigung</option><option value="schuljahr"${r.ab!=="letzte_benachrichtigung"?" selected":""}>im ganzen Schuljahr</option></select></label>
+        <label>Entschuldigung bis <input type="number" id="fzr-frist" min="0" step="1" value="${esc(r.frist)}"> <select id="fzr-einheit"><option value="schultage"${r.einheit!=="kalendertage"?" selected":""}>Schultage</option><option value="kalendertage"${r.einheit==="kalendertage"?" selected":""}>Kalendertage</option></select> nach dem letzten Fehltag</label>
+        <label><input type="checkbox" id="fzr-frist-unent"${r.fristUnent?" checked":""}> Nach Ablauf der Frist zählen offene Stunden als unentschuldigt</label>
+        <label><input type="checkbox" id="fzr-versp"${r.verspaetung?" checked":""}> Verspätungen zählen zur Schwelle</label>
+      </div>
+      <div class="actions"><button class="btn primary small" id="fzr-ok">Übernehmen</button>${r.lokal?`<button class="btn ghost small" id="fzr-weg">Zurück auf ${r.ausProfil?"Profil":"Standard"} (${fmt(r.profil.schwelle)} Std., ${r.profil.frist} ${r.profil.einheit==="kalendertage"?"Kalendertage":"Schultage"})</button>`:""}</div>
+      <p class="note">Gilt sofort für alle Lerngruppen und nur in diesem Browser. Dauerhaft für Claude steht die Regel in deinem Profil (regeln.fehlzeiten).</p>
+    </details>${tabelle}
     <div id="fz-akte"></div>
     ${F.zeilen?"":`<p class="note">Für ${esc(F.gid||"diese Lerngruppe")} ist noch kein Stand gespeichert.</p>`}
     <p class="note">${esc(regelText)}</p>
@@ -374,6 +408,14 @@ function zeichnen(meldung){
     <div class="actions">${F.zeilen&&F.neu?`<button class="btn primary" id="fz-speichern">Stand speichern</button>`:""}${F.zeilen&&F.zeilen.length?`<button class="btn ghost" id="fz-akten" title="Je Kind eine Zeile mit den Summen in die Akte (Bereich Termine), nicht die einzelnen Tage">In die Akten übernehmen …</button>`:""}${F.zeilen?`<button class="btn ghost" id="fz-claude">Mit Claude abgleichen</button>`:""}<button class="btn ghost" id="p-close">Schließen</button></div></div>`;
   $("#p-close").addEventListener("click",()=>{slot.innerHTML=""});
   $("#fz-namen").addEventListener("change",e=>{store.set("namen-zeigen",e.target.checked);zeichnen()});
+  slot.querySelector(".fz-regeln").addEventListener("toggle",e=>store.set("fz-regeln-offen",e.target.open));
+  $("#fzr-ok").addEventListener("click",()=>{const zahl=id=>{const v=parseFloat(String($(id).value).replace(",","."));return isNaN(v)?null:v};
+    const schwelle=zahl("#fzr-schwelle"),vorwarn=zahl("#fzr-vorwarn"),frist=zahl("#fzr-frist");
+    if(!(schwelle>0)){$("#fz-toast").textContent="Bitte eine Schwelle über 0 eintragen.";return}
+    if(vorwarn!=null&&vorwarn>=schwelle){$("#fz-toast").textContent="Die Vorwarnung muss kleiner als die Schwelle sein.";return}
+    store.set("fz-regeln",{schwelle,vorwarn,frist:frist==null?null:Math.max(0,Math.round(frist)),einheit:$("#fzr-einheit").value,ab:$("#fzr-ab").value,verspaetung:$("#fzr-versp").checked,fristUnent:$("#fzr-frist-unent").checked});
+    zeichnen("Schwellen übernommen.")});
+  if($("#fzr-weg"))$("#fzr-weg").addEventListener("click",()=>{store.set("fz-regeln",null);zeichnen("Wieder die Werte aus dem "+(regeln().ausProfil?"Profil":"Standard")+".")});
   $("#fz-gruppe").addEventListener("change",async e=>{const g=e.target.value;store.set("fz-gruppe",g);
     if(F.roh){const p=pseudoZeilen(F.roh,g);F={...F,gid:g,zeilen:p.zeilen,ohne:p.ohne,namen:await namenLesen(g)};}
     else{const s=await standLesen(g);F=s?{gid:g,zeilen:s.zeilen,stand:s.stand,zeitraum:s.zeitraum,quelle:"gespeicherter Stand",herkunft:s.quelle,neu:false,namen:await namenLesen(g)}:{gid:g,zeilen:null}}
@@ -396,7 +438,7 @@ async function einlesen(bufP,quelle,zeitraum){
   try{const erg=await verarbeiten(Array.isArray(bufP)?bufP:[{buf:bufP,name:""}]);const gid=F.gid&&erg.daten.some(d=>d.treffer.some(t=>t.gruppe===F.gid))?F.gid:gruppeVorschlag(erg);
     const p=pseudoZeilen(erg,gid);
     const tage=erg.daten.map(d=>d.iso).sort();const daten=`${datumDE(tage[0])}–${datumDE(tage[tage.length-1])}`;
-    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,hinweise:erg.hinweise,herkunft:erg.herkunft,fehlend:erg.fehlend,aehnlich:erg.aehnlich,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()]};
+    F={gid,roh:erg,zeilen:p.zeilen,ohne:p.ohne,hinweise:erg.hinweise,herkunft:erg.herkunft,fehlend:erg.fehlend,aehnlich:erg.aehnlich,doppelt:erg.doppelt,stand:heuteISO(),zeitraum:zeitraum||("Fehlzeiten vom "+daten),datenVon:tage[0],quelle,neu:true,namen:await namenLesen(gid),klassen:[...erg.klassen.keys()],statusInfo:erg.statusInfo};
     zeichnen(`${erg.daten.length} Zeilen${erg.dateien>1?" aus "+erg.dateien+" Dateien":""} gelesen. Noch nicht gespeichert.`)}
   catch(e){$("#fz-toast").textContent="";g.hidden=false;g.textContent=(e.message||String(e))+(F.antwortNeu?" ("+F.antwortNeu+")":"");F.antwortNeu=""}
 }
@@ -430,7 +472,7 @@ async function holenUeberTab(){
     },1500);
   }catch(e){g.hidden=false;g.textContent=e.message||String(e)}
 }
-/* ---------- IServ-Klassenbuch über den Helfer (ab 0.24) ---------- */
+/* ---------- IServ-Klassenbuch über den Helfer (ab 0.25) ---------- */
 let kbDateien=[];
 async function holenIServ(){
   const g=$("#fz-guard");g.hidden=true;
