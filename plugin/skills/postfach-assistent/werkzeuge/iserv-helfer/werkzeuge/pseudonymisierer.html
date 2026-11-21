@@ -402,15 +402,47 @@ function rueckPaare(){
   return m;
 }
 // baut eine Funktion text -> [{s,e,rep,orig}]
-function matcher(map){
+function matcher(map,{verbinden=false}={}){
   const keys=[...map.keys()].sort((a,b)=>b.length-a.length);
   if(!keys.length)return ()=>[];
+  const woerter=verbinden?codeWoerter():null;
   // optionales Genitiv-s bzw. Apostroph bleibt erhalten
   const re=new RegExp(B+"("+keys.map(k=>reEsc(k).replace(/\s+/g,"\\s+")).join("|")+")(s|’s|'s)?"+E,"gu");
   const norm=new Map([...map].map(([k,v])=>[k.replace(/\s+/g," "),v]));
   return text=>{const out=[];re.lastIndex=0;let m;
-    while((m=re.exec(text))){const key=m[1].replace(/\s+/g," ");out.push({s:m.index,e:m.index+m[0].length,rep:(norm.get(key)??key)+(m[2]||""),orig:m[0]});}
-    return out;};
+    while((m=re.exec(text))){const key=m[1].replace(/\s+/g," ");out.push({s:m.index,e:m.index+m[0].length,rep:(norm.get(key)??key)+(m[2]||""),orig:m[0],name:m[1],ziel:norm.get(key)??key,suffix:m[2]||""});}
+    return woerter?zusammenfassen(text,out,woerter):out;};
+}
+// alle Namensteile je Kürzel (klein geschrieben), z. B. I20 → {blair, anna, sophia}
+function codeWoerter(){
+  const m=new Map();
+  for(const r of liste){const k=r.kurz.trim();if(!k)continue;if(!m.has(k))m.set(k,new Set());
+    for(const w of r.orig.toLowerCase().split(/[\s,-]+/))if(w)m.get(k).add(w);}
+  return m;
+}
+// Treffer, die direkt aufeinander folgen („Blair Anna“ → „I20 I20“), werden ein Kürzel, wenn
+// genau ein Kind alle diese Namensteile trägt. Ein weiterer großgeschriebener Name direkt dahinter
+// am Zellen-/Zeilenende (zweiter Vorname, der nicht in der Liste steht) wird mit ersetzt.
+function zusammenfassen(text,ms,woerter){
+  const res=[];let i=0;
+  while(i<ms.length){
+    let j=i;
+    while(j+1<ms.length&&!ms[j].suffix&&/^[ \u00A0]*[,-]?[ \u00A0]*$/.test(text.slice(ms[j].e,ms[j+1].s)))j++;
+    // auch ein einzelner Treffer mit vollem Namen („Blair Anna“) darf einen Rest-Vornamen mitnehmen
+    if(j>i||/[\s,]/.test(ms[i].name.trim())){
+      const grp=ms.slice(i,j+1);
+      const w=grp.flatMap(m=>m.name.toLowerCase().split(/[\s,-]+/)).filter(Boolean);
+      const kinder=j>i?[...woerter].filter(([,set])=>w.every(x=>set.has(x))).map(([k])=>k):(woerter.has(ms[i].ziel)?[ms[i].ziel]:[]);
+      if(kinder.length===1){
+        const letzt=grp[grp.length-1];let e=letzt.e;
+        if(!letzt.suffix){const rest=/(?:[ \u00A0]+\p{Lu}[\p{L}'’-]*){1,2}(?=[ \u00A0]*(?:$|[\t\r\n;|)]))/uy;rest.lastIndex=e;const r=rest.exec(text);if(r)e+=r[0].length;}
+        res.push({s:grp[0].s,e,rep:kinder[0]+letzt.suffix,orig:text.slice(grp[0].s,e),name:text.slice(grp[0].s,e),ziel:kinder[0],suffix:letzt.suffix});
+        i=j+1;continue;
+      }
+    }
+    res.push(ms[i]);i++;
+  }
+  return res;
 }
 function replaceText(text,find){let r="",last=0;for(const m of find(text)){r+=text.slice(last,m.s)+m.rep;last=m.e;}return r+text.slice(last);}
 
@@ -424,8 +456,8 @@ const MUSTER=[
   {art:"Telefon",re:/(?:\+49|0049|(?<![\d.])0)[\s/-]?\d{2,5}[\s/-]?\d{3,}(?:[\s-]?\d+)?/gu,rep:"[Telefon]",an:true},
   {art:"Adresse",re:/[A-ZÄÖÜ][\p{L}-]*(?:straße|strasse|str\.|weg|allee|platz|gasse|ring|damm|chaussee|stieg)\s?\d+\s?[a-z]?\b/gu,rep:"[Adresse]",an:true},
   {art:"PLZ/Ort",re:/(?<!\d)\d{5}\s[A-ZÄÖÜ][\p{L}-]+/gu,rep:"[Ort]",an:true},
-  {art:"Name nach Anrede",re:/(?<=(?:Herr|Herrn|Frau|Fr\.|Hr\.|Familie|Mutter|Vater|Schwester|Bruder|Oma|Opa|Name:|Schüler:|Schülerin:|Erziehungsberechtigte[rn]?:)\s)[A-ZÄÖÜ][\p{L}-]+(?:\s[A-ZÄÖÜ][\p{L}-]+)?/gu,rep:"[Name]",an:true},
-  {art:"Unterschrift/Klasse",re:/(?:Unterschrift|gez\.)\s*:?\s*[A-ZÄÖÜ][\p{L}.-]+(?:\s[A-ZÄÖÜ][\p{L}-]+)?/gu,rep:"[Unterschrift]",an:true},
+  {art:"Name nach Anrede",re:/(?<=(?:Herr|Herrn|Frau|Fr\.|Hr\.|Familie|Mutter|Vater|Schwester|Bruder|Oma|Opa|Name:|Schüler:|Schülerin:|Erziehungsberechtigte[rn]?:)\s)[A-ZÄÖÜ][\p{L}-]+(?:[ \u00A0][A-ZÄÖÜ][\p{L}-]+)?/gu,rep:"[Name]",an:true},
+  {art:"Unterschrift/Klasse",re:/(?:Unterschrift|gez\.)[ \u00A0]*:?[ \u00A0\t]*[A-ZÄÖÜ][\p{L}.-]+(?:[ \u00A0][A-ZÄÖÜ][\p{L}-]+)?/gu,rep:"[Unterschrift]",an:true},
 ];
 function pruefen(text){
   const hits=[];
@@ -438,7 +470,12 @@ function pruefen(text){
   const out=[];let end=-1;for(const h of hits){if(h.s>=end){out.push(h);end=h.e;}}
   return out;
 }
-const ctx=(t,s,e)=>esc(t.slice(Math.max(0,s-35),s)).replace(/\s+/g," ")+"<b>"+esc(t.slice(s,e))+"</b>"+esc(t.slice(e,e+35)).replace(/\s+/g," ");
+// Fundstelle mit Umgebung, an Wortgrenzen gekürzt (kein „okumentation“)
+const ctx=(t,s,e)=>{let a=Math.max(0,s-40),b=Math.min(t.length,e+40);
+  if(a>0){const k=t.slice(a,s).search(/\s/);a=k>=0?a+k+1:s;}
+  if(b<t.length){const k=t.slice(e,b).search(/\s\S*$/);b=k>=0?e+k:e;}
+  const ws=x=>esc(x).replace(/\s+/g," ");
+  return (a>0?"… ":"")+ws(t.slice(a,s))+"<b>"+esc(t.slice(s,e))+"</b>"+ws(t.slice(e,b))+(b<t.length?" …":"");};
 
 // ---------- Word & Excel (Office-Dateien sind ZIP-Archive mit XML) ----------
 const XMLNS="http://www.w3.org/XML/1998/namespace";
@@ -453,20 +490,26 @@ const OFFICE_TEILE=[
 ];
 const byLocal=(el,name)=>[...el.getElementsByTagName("*")].filter(x=>x.localName===name);
 // ersetzt in allen Absätzen/Zellen, auch wenn Word ein Wort auf mehrere Abschnitte (Runs) verteilt
+// Word: Tabulator und Zeilenumbruch stehen als eigene Elemente zwischen den Textstücken.
+// Sie zählen als Leerraum, sonst klebt „Nada<Tab>Geburtsdatum“ zu „NadaGeburtsdatum“ zusammen
+// und der Name wird nicht mehr erkannt.
+const TRENNER={tab:"\t",br:"\n",cr:"\n"};
 function ersetzeAbsaetze(doc,pTag,tTag,filter,find,collect){
-  let n=0;
+  let n=0;const word=/wordprocessingml/.test((doc.documentElement&&doc.documentElement.namespaceURI)||"");
+  const eigen=(el,p)=>{let a=el.parentNode;while(a&&a.localName!==pTag&&a.localName!=="rPh")a=a.parentNode;return a===p;};
   for(const p of byLocal(doc,pTag)){
     if(filter&&!filter(p))continue;
-    const ts=byLocal(p,tTag).filter(t=>{let a=t.parentNode;while(a&&a.localName!==pTag&&a.localName!=="rPh")a=a.parentNode;return a===p;});
-    if(!ts.length)continue;
-    const parts=ts.map(t=>t.textContent);const full=parts.join("");
+    const ts=[...p.getElementsByTagName("*")].filter(t=>(t.localName===tTag||(word&&t.localName in TRENNER&&t.parentNode&&t.parentNode.localName==="r"))&&eigen(t,p));
+    const fest=ts.map(t=>t.localName!==tTag);
+    if(!fest.includes(false))continue;
+    const parts=ts.map((t,i)=>fest[i]?TRENNER[t.localName]:t.textContent);const full=parts.join("");
     const ms=find(full);if(!ms.length){if(collect)collect.push(full);continue;}
     const starts=[];let o=0;for(const x of parts){starts.push(o);o+=x.length;}
     for(const m of ms.slice().reverse()){
       let first=-1;
       for(let i=0;i<ts.length;i++){
         const a=starts[i],b=a+parts[i].length;
-        if(b<=m.s||a>=m.e)continue;
+        if(b<=m.s||a>=m.e||fest[i])continue;
         const ls=Math.max(m.s,a)-a,le=Math.min(m.e,b)-a;
         if(first<0){first=i;parts[i]=parts[i].slice(0,ls)+m.rep+parts[i].slice(le);}
         else parts[i]=parts[i].slice(0,ls)+parts[i].slice(le);
@@ -475,7 +518,7 @@ function ersetzeAbsaetze(doc,pTag,tTag,filter,find,collect){
       n++;
     }
     if(collect)collect.push(parts.join(""));
-    ts.forEach((t,i)=>{t.textContent=parts[i];if(tTag==="t")t.setAttributeNS(XMLNS,"xml:space","preserve");});
+    ts.forEach((t,i)=>{if(fest[i])return;t.textContent=parts[i];if(tTag==="t")t.setAttributeNS(XMLNS,"xml:space","preserve");});
   }
   return n;
 }
@@ -618,15 +661,23 @@ function csvSchreiben(rows,sep){
   return rows.map(r=>r.map(c=>/[";\t,\r\n]/.test(c)&&(c.includes(sep)||/["\r\n]/.test(c))?'"'+c.replace(/"/g,'""')+'"':c).join(sep)).join("\r\n")+"\r\n";
 }
 // ersetzt Zelle für Zelle; Vor- und Nachname in getrennten Spalten werden über die Zeile eindeutig
+// Spalten mit Schüler-IDs (WebUntis „Externe Id“ u. ä.) sind personenbezogen und werden geleert
+const ID_SPALTE=/^(externe?\s*-?id|sch(ü|ue)ler(\*?innen)?\s*-?id|sch(ü|ue)ler-?nr\.?|sch(ü|ue)lernummer|asv-?id|personal-?id)$/i;
+function idSpalten(rows){
+  for(let i=0;i<Math.min(rows.length,10);i++){const js=[];rows[i].forEach((c,j)=>{if(ID_SPALTE.test(String(c).trim()))js.push(j);});if(js.length)return {kopf:i,js};}
+  return {kopf:-1,js:[]};
+}
 function csvVerarbeiten(rows,find,volle){
   const out=rows.map(r=>r.slice());let n=0;
+  const ids=idSpalten(rows);
+  for(let i=ids.kopf+1;i<rows.length&&ids.js.length;i++)for(const j of ids.js)if((rows[i][j]||"").trim()){out[i][j]="";n++;}
   rows.forEach((r,i)=>{const fertig=new Set();
     for(let a=0;a<r.length;a++)for(let b=a+1;b<r.length;b++){
       if(fertig.has(a)||fertig.has(b)||!r[a].trim()||!r[b].trim())continue;
       const k=volle.get(normName(r[a]+" "+r[b]))||volle.get(normName(r[b]+" "+r[a]));
       if(k){out[i][a]=k;out[i][b]=k;fertig.add(a);fertig.add(b);n+=2;}
     }});
-  rows.forEach((r,i)=>r.forEach((c,j)=>{if(out[i][j]!==c)return;const m=find(c);if(m.length){out[i][j]=replaceText(c,find);n+=m.length;}}));
+  rows.forEach((r,i)=>r.forEach((c,j)=>{if(out[i][j]!==c||(i>ids.kopf&&ids.js.includes(j)))return;const m=find(c);if(m.length){out[i][j]=replaceText(c,find);n+=m.length;}}));
   return {out,n};
 }
 // Zellen in Namensspalten, die nicht ersetzt wurden (Kind fehlt in der Kürzelliste?)
@@ -667,7 +718,7 @@ dropzone($("#dropWord"),$("#fileWord"),async files=>{
 });
 async function wordDatei(f,out){
   const box=document.createElement("div");box.className="card";out.appendChild(box);
-  const find=matcher(paare());const e=ext(f.name);
+  const find=matcher(paare(),{verbinden:true});const e=ext(f.name);
   const neuerName=replaceText(stem(f.name),find)+"_pseudo."+e;
   try{
     let n,text,buf=await f.arrayBuffer(),orig;
@@ -694,14 +745,19 @@ async function wordDatei(f,out){
     }
     else if(e==="xls"){throw new Error("Alte .xls-Dateien bitte in Excel als .xlsx speichern (Datei → Speichern unter → Excel-Arbeitsmappe).");}
     else{orig=textDekodieren(buf);n=find(orig).length;text=replaceText(orig,find);hits=pruefen(text);}
+    // zwei verschiedene Kürzel direkt nebeneinander („I01 I02“): Name steht in der Liste anders
+    {const codes=[...new Set(liste.map(r=>r.kurz.trim()).filter(Boolean))].sort((a,b)=>b.length-a.length).map(reEsc);
+     if(codes.length&&text){const re=new RegExp(B+"("+codes.join("|")+")[ \\u00A0]+("+codes.join("|")+")"+E,"gu");let m;const schon=new Set();
+      while((m=re.exec(text))){if(m[1]===m[2]||schon.has(m[0]))continue;schon.add(m[0]);
+        hits.unshift({art:"Zwei Kürzel?",s:m.index,e:m.index+m[0].length,txt:m[0],rep:"",an:false,nurHinweis:true,hinweis:`„<b>${esc(m[0])}</b>“: zwei verschiedene Kürzel direkt hintereinander. Meist steht der Name im Dokument anders als in der Kürzelliste (z. B. zweiter Vorname oder Doppelname). Bitte in Reiter 1 ergänzen und die Datei neu laden.`});}}}
     // mehrdeutige Teilnamen: Platzhalter „[I09 oder I15]“ zur Auswahl anbieten
     {const re=/\[([^\[\]]+? oder [^\[\]]+?)\]/g;let m;const schon=new Set();
      while(text&&(m=re.exec(text))){if(schon.has(m[0]))continue;schon.add(m[0]);hits.unshift({art:"Welches Kind?",s:m.index,e:m.index+m[0].length,txt:m[0],rep:m[1].split(" oder ")[0],an:false,auswahl:m[1].split(" oder ")});}}
 
     box.innerHTML=`<h2>${esc(f.name)}</h2>
-      <div class="status ${n?"ok":"warn"}">${n} Stellen aus der Kürzelliste ersetzt.${n?"":" Stimmt die Liste?"} Neuer Dateiname: <b>${esc(neuerName)}</b></div>
+      <div class="status ${n?"ok":"warn"}">${n} Stellen aus der Kürzelliste ersetzt.${e==="csv"&&idSpalten(csvRows).js.length?` Spalte „${esc(idSpalten(csvRows).js.map(j=>csvRows[idSpalten(csvRows).kopf][j]).join("“, „"))}“ (Schüler-ID) geleert.`:""}${n?"":" Stimmt die Liste?"} Neuer Dateiname: <b>${esc(neuerName)}</b></div>
       ${hits.length?`<p><b>Prüfliste: ${hits.length} Stellen.</b> Angehakte Stellen werden durch den Text rechts ersetzt. ${e==="csv"?"Datumsangaben zeigt die Prüfliste bei Tabellen nicht an, weil es fast immer Fehlzeiten- oder Termindaten sind.":"Datumsangaben sind nicht angehakt, weil sie oft harmlos sind (Klausurdatum)."} Bei „Welches Kind?“ steht im Dokument nur ein Vor- oder Nachname, den mehrere Kinder tragen: Wähle das richtige Kürzel. Lässt du es offen, bleibt der Platzhalter mit beiden Kürzeln stehen; der Name ist trotzdem weg.</p>
-      <table><thead><tr><th></th><th>Art</th><th>Fundstelle</th><th>ersetzen durch</th></tr></thead><tbody>${hits.map((h,i)=>`<tr>${h.nurHinweis?`<td></td><td><span class="pill warn">${esc(h.art)}</span></td><td class="ctx">Tabellenblatt „<b>${esc(h.txt)}</b>“ trägt einen Namen. Bitte in Excel selbst umbenennen.</td><td></td>`:`<td><input type="checkbox" data-i="${i}" ${h.an?"checked":""}></td><td><span class="pill warn">${esc(h.art)}</span></td><td class="ctx">${ctx(text,h.s,h.e)}</td><td>${h.auswahl?`<select data-r="${i}" onchange="this.closest('tr').querySelector('input[type=checkbox]').checked=true">${h.auswahl.map(k=>`<option>${esc(k)}</option>`).join("")}</select>`:`<input type="text" data-r="${i}" value="${esc(h.rep)}" style="width:150px">`}</td>`}</tr>`).join("")}</tbody></table>`
+      <table><thead><tr><th></th><th>Art</th><th>Fundstelle</th><th>ersetzen durch</th></tr></thead><tbody>${hits.map((h,i)=>`<tr>${h.nurHinweis?`<td></td><td><span class="pill warn">${esc(h.art)}</span></td><td class="ctx">${h.hinweis||`Tabellenblatt „<b>${esc(h.txt)}</b>“ trägt einen Namen. Bitte in Excel selbst umbenennen.`}</td><td></td>`:`<td><input type="checkbox" data-i="${i}" ${h.an?"checked":""}></td><td><span class="pill warn">${esc(h.art)}</span></td><td class="ctx">${ctx(text,h.s,h.e)}</td><td>${h.auswahl?`<select data-r="${i}" onchange="this.closest('tr').querySelector('input[type=checkbox]').checked=true">${h.auswahl.map(k=>`<option>${esc(k)}</option>`).join("")}</select>`:`<input type="text" data-r="${i}" value="${esc(h.rep)}" style="width:150px">`}</td>`}</tr>`).join("")}</tbody></table>`
       :`<div class="status ok">Prüfliste: keine weiteren verdächtigen Stellen gefunden. Trotzdem einmal selbst drüberlesen.</div>`}
       ${e==="csv"?`<h3 class="vorschau-titel">Vorschau der Tabelle</h3>
       <p class="muted legende"><span class="m-ersetzt">grün</span> ersetzt (Maus drauf zeigt den alten Inhalt) · <span class="m-offen">orange</span> bitte prüfen, wird mit den aktuellen Häkchen noch nicht ersetzt · Trennzeichen „${sep==="\t"?"Tab":esc(sep)}“, ${csvRows.length} Zeilen</p>
@@ -717,9 +773,9 @@ async function wordDatei(f,out){
       return extra;
     };
     const csvFertig=()=>{
-      const r=csvVerarbeiten(csvRows,matcher(auswahl()),volle);
+      const r=csvVerarbeiten(csvRows,matcher(auswahl(),{verbinden:true}),volle);
       // orange: Prüflisten-Stellen ohne Häkchen und offene „[A oder B]“-Platzhalter
-      const offen=hits.filter((h,i)=>!h.nurHinweis&&!box.querySelector(`input[data-i="${i}"]`)?.checked).map(h=>h.txt);
+      const offen=hits.filter((h,i)=>(!h.nurHinweis||h.art==="Zwei Kürzel?")&&!box.querySelector(`input[data-i="${i}"]`)?.checked).map(h=>h.txt);
       for(const z of r.out)for(const c of z){const m=c.match(/\[[^\[\]]+? oder [^\[\]]+?\]/);if(m&&!offen.includes(m[0]))offen.push(m[0]);}
       return {out:r.out,offen};
     };
@@ -727,7 +783,7 @@ async function wordDatei(f,out){
     if(e==="csv"){box.addEventListener("change",zeigen);box.addEventListener("input",zeigen);zeigen();}
     box.querySelector("button.b").onclick=async()=>{
       const extra=auswahl();
-      const find2=matcher(extra);
+      const find2=matcher(extra,{verbinden:true});
       if(e==="csv"){download("\uFEFF"+csvSchreiben(csvFertig().out,sep),replaceText(stem(f.name),find2)+"_pseudo.csv","text/csv;charset=utf-8");return;}
       if(OFFICE(e)){const r=await officeProcess(buf,find2,{volle:vollePaare()});download(await r.zip.generateAsync({type:"blob",mimeType:MIME[e]}),replaceText(stem(f.name),find2)+"_pseudo."+e);}
       else download(replaceText(orig,find2),replaceText(stem(f.name),find2)+"_pseudo."+e,"text/plain;charset=utf-8");
@@ -758,7 +814,7 @@ dropzone($("#dropScan"),$("#fileScan"),async files=>{
   if(!files.length)return;
   seiten=[];verlauf=[];$("#pages").innerHTML="";$("#scanName").value="";$("#scanTools").classList.remove("hidden");
   $("#scanStatus").innerHTML=`<div class="status">Lade …</div>`;
-  const find=matcher(paare());let auto=0,vorschl=0,ohneText=0;
+  const find=matcher(paare(),{verbinden:true});let auto=0,vorschl=0,ohneText=0;
   for(const f of files){
     if(ext(f.name)==="pdf"){
       const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer()),isEvalSupported:false}).promise;
