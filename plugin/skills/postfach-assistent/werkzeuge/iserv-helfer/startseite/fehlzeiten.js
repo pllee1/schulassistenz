@@ -114,12 +114,14 @@ const SPALTEN={
   verp:[/^verp(\.|asst)?\s*unterricht/i],
   wu:[/^externe id$/i,/^abwesenheitsgrund/i]
 };
-// Vermerke (IServ-Klassenbuch › Statistik › Vermerke): Spaltennamen sind noch nicht an einer echten Datei geprüft, daher tolerant.
+// Vermerke (IServ-Klassenbuch › Statistik › Vermerke), laut Ansicht in IServ: Wertung, Klasse, Schüler, Datum („04.11.2026 - 2. Stunde“),
+// Lehrer, Kategorie, Bemerkung. Lehrer und Stunde werden nicht übernommen. Ein Fach gibt es dort nicht; steht eine Fach-Spalte in der Datei, kommt sie mit.
 const VERMERK_SPALTEN={
   name:[/^sch(ü|ue)ler/i,/^name$/i],
   datum:[/^datum$/i,/^date$/i,/^tag$/i],
   text:[/^vermerk$/i,/^sch(ü|ue)lervermerk/i,/^bemerkung/i,/^text$/i,/^inhalt$/i,/^kommentar/i,/^beschreibung/i,/^notiz/i],
   art:[/^art$/i,/^vermerkart/i,/^kategorie/i,/^typ$/i,/^vermerktyp/i,/^grund$/i],
+  wertung:[/^wertung$/i,/^bewertung$/i],
   fach:[/^fach$/i,/^f(ä|ae)cher$/i,/^unterricht$/i,/^verp(\.|asst)?\s*unterricht/i,/^kurs$/i,/^stunde$/i],
   fehl:[/^fehlstunden/i,/^fehlmin/i]
 };
@@ -242,14 +244,17 @@ async function verarbeiten(eingabe){
     for(const z of zeilen.slice(kopf+1)){if(!z)continue;
       const name=(s.name>=0?String(z[s.name]??"").trim():"")||(ausDatei?ausDatei.name:"");const iso=datumISO(z[s.datum]);
       const fach=s.fach>=0?fachAus(z[s.fach]):"";
-      const text=s.text>=0?String(z[s.text]??"").replace(/\s+/g," ").trim():"",art=s.art>=0?String(z[s.art]??"").replace(/\s+/g," ").trim():"";
+      const zelle=i=>{const v=i>=0?String(z[i]??"").replace(/\s+/g," ").trim():"";return /^[-–—]$/.test(v)?"":v};
+      const text=zelle(s.text),art=zelle(s.art),w=norm(zelle(s.wertung));
+      const wertung=/neg|^-$|^−$/.test(w)?"negativ":/pos|^\+$/.test(w)?"positiv":/neutr/.test(w)?"neutral":"";
       if(!name||!iso||(!text&&!art))continue;
       const treffer=namen.get(norm(name))||namen.get("§"+tokenKey(name))||namen.get("~"+ohneAkzent(tokenKey(name)))||[];
       const schl=["v",tokenKey(name),iso,art,text].join("|");if(gesehen.has(schl))continue;gesehen.add(schl);
-      vermerke.push({name,treffer,iso,art,text,fach});if(!treffer.length)fehlend.set(name,(fehlend.get(name)||0)+1)}
+      vermerke.push({name,treffer,iso,art,text,fach,wertung});if(!treffer.length)fehlend.set(name,(fehlend.get(name)||0)+1)}
     continue}
   const sp=spaltenFinden(zeilen,!!ausDatei);
-  if(!sp){if(zeilen.slice(0,15).some(z=>(z||[]).some(x=>/^fehltage$/i.test(String(x??"").trim()))))summen++;else ohneKopf++;continue}
+  if(!sp){const kopfz=zeilen.slice(0,15).map(z=>(z||[]).map(x=>String(x??"").trim()));
+    if(kopfz.some(z=>z.some(x=>/^fehltage$/i.test(x))||(z.some(x=>/^negativ$/i.test(x))&&z.some(x=>/^positiv$/i.test(x)))))summen++;else ohneKopf++;continue}
   const {kopf,s,kopfzeile}=sp;
   if(s.name<0&&!ausDatei){ohneKopf++;continue}
   if(s.status>=0)spName=kopfzeile[s.status];kopfLetzt=kopfzeile;const spUnent=/^unentsch/i.test(s.status>=0?kopfzeile[s.status]:"");
@@ -277,11 +282,11 @@ async function verarbeiten(eingabe){
     else if(new Set(treffer.map(t=>t.gruppe)).size<treffer.length)doppelt.set(name,treffer);
   }}
   if(pdf)hinweise.push(`${pdf===1?"Eine PDF-Datei wurde":pdf+" PDF-Dateien wurden"} übersprungen. Bitte beim Export „Excel“ oder „CSV“ wählen.`);
-  if(summen&&daten.length)hinweise.push(`${summen===1?"Eine Summen-Datei":summen+" Summen-Dateien"} (Fehlzeiten_Summe) übersprungen: Die Summen rechnet die Seite aus den Abwesenheiten selbst.`);
+  if(summen&&(daten.length||vermerke.length))hinweise.push(`${summen===1?"Eine Summen- bzw. Übersichtsdatei":summen+" Summen- bzw. Übersichtsdateien"} (z. B. Fehlzeiten_Summe, Schülerübersicht nach Wertung) übersprungen: Die Summen rechnet die Seite selbst.`);
   if(ohneKopf)hinweise.push(`${ohneKopf===1?"Eine Datei hat":ohneKopf+" Dateien haben"} keine passende Kopfzeile (Schüler bzw. Dateiname und Datum) und wurde${ohneKopf===1?"":"n"} übersprungen.`);
   if(!daten.length&&!vermerke.length){
     if(pdf&&!summen&&!ohneKopf)throw new Error("PDF-Dateien kann die Seite nicht lesen. Bitte beim Export „Excel“ oder „CSV“ wählen.");
-    if(summen&&!ohneKopf)throw new Error("Das ist nur die Summe (Fehlzeiten_Summe). Für die Ampel braucht die Seite die Abwesenheiten: im IServ-Klassenbuch unter Statistik › Abwesenheiten exportieren.");
+    if(summen&&!ohneKopf)throw new Error("Das ist nur eine Summe bzw. Übersicht. Die Seite braucht die einzelnen Einträge: im IServ-Klassenbuch unter Statistik › Abwesenheiten bzw. bei den Schülervermerken (Liste mit Datum, Kategorie, Bemerkung) exportieren.");
     throw new Error(dateien.length>1?"In den Dateien stehen keine Fehlzeilen (Name und Datum).":"In der Datei fehlt die Kopfzeile mit Schülername und Datum (oder es stehen keine Fehlzeiten darin). Ist es der Bericht „Abwesenheiten“ aus WebUntis bzw. aus dem IServ-Klassenbuch (Statistik)?");}
   const statusInfo={spalte:spName||null,werte:[...stWerte].sort((a,b)=>b[1]-a[1]).slice(0,8).map(([w,n])=>[w.slice(0,30),n]),erkannt:daten.filter(d=>d.status!=="offen").length,
     kopf:kopfLetzt.filter(Boolean).map(x=>x.slice(0,30))};
@@ -598,17 +603,19 @@ function aktenVorschau(){
 /* ---------- Vermerke (IServ-Klassenbuch) in die Akten ---------- */
 function vermerkeFuer(erg,gid){
   return (erg.vermerke||[]).map(v=>{const t=v.treffer.find(x=>x.gruppe===gid);if(!t)return null;const text=textPseudo(v.text),art=textPseudo(v.art);
-    return {k:t.kuerzel,iso:v.iso,art,text,fach:v.fach||"",verdacht:nameRest(text),an:true}}).filter(Boolean)
+    return {k:t.kuerzel,iso:v.iso,art,text,fach:v.fach||"",wertung:v.wertung||"",verdacht:nameRest(text),an:true}}).filter(Boolean)
     .sort((a,b)=>a.k.localeCompare(b.k,"de",{numeric:true})||a.iso.localeCompare(b.iso));
 }
 const vInhalt=v=>{const t=!v.art?v.text:!v.text||v.text.toLowerCase().includes(v.art.toLowerCase())?(v.text||v.art):`${v.art}: ${v.text}`;return v.fach?`${v.fach} – ${t}`:t};
 function vermerkZeilen(modus){
   const an=(F.vermerke||[]).filter(v=>v.an&&vInhalt(v));const out=[];
-  if(modus==="einzeln"){for(const v of an)out.push({k:v.k,inhalt:`Vermerk im Klassenbuch: ${vInhalt(v)}`,datum:v.iso});return out}
+  if(modus==="einzeln"){for(const v of an)out.push({k:v.k,inhalt:`Vermerk im Klassenbuch${v.wertung?" ("+v.wertung+")":""}: ${vInhalt(v)}`,datum:v.iso});return out}
   const pro=new Map();for(const v of an){if(!pro.has(v.k))pro.set(v.k,[]);pro.get(v.k).push(v)}
   for(const [k,l] of pro){const zaehl=new Map();for(const v of l){const x=vInhalt(v);zaehl.set(x,(zaehl.get(x)||0)+1)}
     const d=l.map(v=>v.iso).sort();
-    out.push({k,datum:heuteISO(),inhalt:`Vermerke im Klassenbuch ${d[0]===d[d.length-1]?datumDE(d[0]):datumDE(d[0])+"–"+datumDE(d[d.length-1])}: ${[...zaehl].map(([x,n])=>n>1?`${x} (${n}×)`:x).join("; ")}`})}
+    const wz=["negativ","neutral","positiv"].map(w=>[w,l.filter(v=>v.wertung===w).length]).filter(x=>x[1]);
+    const kopfW=`${l.length} ${l.length===1?"Vermerk":"Vermerke"}${wz.length?" ("+wz.map(([w,n])=>`${n} ${w}`).join(", ")+")":""}`;
+    out.push({k,datum:heuteISO(),inhalt:`${kopfW} im Klassenbuch ${d[0]===d[d.length-1]?datumDE(d[0]):datumDE(d[0])+"–"+datumDE(d[d.length-1])}: ${[...zaehl].map(([x,n])=>n>1?`${x} (${n}×)`:x).join("; ")}`})}
   return out;
 }
 function vermerkeHTML(){
@@ -618,7 +625,7 @@ function vermerkeHTML(){
   return `<div class="fz-vm"><h4 style="margin:14px 0 4px">Vermerke aus dem Klassenbuch (${V.length})</h4>
     <p class="note" style="margin:0 0 6px">Namen in den Texten sind schon durch Kürzel ersetzt. Du kannst jeden Text noch ändern oder abwählen. Das Fach steht vorn; Lehrkräfte und Stunden werden nicht übernommen.</p>
     ${verd?`<div class="fz-warn"><b>${verd===1?"1 Text enthält":verd+" Texte enthalten"} vielleicht noch einen Namen</b> (gelb markiert). Bitte prüfen und ändern, bevor du sie übernimmst.</div>`:""}
-    <div class="fz-tab-wrap"><table class="fz-tab"><thead><tr><th></th><th>Kürzel</th><th>Datum</th><th>Vermerk</th></tr></thead><tbody>${[...pro].map(([k,l])=>l.map(([v,i],j)=>`<tr><td><input type="checkbox" data-vm-an="${i}"${v.an?" checked":""} aria-label="übernehmen"></td><td>${j?"":`<span class="k">${esc(k)}</span>`}</td><td class="z" style="text-align:left">${datumDE(v.iso)}</td><td><input type="text" data-vm-t="${i}" value="${esc(vInhalt(v))}" style="width:100%;${v.verdacht?"outline:2px solid var(--warn)":""}"></td></tr>`).join("")).join("")}</tbody></table></div>
+    <div class="fz-tab-wrap"><table class="fz-tab"><thead><tr><th></th><th>Kürzel</th><th>Datum</th><th>Vermerk</th></tr></thead><tbody>${[...pro].map(([k,l])=>l.map(([v,i],j)=>`<tr><td><input type="checkbox" data-vm-an="${i}"${v.an?" checked":""} aria-label="übernehmen"></td><td>${j?"":`<span class="k">${esc(k)}</span>`}</td><td class="z" style="text-align:left">${datumDE(v.iso)}${v.wertung?`<div class="nm">${esc(v.wertung)}</div>`:""}</td><td><input type="text" data-vm-t="${i}" value="${esc(vInhalt(v))}" style="width:100%;${v.verdacht?"outline:2px solid var(--warn)":""}"></td></tr>`).join("")).join("")}</tbody></table></div>
     <div class="fz-ja" style="margin-top:6px"><label class="r-skala"><input type="radio" name="fz-vm-modus" value="zusammen"${modus!=="einzeln"?" checked":""}> je Kind eine Zeile (mit Anzahl)</label><label class="r-skala"><input type="radio" name="fz-vm-modus" value="einzeln"${modus==="einzeln"?" checked":""}> jeder Vermerk eine Zeile</label>
     <button class="btn small primary" id="fz-vm-ok">Ausgewählte in die Akten</button></div>
     <p class="note">Ziel: Bereich „Arbeits- und Sozialverhalten“ der Akte, als Beleg mit Quelle IServ-Klassenbuch. Was schon in der Akte steht, wird nicht doppelt geschrieben.</p></div>`;
