@@ -459,7 +459,7 @@ function zeichnen(meldung){
     ${F.zeilen?"":`<p class="note">Für ${esc(F.gid||"diese Lerngruppe")} ist noch kein Stand gespeichert.</p>`}
     <p class="note">${esc(regelText)}</p>
     <p class="note">Datenschutz: Gespeichert und an Claude gegeben werden nur Kürzel, Datum, Stunden und Status. Namen, Externe Id, Abwesenheitsgründe, Texte, Lehrkräfte und Fächer („Verp. Unterricht“) werden verworfen. Ablage: ${esc(sdPfad("ausgaben/fehlzeiten/"+DATEI(F.gid||"<gruppe>")))}.</p>
-    <div class="actions">${F.zeilen&&F.neu?`<button class="btn primary" id="fz-speichern">Stand speichern</button>`:""}${F.zeilen&&F.zeilen.length?`<button class="btn ghost" id="fz-akten" title="Je Kind eine Zeile mit den Summen in die Akte (Bereich Termine), nicht die einzelnen Tage">In die Akten übernehmen …</button>`:""}${F.zeilen?`<button class="btn ghost" id="fz-claude">Mit Claude abgleichen</button>`:""}<button class="btn ghost" id="p-close">Schließen</button></div></div>`;
+    <div class="actions">${F.zeilen&&F.neu?`<button class="btn primary" id="fz-speichern">Stand speichern</button>`:""}${F.zeilen&&F.zeilen.length?`<button class="btn ghost" id="fz-akten" title="Je Kind eine Zeile mit den ganzen Fehltagen in die Akte (Bereich Termine)">In die Akten übernehmen …</button>`:""}${F.zeilen?`<button class="btn ghost" id="fz-claude">Mit Claude abgleichen</button>`:""}<button class="btn ghost" id="p-close">Schließen</button></div></div>`;
   $("#p-close").addEventListener("click",()=>{slot.innerHTML=""});
   $("#fz-namen").addEventListener("change",e=>{store.set("namen-zeigen",e.target.checked);zeichnen()});
   slot.querySelector(".fz-regeln").addEventListener("toggle",e=>store.set("fz-regeln-offen",e.target.open));
@@ -564,13 +564,18 @@ function aktenSummen(){
   for(const z of F.zeilen){if(!pro.has(z.k))pro.set(z.k,[]);pro.get(z.k).push(z)}
   const g=ordner.gruppen.find(x=>x.id===F.gid);const daten=F.zeilen.map(z=>z.iso).sort();
   const von=F.datenVon||daten[0],bis=F.stand||heuteISO();const out=[];
+  // Nur ganze Fehltage (Pauls Regel). IServ liefert sie als Spalte „Fehltage“. Ohne diese Spalte (WebUntis) gilt ein Tag als ganz,
+  // wenn das Kind an dem Tag so viele Stunden fehlt wie das Kind mit den meisten Fehlstunden an diesem Tag (mindestens 4).
+  const tagStd=new Map();for(const z of F.zeilen)if(!z.verspaetung){const key=z.k+"|"+z.iso;tagStd.set(key,(tagStd.get(key)||0)+z.std)}
+  const tagMax=new Map();for(const [key,n] of tagStd){const iso=key.split("|")[1];tagMax.set(iso,Math.max(tagMax.get(iso)||0,n))}
   for(const [k,l] of pro){
-    const nv=l.filter(z=>!z.verspaetung),summe=st=>nv.filter(z=>z.status===st).reduce((s,z)=>s+z.std,0);
-    const std=nv.reduce((s,z)=>s+z.std,0),versp=l.filter(z=>z.verspaetung).length;if(!std&&!versp)continue;
-    const mitFt=l.some(z=>z.ft!=null),tage=mitFt?l.reduce((s,z)=>s+(z.ft||0),0):new Set(nv.filter(z=>z.std>0).map(z=>z.iso)).size;
-    const teile=[mitFt?`${fmt(tage)} ${tage===1?"Fehltag":"Fehltage"}`:`${tage} ${tage===1?"Tag":"Tage"} mit Fehlstunden`,`${fmt(std)} Std.`];
-    const det=[["unentschuldigt",summe("unentschuldigt")],["entschuldigt",summe("entschuldigt")],["offen",summe("offen")]].filter(x=>x[1]).map(x=>`${x[0]} ${fmt(x[1])}`);
-    const inhalt=`Fehlzeiten-Stand ${datumDE(bis)} (Einträge seit ${datumDE(von)}): ${teile.join(", ")}${det.length?" ("+det.join(", ")+")":""}${versp?`, ${versp} ${versp===1?"Verspätung":"Verspätungen"}`:""}`;
+    const mitFt=l.some(z=>z.ft!=null);const tage={unentschuldigt:0,entschuldigt:0,offen:0};
+    if(mitFt)for(const z of l)tage[z.status]+=(z.ft||0);
+    else{const proTag=new Map();for(const z of l)if(!z.verspaetung){if(!proTag.has(z.iso))proTag.set(z.iso,{std:0,st:{}});const t=proTag.get(z.iso);t.std+=z.std;t.st[z.status]=(t.st[z.status]||0)+z.std}
+      for(const [iso,t] of proTag){const max=tagMax.get(iso)||0;if(max>=4&&t.std>=max){const st=Object.entries(t.st).sort((a,b)=>b[1]-a[1])[0][0];tage[st]++}}}
+    const ganz=tage.unentschuldigt+tage.entschuldigt+tage.offen;if(!ganz)continue;
+    const det=Object.entries(tage).filter(x=>x[1]).map(x=>`${x[0]} ${fmt(x[1])}`);
+    const inhalt=`Fehlzeiten-Stand ${datumDE(bis)} (seit ${datumDE(von)}): ${fmt(ganz)} ${ganz===1?"ganzer Fehltag":"ganze Fehltage"}${det.length?" ("+det.join(", ")+")":""}`;
     const hk=F.herkunft||F.quelle||"";const zeile=`- ${bis} | Beleg | ${inhalt} | Quelle: ${/iserv/i.test(hk)?"IServ-Klassenbuch":/webuntis/i.test(hk)?"WebUntis":"Fehlzeiten-Export"} (Startseite, Fehlzeiten) | bestätigt`;
     const akte=g&&g.akten.find(a=>a.kuerzel===k);const schon=akte&&akte.text.includes(`| ${inhalt} |`);
     out.push({k,zeile,inhalt,akte:!!akte,schon});
@@ -579,7 +584,7 @@ function aktenSummen(){
 }
 function aktenVorschau(){
   const box=$("#fz-akte");if(!box)return;const l=aktenSummen();const neu=l.filter(x=>x.akte&&!x.schon);
-  box.innerHTML=`<div class="fz-warn" style="border-left-color:var(--accent);background:transparent;border:1px solid var(--line);border-left-width:4px"><b>In die Akten übernehmen (Bereich Termine)</b><br>Je Kind eine Zeile mit den Summen, nicht die einzelnen Tage und keine Gründe.${F.neu?" Der Stand ist noch nicht gespeichert; die Akten-Zeile entsteht trotzdem aus den gelesenen Zahlen.":""}
+  box.innerHTML=`<div class="fz-warn" style="border-left-color:var(--accent);background:transparent;border:1px solid var(--line);border-left-width:4px"><b>In die Akten übernehmen (Bereich Termine)</b><br>Je Kind eine Zeile mit der Zahl der ganzen Fehltage (einzelne Stunden und Verspätungen zählen nicht), keine Daten und keine Gründe. Kinder ohne ganzen Fehltag bekommen keine Zeile.${F.neu?" Der Stand ist noch nicht gespeichert; die Akten-Zeile entsteht trotzdem aus den gelesenen Zahlen.":""}
     <ul>${l.map(x=>`<li><span class="k" style="font-family:var(--f-mono);font-weight:600">${esc(x.k)}</span> ${esc(x.inhalt)}${!x.akte?" <i>(keine Akte, wird übersprungen)</i>":x.schon?" <i>(steht schon in der Akte)</i>":""}</li>`).join("")}</ul>
     <div class="fz-ja"><button class="btn small primary" id="fz-akte-ok"${neu.length?"":" disabled"}>${neu.length} ${neu.length===1?"Akte":"Akten"} ergänzen</button><button class="btn small ghost" id="fz-akte-ab">Abbrechen</button></div></div>`;
   $("#fz-akte-ab").addEventListener("click",()=>{box.innerHTML=""});

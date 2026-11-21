@@ -61,7 +61,7 @@ Die Regeln stehen im Profil unter `regeln.fehlzeiten` (siehe **schulprofil**). F
 
 Keine Gründe für Fehlzeiten erfassen oder vermuten (Gesundheit ist besondere Kategorie). Häufen sich Fehlzeiten so, dass Schulpflicht oder Kindeswohl berührt sein könnten: nur auf das Verfahren der Schule hinweisen, nichts selbst einordnen.
 
-Ist die lernstandsakte freigegeben: nach Bestätigung die Zahl der Fehltage je Halbjahr in die Kind-Akte schreiben (Bereich Leistungen oder Termine, nicht die einzelnen Tage). Die Startseite schreibt solche Zeilen selbst („In die Akten übernehmen …“ in der Fehlzeiten-Ampel): `Fehlzeiten-Stand <Datum> (Einträge seit <Datum>): … | Quelle: IServ-Klassenbuch bzw. WebUntis (Startseite, Fehlzeiten)`. Vorhandene Zeilen dieser Form nicht noch einmal schreiben.
+Ist die lernstandsakte freigegeben: nach Bestätigung die Zahl der Fehltage je Halbjahr in die Kind-Akte schreiben (Bereich Leistungen oder Termine, nicht die einzelnen Tage). Die Startseite schreibt solche Zeilen selbst („In die Akten übernehmen …“ in der Fehlzeiten-Ampel): `Fehlzeiten-Stand <Datum> (seit <Datum>): <n> ganze Fehltage (…) | Quelle: IServ-Klassenbuch bzw. WebUntis (Startseite, Fehlzeiten)`. Vorhandene Zeilen dieser Form nicht noch einmal schreiben.
 
 **Benachrichtigung festhalten:** Sagt die Lehrkraft, dass sie Eltern informiert hat (oder gibt Daten aus der Vergangenheit an), nach Bestätigung in die Kind-Akte schreiben, Bereich Termine: `2026-11-18 | Beleg | Eltern über Fehlzeiten informiert (unentschuldigt bis dahin: 12 Std.) | Quelle: Lehrkraft | bestätigt`. Ab diesem Datum zählt die Schwelle neu. Bei „noch nie“ nichts eintragen.
 
