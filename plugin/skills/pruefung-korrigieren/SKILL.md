@@ -1,6 +1,6 @@
 ---
 name: "pruefung-korrigieren"
-description: "Korrigiert eingescannte Klassenarbeiten, Klausuren und Tests jedes Fachs (schulassistenz) nach Erwartungshorizont und Notenschlüssel aus dem Profil; Ergebnisse nach Freigabe in die Lernstandsakte."
+description: "Korrigiert eingescannte Klassenarbeiten, Klausuren und Tests jedes Fachs (schulassistenz) nach Erwartungshorizont und Notenschlüssel aus dem Profil; liefert immer Excel-Übersicht und Bewertungsbögen je Klausur im Layout „Klar · Band“; Ergebnisse nach Freigabe in die Lernstandsakte."
 ---
 
 # Prüfung korrigieren
@@ -132,16 +132,19 @@ Berechne Summe, Maximum, Erfüllungsgrad (Punkte / Max × 100), Note nach dem be
 
 Keine Namen von der KI im Export. Nur tatsächlich bearbeitete Klausuren aufführen.
 
-Ablage: Ergebnisse haben Schülerbezug. Ist im Profil `ablage.schuelerdaten` gesetzt, Excel und Rückmeldeseiten dort unter `ausgaben/<lerngruppe>/` ablegen (Rückmeldeseiten nur, wenn die Lehrkraft sie behalten will, sonst als Download). Sonst nach dem Ablagemuster des Profils neben die Klausur (Ordner der Einheit) oder in `ausgaben/`. Die Scans selbst nie ablegen; nach der Korrektur vorschlagen, sie zu löschen.
+Ablage: Ergebnisse haben Schülerbezug. Ist im Profil `ablage.schuelerdaten` gesetzt, Excel und Bewertungsbögen dort unter `ausgaben/<lerngruppe>/` ablegen (Bewertungsbögen nur, wenn die Lehrkraft sie behalten will, sonst als Download). Sonst nach dem Ablagemuster des Profils neben die Klausur (Ordner der Einheit) oder in `ausgaben/`. Die Scans selbst nie ablegen; nach der Korrektur vorschlagen, sie zu löschen.
 
-### 10.2 Rückmeldeseiten für Schülerinnen und Schüler
-Auf Wunsch ein druckfertiges PDF (A4) mit **einer Seite pro Klausur**:
-- Kopf: Titel der Klausur, Fach, Datum und „Code: KV001“ (bei Arbeiten mit Schüler-Code), sonst leere Zeile „Name: ____“
-- Tabelle nach Teilen gegliedert: Nr. · Aufgabe (Kurztitel) · Punkte (erreicht / max, farbig: grün = voll, orange = teilweise, rot = 0) · Begründung
-- Begründungen **kurz, prägnant, in Du-Form**, für Schüler:innen verständlich: was war gut (✓), was fehlt, bei geschlossenen Aufgaben die richtige Lösung direkt nennen (z. B. „Falsch: Nr. 6 (richtig: Schimmelpilze)“). Keine Fachsprache der Korrektur, keine Hinweise auf Alternativbewertungen oder interne Regeln.
-- Fuß: Gesamtpunkte, Erfüllungsgrad, Note; klein die Klausur-ID bzw. der Code mit Datei/Seiten zur Zuordnung durch die Lehrkraft
-- Punkte identisch mit der Excel-Datei; nach Änderungen beide neu erzeugen. Layout vor der Ausgabe an einer Seite mit viel Text prüfen (muss auf eine Seite passen).
-- Farben und Kopf nach dem Layout des Profils (**material-gestalten**), ohne Vorgabe neutral.
+### 10.2 Bewertungsbögen (immer)
+Zu **jeder** korrigierten Klausur immer einen Bewertungsbogen erzeugen, ohne eigene Nachfrage: ein druckfertiges PDF (A4) mit **einer Seite pro Klausur**, zusammen mit der Excel-Datei ausliefern.
+
+- **Layout „Klar · Band“** mit dem Baukasten von **material-gestalten** (`../material-gestalten/skripte/klar.py`, HTML + Chromium): `K.Profil(...)` mit Fach, Jahrgang, Thema, Fachfarbe + hell, Logo (ab `layout.logo_ab_klasse`), Lehrkraft-Kürzel, Schuljahr, `noten` (bestätigter Schlüssel), `notenpunkte=True` und `unterschrift2="Kenntnisnahme"` in der Oberstufe. Nie ein eigenes ReportLab-Layout bauen; nur wenn Chromium nicht startet, ReportLab-Notlösung und das im Lieferhinweis sagen.
+- **Kopf** (`folge_kopf`-Band): Logo, „<Art> · <Fach> · <Jahrgang>“, Thema; rechts bei Arbeiten mit Schüler-Code nur „Code: KV001“, sonst Feld „Name“ (nur ausfüllen, wenn die Lehrkraft die Namen ausdrücklich will; sonst leer zum Eintragen).
+- **Punktetabelle** je Teilaufgabe: Nr. · Schwerpunkt (aus dem Erwartungshorizont) · max. · BE (farbiges Kästchen: grün = voll, orange = teilweise, rot = 0) · Rückmeldung. Experimente mit getrennten Kriterienblöcken (z. B. Planung / Durchführung) als eigene Zeilen. Teile mit einer Linie in der Fachfarbe trennen, Summenzeile.
+- **Rückmeldungen** kurz und für Schüler:innen verständlich: was gelungen ist, was fehlt, bei geschlossenen Aufgaben die richtige Lösung. Keine Hinweise auf Alternativbewertungen, ⚑-Fälle oder interne Regeln; keine Vergleiche mit anderen Schüler:innen.
+- **Ergebnis** (Kasten): erreichte BE / Gesamt-BE = %, Note bzw. Notenpunkte im Notenfeld; darunter der Notenschlüssel mit hervorgehobener Spalte; Fußnote zur Rundungsregel.
+- **Kommentar** im orangen Merkkasten (2–3 Sätze: Stärke, wichtigste Lücke, konkreter Übungstipp), darunter Unterschriftzeilen „Datum, Unterschrift Lehrkraft (Kürzel)“ | „Unterschrift Erziehungsberechtigte“ bzw. Oberstufe „Kenntnisnahme“. Mündliche Leistung nur, wenn die Layout-Datei es vorsieht.
+- Eigene CSS-Klassen nicht wie Klassen des Baukastens benennen (z. B. **nicht** `teil`, `kopf`, `material`, `aufgabe`) – sie erben sonst dessen Raster und zerstören die Tabelle.
+- Punkte identisch mit der Excel-Datei; nach jeder Änderung beide neu erzeugen. `K.speichern` meldet überlaufende Seiten: kürzen, bis jede Klausur auf eine Seite passt. Vor der Ausgabe die PNG-Vorschau einer Seite mit viel Text ansehen.
 
 ### 10.3 In die Lernstandsakte übernehmen
 
@@ -178,7 +181,7 @@ Beim Start schätzen, wie lange die Durchsicht durch die Lehrkraft dauert (Minut
 - Regelkatalog auf alle Klausuren gleich angewendet?
 - Summen und Noten per Code geprüft, nur der bestätigte Schlüssel verwendet, Lücken zugunsten der Schüler:innen aufgerundet?
 - Notengrenzfälle markiert?
-- Rückmeldeseiten: eine Seite pro Klausur, Punkte stimmen mit Excel überein?
+- Bewertungsbögen im Layout „Klar · Band“ erzeugt: eine Seite pro Klausur, kein Überlauf, Punkte stimmen mit Excel überein?
 - Unterschreitungsregel aus dem Profil geprüft und im Bericht genannt (10.3a)?
 - Akten-Einträge nur für bestätigte Noten, nur mit gesicherter Code-Kürzel-Zuordnung, keine Namen?
 
