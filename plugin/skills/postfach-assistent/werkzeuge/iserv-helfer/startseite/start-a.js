@@ -2100,7 +2100,7 @@ function lebWerte(q,daten,ed){const w={};const ganz=v=>Math.min(6,Math.max(1,Mat
   return w}
 /* Für andere Teile der Startseite (z. B. „Was steht an?“): Notenübersicht mit vorgewähltem LEB-Panel öffnen */
 window.saLebOeffnen=(gid,quelleId,o)=>{if(quelleId)store.set("leb-quelle-"+gid,quelleId);return zeigeNoten(gid,{leb:quelleId||store.get("leb-quelle-"+gid,null),sofort:!!(o&&o.sofort)})};
-function lebMmBez(sj,von){const n=[1,2,3,4].find(i=>lebQuartal(sj,null,i)[0]===von);return n?`mündlich ${n}. Quartal`:"mündlich"}
+function lebMmBez(sj,von,bis){if(bis&&von===`${sj}-08-01`&&!(lebQuartal(sj,null,1)[1]===bis))return `mündlich bis ${datumDE(bis)}`;const n=[1,2,3,4].find(i=>lebQuartal(sj,null,i)[0]===von);return n?`mündlich ${n}. Quartal`:"mündlich"}
 function lebQuartal(sj,datum,nr){const j=+sj,fq=window.saErkennung&&saErkennung.quartale?saErkennung.quartale(sj):null,b=fq||[[`${j}-08-01`,`${j}-10-31`],[`${j}-11-01`,`${j+1}-01-31`],[`${j+1}-02-01`,`${j+1}-04-30`],[`${j+1}-05-01`,`${j+1}-07-31`]];
   if(nr)return b[nr-1];return b.find(x=>datum>=x[0]&&datum<=x[1])||b[0]}
 async function zeigeNoten(gidStart,opt){
@@ -2186,7 +2186,7 @@ async function zeigeNoten(gidStart,opt){
         ${lebQ.length?`<div class="n-felder"><label>Was <select id="lb-q">${lebQ.map(x=>`<option value="${esc(x.id)}"${x.id===ed.q?" selected":""}>${esc(x.titel)}</option>`).join("")}</select></label>
         <label>Leistungsart in LEB <select id="lb-art"><option value="1"${+ed.art===1?" selected":""}>mündlich/fachspezifisch</option><option value="2"${+ed.art===2?" selected":""}>schriftlich</option></select></label>
         <label>Bezeichnung <input id="lb-bez" value="${esc(ed.bez||"")}" autocomplete="off"></label>
-        ${q&&q.id==="mm"?`<label>Zeitraum <select id="lb-quartal"><option value="">eigener Zeitraum</option>${quartale}</select></label><label>von <input id="lb-von" type="date" value="${esc(ed.von)}"></label><label>bis <input id="lb-bis" type="date" value="${esc(ed.bis)}"></label>`:""}</div>
+        ${q&&q.id==="mm"?`<label>Zeitraum <select id="lb-quartal"><option value="">eigener Zeitraum</option><option value="${sj}-08-01|${heuteISO()}"${ed.von===`${sj}-08-01`&&ed.bis===heuteISO()?" selected":""}>Schuljahresbeginn bis heute</option>${quartale}</select></label><label>von <input id="lb-von" type="date" value="${esc(ed.von)}"></label><label>bis <input id="lb-bis" type="date" value="${esc(ed.bis)}"></label>`:""}</div>
         ${(()=>{const ohne=reihe.filter(k=>!(werte[k]&&werte[k].note!=null));if(!ohne.length||!q)return "";const aus=ohne.filter(k=>werte[k]&&werte[k].aussen);
           return `<p class="hinweis-warn"><strong>${ohne.length} von ${reihe.length} Kindern haben bei „${esc(q.titel)}“ keine Note</strong> (${esc(ohne.join(", "))}). Sie bleiben in LEB-online leer.${aus.length?` ${aus.length} davon haben Mitarbeitsnoten außerhalb des Zeitraums: Zeitraum prüfen.`:q.id!=="mm"&&lebQ.some(x=>x.id==="mm")?" Für die Mitarbeitsnote oben bei „Was“ die mündliche Note wählen.":""}</p>`})()}
         <div class="r-tab-wrap"><table class="r-tab n-tab"><thead><tr><th>Kürzel</th>${zeigN?"<th>Name (nur hier)</th>":""}<th>Note für LEB</th><th>aus</th></tr></thead><tbody>${reihe.map(k=>{const w=werte[k];return `<tr><td class="m">${esc(k)}</td>${zeigN?`<td>${esc(nameVon(k))}</td>`:""}<td class="m b">${w&&w.note!=null?w.note:"–"}</td><td>${w?esc(w.info):""}</td></tr>`}).join("")}</tbody></table></div>
@@ -2228,7 +2228,7 @@ async function zeigeNoten(gidStart,opt){
     if($("#lb-q"))$("#lb-q").addEventListener("change",e=>{ed={typ:"leb",q:e.target.value};store.set("leb-quelle-"+gid,e.target.value);zeichnen()});
     if($("#lb-art"))$("#lb-art").addEventListener("change",e=>{ed.art=+e.target.value});
     if($("#lb-bez"))$("#lb-bez").addEventListener("input",e=>{ed.bez=e.target.value});
-    if($("#lb-quartal"))$("#lb-quartal").addEventListener("change",e=>{if(!e.target.value)return;[ed.von,ed.bis]=e.target.value.split("|");ed.bez=lebMmBez(sj,ed.von);zeichnen()});
+    if($("#lb-quartal"))$("#lb-quartal").addEventListener("change",e=>{if(!e.target.value)return;[ed.von,ed.bis]=e.target.value.split("|");ed.bez=lebMmBez(sj,ed.von,ed.bis);zeichnen()});
     ["#lb-von","#lb-bis"].forEach(s=>{if($(s))$(s).addEventListener("change",e=>{ed[s==="#lb-von"?"von":"bis"]=e.target.value;zeichnen()})});
     const lebLos=async direkt=>{
       const q=lebQ.find(x=>x.id===ed.q);if(!q)return;const bez=ohnePipe($("#lb-bez").value);const p=textPruefen(bez,namen);if(p)return fehler(p);
