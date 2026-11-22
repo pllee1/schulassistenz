@@ -159,6 +159,7 @@ Erst wenn die Lehrkraft die Noten festgelegt hat (nach ihren Änderungen in der 
 - **Kind-Akte** `<kuerzel>.md`, Bereich Leistungen, je Klausur eine Zeile:
   `2026-11-20 | Beleg | Klausur 2 (Exponentialfunktionen): 31/40 BE, 78 %, Note 2; stark: Wachstum modellieren; Lücke: Logarithmus anwenden | Quelle: pruefung-korrigieren, Klausur 2 | bestätigt`
   Stärke und Lücke je höchstens ein Stichwort, abgeleitet aus den Teilaufgaben mit voller bzw. ohne Punktzahl. Keine Prüfhinweise, keine Alternativwertungen.
+  **Pflichtformat, damit die Noteneinsicht der Startseite die Note als schriftlich erkennt:** Das Inhaltsfeld beginnt immer mit `Klausur <Nr>` (Sek I auch `Klassenarbeit <Nr>`), auch bei Vorabitur, Nachschreib- oder Ersatzklausur; die Art steht in Klammern dahinter („Klausur 1 (Vorabitur, Elektrochemie): …“). Die Nummer ist die nächste freie Klausurnummer der Lerngruppe im Schuljahr (vorher die Akten lesen; im Zweifel fragen). Die Note steht als `Note 2` (Sek I) bzw. `10 NP` (Sek II); halbe BE mit Komma. Nach dem Schreiben die Lehrkraft bitten, die Noteneinsicht neu zu laden und die Spalte der Klausur zu prüfen.
 - **Gruppen-Akte** `gruppe.md`: unter Leistungen Notenspiegel, Durchschnitt, Durchschnitt je Aufgabe in Prozent; unter Schwerpunkte die zwei bis drei Aufgabenbereiche mit dem niedrigsten Erfüllungsgrad („Klausur 2: Logarithmus anwenden 38 %, Sachaufgaben Zinseszins 45 %“). Keine einzelnen Kinder in gruppe.md.
 - Nachschreiber und fehlende Kürzel als `Termine`-Eintrag in gruppe.md („Nachschreiben Klausur 2: M04, M17“), nach Bestätigung auch als Aufgabe in `planung/aufgaben.md` für den **wochenplaner**.
 
@@ -192,6 +193,7 @@ Beim Start schätzen, wie lange die Durchsicht durch die Lehrkraft dauert (Minut
 - Bewertungsbögen im Layout „Klar · Band“ erzeugt: eine Seite pro Klausur, kein Überlauf, Punkte stimmen mit Excel überein?
 - Unterschreitungsregel aus dem Profil geprüft und im Bericht genannt (10.3a)?
 - Akten-Einträge nur für bestätigte Noten, nur mit gesicherter Code-Kürzel-Zuordnung, keine Namen?
+- Akten-Einträge beginnen mit `Klausur <Nr>` (bzw. `Klassenarbeit <Nr>`) und enthalten `NP` bzw. `Note`?
 
 ## 12. Datenschutz und Verantwortung
 
