@@ -358,6 +358,7 @@ async function ordnerLesen(h){
   await kalDateienLesen(h);await namenSammeln(sdr,gruppen.map(g=>g.id));await verknLaden(sdr);
   ordner={zustand:"an",gruppen,profil,hatAkten:!!lg,aufgaben};
   renderWoche();if(!$("#kal-sec").hidden)renderKalender();
+  if(window.saNachLesen)window.saNachLesen().catch(e=>console.warn(e));   // umzug.js: Einstellungen mitnehmen, Kürzellisten für den Helfer
 }
 async function ordnerStart(nachfragen){
   if(!kannOrdner){ordner.zustand="nicht";return renderOrdner()}
@@ -1452,13 +1453,14 @@ function einrPunkte(){
     {id:"listen",pflicht:true,ok:ordner.zustand==="an"&&gr.length>0&&!ohne.length,titel:"Kürzellisten mit Namen",
       hilfe:ordner.zustand!=="an"?"Wird geprüft, sobald der Datenordner verbunden ist.":!gr.length?"Noch keine Lerngruppen. Rechts „Neue Lerngruppe“ anlegen.":ohne.length?`Ohne Namen: ${ohne.join(", ")}. Trag sie in kuerzellisten/ ein. Die Listen bleiben auf deinen Rechnern und gehen nie an Claude.`:`Alle ${gr.length} Lerngruppen haben Namen. Stehen Vor- und Nachname falsch herum, im Live-Raster „Vor-/Nachname tauschen“ klicken (gilt nur für diesen Browser).`},
     {id:"helfer",pflicht:false,ok:helferDa(),titel:"Schulassistenz-Helfer (Browser-Erweiterung)",
-      hilfe:helferDa()?"Erkannt. Er holt Stundenplan, IServ-Kalender und Fehlzeiten aus WebUntis oder dem IServ-Klassenbuch und hilft im Postfach.":`Nicht erkannt. 1. ${ext} öffnen, „Entwicklermodus“ einschalten. 2. „Entpackte Erweiterung laden“ und den Ordner werkzeuge\\iserv-helfer im Datenordner wählen. 3. Beim Helfer „Details“ öffnen und „Zugriff auf Datei-URLs zulassen“ einschalten. 4. Diese Seite mit F5 neu laden.`},
+      hilfe:helferDa()?"Erkannt. Er holt Stundenplan, IServ-Kalender und Fehlzeiten aus WebUntis oder dem IServ-Klassenbuch und hilft im Postfach.":`Nicht erkannt. Am einfachsten: im Datenordner „Neuer-PC-einrichten.cmd“ doppelklicken. Sonst: 1. ${ext} öffnen, „Entwicklermodus“ einschalten. 2. „Entpackte Erweiterung laden“ und den Ordner werkzeuge\\iserv-helfer im Datenordner wählen. 3. Beim Helfer „Details“ öffnen und „Zugriff auf Datei-URLs zulassen“ einschalten. 4. Diese Seite mit F5 neu laden.`},
     {id:"plan",pflicht:false,ok:plan.events.length>0,titel:"Stundenplan aus WebUntis",
       hilfe:plan.events.length?`${plan.quelle}.`:"Den persönlichen iCal-Link aus WebUntis einfügen. Er wird nur in diesem Browser gespeichert und muss auf jedem PC neu eingetragen werden.",
       knopf:plan.events.length?null:["Stundenplan",()=>{zeigePlanEinrichten();$("#panel-slot").scrollIntoView({block:"start",behavior:"smooth"})}]},
     {id:"iserv",pflicht:false,ok:iservOk,titel:"IServ-Kalender verbunden",
       hilfe:iservOk?"Termine aus IServ werden geladen und gefiltert.":!helferDa()?"Braucht zuerst den Schulassistenz-Helfer.":iserv.length?"Verbindung eingetragen, aber noch keine Termine geladen. In IServ angemeldet? Einmal den IServ-Kalender öffnen, dann hier „Kalender“ → „Kalender hinzufügen“.":"Im Kalender auf „Kalender hinzufügen“ → „IServ verbinden“. Die Verbindung gilt nur für diesen Browser.",
       knopf:iservOk?null:["Kalender öffnen",()=>{kalVerwalten=true;zeigeKalender(true)}]},
+    ...(window.saUmzugPunkte?window.saUmzugPunkte():[]),
   ];
 }
 function renderEinrichtung(){
@@ -1472,7 +1474,7 @@ function renderEinrichtung(){
   box.innerHTML=`<div class="einr-kopf"><b>${kopfText}</b><span class="einr-bar" aria-hidden="true"><i style="width:${Math.round(erl/P.length*100)}%"></i></span><span class="m" style="font-size:12.5px;color:var(--muted)">${erl} von ${P.length}</span><span class="sp"></span>
     <button class="btn ghost small" id="einr-auf" aria-expanded="${einrOffen}">${einrOffen?"Liste schließen":"Anzeigen"}</button>${pflOffen?"":`<button class="btn ghost small" id="einr-weg">Ausblenden</button>`}</div>
     ${einrOffen?`<ol>${P.map((x,i)=>`<li class="${x.ok?"ok":x.pflicht?"offen":"opt"}"><span class="ic" aria-label="${x.ok?"erledigt":"offen"}">${x.ok?"✓":x.pflicht?"!":"○"}</span><span>${esc(x.titel)}${x.pflicht?"":` <small style="display:inline">(optional)</small>`}</span><small>${esc(x.hilfe)}</small>${x.knopf?`<button class="btn small ${x.pflicht?"primary":"ghost"}" data-i="${i}">${esc(x.knopf[0])}</button>`:""}</li>`).join("")}</ol>
-    <p class="note">${sdExtern()?`Akten und Kürzellisten liegen im Schülerdaten-Ordner (${esc(sdPfad(""))}), Aufgaben und Einstellungen im Datenordner. Auf einem anderen PC sind sie da, sobald dort beide Ordner verbunden sind.`:"Was in Dateien steht (Akten, Kürzellisten, Aufgaben, Einstellungen), kommt über deinen Cloud-Speicher (z. B. OneDrive) auf andere PCs mit."} Nur im Browser gespeichert und daher auf jedem PC neu nötig: Datenordner-Freigabe, iCal-Link, IServ-Verbindung, Filter-Änderungen auf dieser Seite, Sitzpläne, Favoriten und „Vor-/Nachname tauschen“.</p>`:""}`;
+    <p class="note">${sdExtern()?`Akten und Kürzellisten liegen im Schülerdaten-Ordner (${esc(sdPfad(""))}), Aufgaben und Einstellungen im Datenordner. Auf einem anderen PC sind sie da, sobald dort beide Ordner verbunden sind.`:"Was in Dateien steht (Akten, Kürzellisten, Aufgaben, Einstellungen), kommt über deinen Cloud-Speicher (z. B. OneDrive) auf andere PCs mit."} Einstellungen dieser Seite und des Helfers (Kalender, Filter, Favoriten, Sitzpläne, Zuordnungen) übernimmt ein anderer PC mit einem Klick. Auf jedem PC neu nötig sind nur die Datenordner-Freigabe, die IServ-Anmeldung und der iCal-Link. Unter Windows hilft „Neuer-PC-einrichten.cmd“ im Datenordner.</p>`:""}`;
   $("#einr-auf").addEventListener("click",()=>{einrOffen=!einrOffen;renderEinrichtung()});
   if($("#einr-weg"))$("#einr-weg").addEventListener("click",()=>{einrOffen=false;store.set("einr-zu",P.filter(x=>!x.ok).map(x=>x.id).join(","));renderEinrichtung()});
   box.querySelectorAll("li .btn").forEach(b=>b.addEventListener("click",()=>P[+b.dataset.i].knopf[1]()));

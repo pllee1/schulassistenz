@@ -2,6 +2,8 @@
 
 Hält Startseite, Schulassistenz-Helfer, Pseudonymisierer und Abschluss-Check im Datenordner aktuell. Es lädt nur herunter, es lädt nichts hoch.
 
+**Neuer PC:** `Neuer-PC-einrichten.cmd` im Datenordner doppelklicken. Es macht alles von `einrichten.cmd` und verbindet zusätzlich IServ als Laufwerk (Adressen aus `profil\profil.md`, Passwort fragt Windows ab), öffnet die Erweiterungsseite von Chrome bzw. Edge mit dem Helfer-Pfad in der Zwischenablage und sagt am Ende, was noch fehlt. Mehrfach starten schadet nicht, es ändert nur Fehlendes.
+
 **Einrichten (einmal je PC):** `einrichten.cmd` doppelklicken. Das legt an:
 - eine Autostart-Verknüpfung „schulassistenz-Update“ (läuft bei jeder Anmeldung unsichtbar),
 - eine Aufgabe „schulassistenz-Update“ in der Aufgabenplanung (alle 2 Stunden).

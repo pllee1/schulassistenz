@@ -13,3 +13,5 @@ updater/einrichten.cmd                                                    =>  we
 updater/zuordnung.txt                                                     =>  werkzeuge/updater/zuordnung.txt
 updater/jetzt-aktualisieren.cmd                                            =>  werkzeuge/updater/jetzt-aktualisieren.cmd
 updater/LIESMICH.md                                                       =>  werkzeuge/updater/LIESMICH.md
+updater/neuer-pc.ps1                                                      =>  werkzeuge/updater/neuer-pc.ps1
+updater/Neuer-PC-einrichten.cmd                                           =>  Neuer-PC-einrichten.cmd

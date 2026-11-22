@@ -5,6 +5,16 @@ function zeigen(liste, name) {
   const tb = $("#tab tbody"); tb.innerHTML = "";
   for (const r of liste.slice(0, 500)) { const tr = document.createElement("tr"); const a = document.createElement("td"), b = document.createElement("td"); a.textContent = r.orig; b.textContent = r.kurz; tr.append(a, b); tb.append(tr); }
 }
+function autoListeZeigen() {
+  chrome.storage.local.get({ listeAutoInfo: null, listeExtra: null }, v => {
+    const i = v.listeAutoInfo, el = $("#autoListe"); if (!el) return;
+    el.innerHTML = i && i.dateien && i.dateien.length
+      ? `<span class="ok">Automatisch: ${i.dateien.length} Kürzelliste${i.dateien.length === 1 ? "" : "n"} aus ${i.ort ? i.ort.replace(/[&<>]/g, "") : "kuerzellisten"} (Stand ${new Date(i.stand).toLocaleString("de-DE")}).</span>${v.listeExtra && v.listeExtra.length ? ` Dazu ${v.listeExtra.length} Einträge aus einer hineingezogenen Datei.` : ""}`
+      : "Noch nicht automatisch geladen. Öffne einmal die Startseite mit verbundenem Datenordner (und bei IServ angemeldet).";
+  });
+}
+autoListeZeigen();
+chrome.storage.onChanged.addListener(c => { if (c.listeAutoInfo || c.listeExtra) autoListeZeigen(); if (c.liste) zeigen(c.liste.newValue || []); });
 chrome.storage.local.get({ liste: [], ichName: "", ziel: "web", knopf: true }, v => {
   zeigen(v.liste); $("#ich").value = v.ichName;
   document.querySelector(`input[name=ziel][value=${v.ziel}]`).checked = true; $("#knopf").checked = v.knopf;
@@ -21,7 +31,12 @@ async function einlesen(f) {
       liste = P.tabelleEinlesen(txt.split(/\r?\n/).map(l => l.split(sep).map(c => c.replace(/^"|"$/g, ""))));
     }
     if (!liste.length) { $("#status").innerHTML = `<span class="err">In der Datei wurden keine Spalten Vorname/Nachname/Kürzel oder Original/Kürzel gefunden.</span>`; return; }
-    chrome.storage.local.set({ liste }, () => zeigen(liste, f.name));
+    // Hineingezogene Liste gilt zusätzlich zu den Kürzellisten, die die Startseite automatisch übergibt (ab 0.28), und steht zuerst.
+    chrome.storage.local.get({ listeAutoTeil: [] }, d => {
+      const s = new Set(), alle = [];
+      for (const r of liste.concat(d.listeAutoTeil || [])) { const k = r.orig + "\u0001" + r.kurz; if (!s.has(k)) { s.add(k); alle.push(r); } }
+      chrome.storage.local.set({ liste: alle, listeExtra: liste }, () => zeigen(alle, f.name));
+    });
   } catch (e) { $("#status").innerHTML = `<span class="err">Datei konnte nicht gelesen werden: ${e.message}</span>`; }
 }
 const d = $("#drop");
@@ -30,7 +45,7 @@ $("#datei").onchange = e => e.target.files[0] && einlesen(e.target.files[0]);
 d.ondragover = e => { e.preventDefault(); d.classList.add("over"); };
 d.ondragleave = () => d.classList.remove("over");
 d.ondrop = e => { e.preventDefault(); d.classList.remove("over"); e.dataTransfer.files[0] && einlesen(e.dataTransfer.files[0]); };
-$("#leeren").onclick = () => chrome.storage.local.set({ liste: [] }, () => zeigen([]));
+$("#leeren").onclick = () => chrome.storage.local.set({ liste: [], listeExtra: [], listeAutoTeil: [] }, () => zeigen([]));
 $("#ichSpeichern").onclick = () => chrome.storage.local.set({ ichName: $("#ich").value.trim() }, () => { $("#ichOk").textContent = "gespeichert"; setTimeout(() => $("#ichOk").textContent = "", 2000); });
 document.querySelectorAll("input[name=ziel]").forEach(r => r.onchange = () => chrome.storage.local.set({ ziel: r.value }));
 $("#knopf").onchange = () => chrome.storage.local.set({ knopf: $("#knopf").checked });

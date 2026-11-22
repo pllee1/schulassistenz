@@ -25,8 +25,10 @@
 <p class="info"><b>Neu ab 0.9:</b> Die Schulassistenz-Startseite wohnt im Helfer. <a href="startseite/start.html" target="_blank">Startseite öffnen</a> oder einfach auf das Helfer-Symbol klicken. Das Helfer-Fenster für Mails öffnest du per Rechtsklick auf das Symbol oder auf der Seite.</p>
 
 <div class="karte">
- <h2 style="margin-top:0">1. Kürzelliste laden</h2>
- <div class="drop" id="drop">Kürzelliste (Excel oder CSV) hierher ziehen oder klicken<br><span class="info">Dieselbe Liste wie im Pseudonymisierer: Vorname | Nachname | Kürzel, weitere Blätter z. B. „Weitere Personen“ (Eltern, Kolleg:innen).</span></div>
+ <h2 style="margin-top:0">1. Kürzelliste</h2>
+ <p class="info"><b>Ab 0.28 automatisch:</b> Die Startseite gibt dem Helfer alle Kürzellisten aus deinem Ordner <i>kuerzellisten</i> (bei IServ aus dem Schülerdaten-Ordner), bei jedem Öffnen neu. Hineinziehen brauchst du nur noch für eine zusätzliche Liste, z. B. Eltern oder Kolleg:innen.</p>
+ <p id="autoListe" class="info"></p>
+ <div class="drop" id="drop">Zusätzliche Liste (Excel oder CSV) hierher ziehen oder klicken<br><span class="info">Dieselbe Liste wie im Pseudonymisierer: Vorname | Nachname | Kürzel, weitere Blätter z. B. „Weitere Personen“ (Eltern, Kolleg:innen).</span></div>
  <input type="file" id="datei" accept=".xlsx,.xls,.csv,.txt" hidden>
  <p id="status" class="info"></p>
  <button class="b2" id="leeren">Liste aus dem Browser löschen</button>
@@ -41,7 +43,7 @@
 
 <div class="karte">
  <h2 style="margin-top:0">Weitere Personen (automatisch)</h2>
- <p class="info">Namen aus Kopfzeilen (Von, An) und Signaturen, die nicht in deiner Kürzelliste stehen (z. B. Kolleg:innen), bekommen automatisch ein Kürzel P1, P2 … Dieselbe Person behält ihr Kürzel. Die Zuordnung bleibt nur in diesem Browser.</p>
+ <p class="info">Namen aus Kopfzeilen (Von, An) und Signaturen, die nicht in deiner Kürzelliste stehen (z. B. Kolleg:innen), bekommen automatisch ein Kürzel P1, P2 … Dieselbe Person behält ihr Kürzel. Die Zuordnung bleibt in diesem Browser. Die Startseite legt eine Kopie bei deinen Kürzellisten ab (helfer-personen.json), damit ein anderer PC sie übernehmen kann.</p>
  <p id="autoInfo" class="info"></p>
  <details><summary class="info">Zuordnung ansehen</summary><table id="autoTab"><tbody></tbody></table></details>
  <button class="b2" id="autoLeeren">Automatische Kürzel löschen</button>

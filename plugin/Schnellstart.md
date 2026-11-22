@@ -22,7 +22,7 @@ Oben steht **„Einrichtung auf diesem PC“**. Die Punkte der Reihe nach abarbe
 3. In der **Kürzelliste** (`kuerzellisten\Kuerzelliste-<gruppe>.xlsx`) selbst die Namen neben die Kürzel schreiben. Diese Datei nie hochladen.
 4. Optional: **Stundenplan** (iCal-Link aus WebUntis o. Ä., bleibt nur im Browser) und **Schulkalender** (IServ verbinden).
 
-Datenordner-Freigabe, Stundenplan-Link und Kalender gelten nur für diesen PC und Browser. An einem zweiten PC Schritt 2 und 3.1 wiederholen.
+**Zweiter PC:** Wenn OneDrive den Datenordner geholt hat, dort `Neuer-PC-einrichten.cmd` doppelklicken (Updates, IServ-Laufwerk, Helfer-Pfad in der Zwischenablage). Dann Helfer laden, Startseite öffnen, „Datenordner verbinden“ und „Einstellungen von deinem anderen PC übernehmen“. Nur den Stundenplan-Link trägst du dort neu ein.
 
 ## 4. Loslegen
 - **Heute:** Tagesplan, Woche und „Als Nächstes“.
@@ -36,4 +36,5 @@ Lerngruppe › **Fehlzeiten** liest den Abwesenheits-Export aus **WebUntis** ode
 ## Gut zu wissen
 - Alles sind Entwürfe. In Akten wird erst nach deinem Klick geschrieben, und nichts wird verschickt.
 - Keine Diagnosen, Gesundheits- oder Herkunftsangaben in die Akten.
+- **Kürzellisten** gibt die Startseite dem Helfer automatisch, Hineinziehen ist nicht mehr nötig.
 - **Updates** kommen von selbst über die Claude-App. Für die Werkzeuge im Datenordner richtet `werkzeuge\updater\einrichten.cmd` die automatische Aktualisierung ein (einmal je PC). Der Helfer lädt sich danach selbst neu.

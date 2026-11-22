@@ -130,6 +130,10 @@ Neue Skills des Plugins bringen ihren Knopf in `kacheln.js` mit. Er steht 14 Tag
 
 ## Einrichtung auf einem neuen PC
 
+**Am schnellsten (ab Helfer 0.28, Windows):** Sobald OneDrive den Datenordner auf den neuen PC geholt hat, dort `Neuer-PC-einrichten.cmd` doppelklicken. Es richtet die automatischen Updates ein, verbindet IServ als Laufwerk (Adressen aus deinem Profil, das Passwort fragt Windows ab), öffnet die Erweiterungsseite von Chrome und legt den Pfad zum Helfer in die Zwischenablage. Danach: Helfer laden, auf das Helfer-Symbol klicken, „Datenordner verbinden“ und bei „Einstellungen von deinem anderen PC gefunden“ auf **Übernehmen** klicken. Dann kommen Kalender, Filter, Favoriten, Sitzpläne, WebUntis- und LEB-Zuordnungen, dein Name und die Kürzel für Kolleg:innen mit. Nur den Stundenplan-Link aus WebUntis trägst du einmal neu ein, weil er einen persönlichen Schlüssel enthält und deshalb nie in eine Datei kommt.
+
+So kommen die Einstellungen mit: Die Startseite legt eine Kopie in `werkzeuge/startseite/browser-einstellungen.json` (ohne Namen, ohne Stundenplan-Link, ohne eigene Kalender-Links mit Schlüssel) und deinen Namen samt Kolleg:innen-Kürzeln in `kuerzellisten/helfer-personen.json` (bei den Kürzellisten, nie an Claude). Sie aktualisiert beide, wenn sich etwas ändert. Ein neuer PC schreibt erst, wenn du „Übernehmen“ oder „Nicht nötig“ geklickt hast. Die Kürzellisten muss niemand mehr in den Helfer ziehen: Die Startseite gibt ihm bei jedem Öffnen alle Listen aus `kuerzellisten/`.
+
 Oben auf der Startseite erscheint „Einrichtung auf diesem PC“, solange etwas fehlt. „Anzeigen“ klappt die Liste auf, mit Knöpfen zum Erledigen:
 
 - Pflicht: Edge oder Chrome, Werkzeug-Dateien gefunden, Datenordner verbunden, Schulprofil, Kürzellisten mit Namen.

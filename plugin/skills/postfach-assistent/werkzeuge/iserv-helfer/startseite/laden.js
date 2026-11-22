@@ -75,7 +75,7 @@
   const los = async () => {
     await umzugUebernehmen();
     await einstellungen();
-    for (const s of ["start-a.js", "sicherung.js", "fehlzeiten.js", "erkennung.js", "start-b.js", "ansicht.js"]) {
+    for (const s of ["start-a.js", "sicherung.js", "fehlzeiten.js", "erkennung.js", "umzug.js", "start-b.js", "ansicht.js"]) {
       try { await skript(s); } catch (e) { console.error("Nicht geladen:", e.message); }
     }
     window.postMessage({ sa: "helfer-da", version: chrome.runtime.getManifest().version }, "*");

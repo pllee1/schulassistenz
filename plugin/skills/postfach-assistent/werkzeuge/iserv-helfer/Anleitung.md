@@ -10,7 +10,7 @@ Eine kleine Erweiterung für **Google Chrome** (läuft genauso in Microsoft Edge
 2. Oben rechts den **Entwicklermodus** einschalten (Edge: Schalter links unten).
 3. **„Entpackte Erweiterung laden“** klicken und diesen Ordner `iserv-helfer` auswählen.
 4. Es öffnet sich die Einstellungsseite (sonst: Rechtsklick auf das Symbol → Erweiterungsoptionen):
-   - **Kürzelliste** hineinziehen (dieselbe Excel-Datei wie für den Pseudonymisierer, alle Blätter werden gelesen).
+   - **Kürzelliste:** Ab 0.28 bekommt der Helfer alle Kürzellisten automatisch von der Startseite (Ordner `kuerzellisten`, bei IServ aus dem Schülerdaten-Ordner), sobald du sie einmal mit verbundenem Datenordner öffnest. Hineinziehen nur noch für eine zusätzliche Liste (z. B. Eltern), alle Blätter werden gelesen.
    - **Deinen Namen** eintragen, er wird zu `L-ICH`.
    - Wählen, ob du Claude **im Browser** oder in der **Claude-App** nutzt.
    - Unter „Ausprobieren“ testen.
@@ -22,7 +22,9 @@ Chrome zeigt beim Start manchmal den Hinweis „Erweiterungen im Entwicklermodus
 7. **Design (ab 0.11):** Startseite, Mail-Fenster, Einstellungen, Pseudonymisierer und Abschluss-Check haben das Design „Graphit & Heft“ (dunkles Graphit, Heftlinien, roter Rand) und ein neues Symbol (Heft mit Häkchen). Die Schriften Lora und Work Sans liegen im Ordner `schriften/` (freie OFL-Lizenz, Lizenztexte daneben).
 8. **LEB-online (ab 0.12):** In LEB-online (Noten PLUS) erscheint beim Anlegen und Bewerten einer Leistungsüberprüfung oben rechts ein Helfer-Kasten. Er füllt Noten ein, die du in der Notenübersicht der Startseite mit „Nach LEB-online“ bereitgelegt hast. Speichern klickst du selbst (Anleitung: `startseite/Anleitung.md`, Abschnitt „Nach LEB-online übertragen“).
 
-Ändert sich deine Kürzelliste, einfach die neue Datei wieder hineinziehen.
+Ändert sich eine Kürzelliste, holt die Startseite sie beim nächsten Öffnen von selbst. Eine zusätzlich hineingezogene Liste bleibt erhalten und steht beim Rückweg zuerst.
+
+**Neuer PC (ab 0.28):** `Neuer-PC-einrichten.cmd` im Datenordner doppelklicken. Dein Name und die Kürzel P1, P2 … kommen über die Startseite („Übernehmen“) mit.
 
 **Tipp für die Rückrichtung:** Pro Kürzel wird beim Rückweg der *erste* Eintrag der Liste eingesetzt. Für Eltern im Blatt „Weitere Personen“ also so eintragen, wie die Anrede lauten soll, z. B. `Mustermann → E-K07` (dann wird aus „Liebe Frau E-K07“ „Liebe Frau Mustermann“).
 
