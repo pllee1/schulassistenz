@@ -86,6 +86,17 @@ Die Knöpfe der Startseite schicken diese Aufträge mit Platzhaltern an Claude. 
 - **Alles sind Entwürfe.** Claude schreibt erst nach deiner Freigabe in Akten und verschickt nichts.
 - **Keine sensiblen Daten** wie Diagnosen, Gesundheit, Religion oder Herkunft in die Akten. Jede Akte hat ein Löschdatum aus deinem Profil.
 
+## Bilder mit ComfyUI (optional)
+
+Für Bildkarten, Wortspeicher- und Situationsbilder kann Claude Bilder **lokal auf deinem PC** erzeugen, wenn dort ComfyUI läuft. Versuchsskizzen, Schaltungen, Querschnitte und Diagramme zeichnet Claude weiterhin selbst, weil KI-Bilder dabei Details erfinden.
+
+1. **ComfyUI** installieren (ComfyUI Desktop oder das Windows-Portable-Paket; eine NVIDIA-Grafikkarte mit mind. 8 GB ist sinnvoll) und mindestens ein Bildmodell laden, z. B. ein SDXL-Modell. Lizenz des Modells prüfen.
+2. **Node.js** ab 22.14 (LTS) installieren.
+3. ComfyUI starten, dann die Claude-Desktop-App neu starten. Der Server `comfyui` im Plugin findet ComfyUI selbst (Port 8188 oder 8000).
+4. Test: „Prüfe, ob ComfyUI erreichbar ist.“
+
+Ohne ComfyUI bleibt alles wie bisher: Claude setzt dann Platzhalter mit einem Prompt-Vorschlag. Die Meldung, dass der Server `comfyui` nicht verbunden ist, kannst du ignorieren. Es werden nur Modelle genutzt, die du selbst installiert hast; Claude lädt ohne Rückfrage nichts nach.
+
 ## Updates
 
 **Skills:** kommen über den Marketplace von selbst (siehe Abschnitt 2). Falls Claude eine neue Fassung nicht sofort zeigt: beim Marketplace schulassistenz auf „Aktualisieren“ (Update) klicken.
