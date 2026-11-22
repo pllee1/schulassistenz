@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "comfyui": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "comfyui-mcp@0.16.0"],
+      "env": {}
+    }
+  }
+}

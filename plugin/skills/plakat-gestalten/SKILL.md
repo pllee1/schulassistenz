@@ -9,7 +9,7 @@ Für alles, was **angeschaut** wird statt bearbeitet: Lernplakate für die Klass
 
 Arbeitet ohne Schülerdaten. Auf Aushängen keine Namen von Lernenden; Fotos von Lernenden nur, wenn die Lehrkraft die Einwilligung bestätigt.
 
-**Pflichtlektüre vor dem ersten Strich:** `referenzen/illustrationsstil.md` (in diesem Skill-Ordner). Dort stehen Palette, Beschriftung, Bausteine, Prüfschleife. Zwei vollständige Beispiele liegen in `beispiele/`.
+**Pflichtlektüre vor dem ersten Strich:** `referenzen/illustrationsstil.md` (in diesem Skill-Ordner). Dort stehen Palette, Beschriftung, Bausteine, Prüfschleife. Zwei vollständige Beispiele liegen in `beispiele/`. Vor dem ersten KI-Bild (ComfyUI) zusätzlich `referenzen/bildgenerierung.md` lesen.
 
 ## 0. Vorher
 
@@ -56,8 +56,9 @@ Arbeitet ohne Schülerdaten. Auf Aushängen keine Namen von Lernenden; Fotos von
 Reihenfolge wie in material-gestalten Abschnitt 2a:
 1. Bilder der Lehrkraft,
 2. frei lizenzierte Bilder und Illustrationen (Wikimedia Commons, Servier Medical Art, Bioicons, Openverse; Liste im Illustrationsstil Abschnitt 7) mit Quellenzeile,
-3. selbst gezeichnet nach dem Illustrationsstil: Querschnitte, Profile, Modellbilder, Kreisläufe, Bildfolgen, Schaubilder, Symbole,
-4. sonst Platzhalter mit Suchbegriff.
+3. selbst gezeichnet nach dem Illustrationsstil: Querschnitte, Profile, Modellbilder, Kreisläufe, Bildfolgen, Schaubilder, Symbole, Versuchsaufbauten – alles, was fachlich genau stimmen muss, **nie generiert**,
+4. gegenständliche Motive ohne Fachdetail (Blickfang, Situationsbild, Bildkarten) mit **ComfyUI**, wenn dessen Tools vorhanden sind: nach `referenzen/bildgenerierung.md`,
+5. sonst Platzhalter mit Suchbegriff (und Prompt-Vorschlag für ComfyUI).
 
 Messwert-Diagramme nach dem Skill **dataviz** (wenn vorhanden), Fachfarbe als erste Reihe.
 
