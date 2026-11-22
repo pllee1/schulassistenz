@@ -92,8 +92,13 @@ Eine unleserliche Antwort ist nicht automatisch falsch.
 
 Prüfe je Teilaufgabe: fachlich korrekt? alle Aspekte? Lösungsweg? Begründung, Fachbegriffe, Einheiten? Alternativlösung? Teilpunkte möglich? Unsicherheiten?
 
+- **Ganze Klausur nach Belegen durchsuchen**, bevor eine Teilaufgabe Punkte verliert: Was an anderer Stelle steht (Messtabelle oder Messprotokoll auf einer späteren Seite, Pole im Zelldiagramm, Rangfolge schon in einer früheren Aufgabe, Beobachtungen, Konzeptblatt), zählt für die Teilaufgabe, zu der es inhaltlich gehört. In der Begründung die Fundstelle nennen („Messtabelle S. 8“).
+- **Folgefehler konsequent anrechnen:** Wer mit einem eigenen falschen Wert, einer falschen Gleichung oder einer falschen Annahme fachlich richtig weiterarbeitet, bekommt die Punkte für den weiteren Weg. Der Fehler wird nur einmal abgezogen. Das gilt auch über Aufgaben hinweg (Gleichung aus 2.1 in 2.4 übernommen) und innerhalb einer Antwort (zuerst falsch, im Verlauf richtig).
+- **Richtige Ansätze und Teilaspekte belohnen**, auch wenn das Ergebnis falsch ist: richtig herausgesuchte Werte, ein tragfähiger Ansatz, ein richtig genannter Gesichtspunkt (z. B. Explosionsgefahr), eine richtig erkannte Folge mit falscher Schlussfolgerung. Bei falschem Endergebnis nicht reflexhaft 0–1 BE vergeben, sondern prüfen, welche Kriterien des Erwartungshorizonts erfüllt sind.
+- **Halbe Punkte** sind erlaubt, wenn ein Kriterium teilweise erfüllt ist (z. B. 1,5/2, wenn eine von drei Polzuordnungen falsch ist). Summen und Notenformel müssen mit halben BE rechnen.
+- **Kein Abzug für Formales**, das der Erwartungshorizont nicht verlangt (fehlendes Datum, knappe, aber ausreichende Beobachtung, Schreibweise). Eine überarbeitete Fassung (z. B. Planung auf dem Klausurpapier statt auf dem Planungsbogen) gilt, außer der Erwartungshorizont schließt das ausdrücklich aus; im Zweifel als ⚑ vorlegen.
+- **Experimente:** Liegen alle Messwerte eines Kurses systematisch neben dem Ersatzwert (z. B. alle Fe/Cu-Werte bei 0,3 V statt 0,55 V), ist das Material die Ursache: Werte als plausibel werten und der Lehrkraft vorschlagen, die Ersatzwerte anzupassen. Kriterienblöcke (Vorhersage, Skizze, Durchführung, Tabelle …) einzeln bewerten und ausweisen.
 - Teilpunkte nur nach nachvollziehbaren Kriterien; keine scheinpräzisen Werte.
-- Rechen- und Folgefehler unterscheiden; keine Mehrfachabzüge.
 - Widersprüche in einer Antwort benennen.
 - Skizzen nach aufgabenspezifischen Kriterien bewerten.
 - Sprache nur bewerten, wenn vorgesehen.
@@ -120,6 +125,7 @@ Berechne Summe, Maximum, Erfüllungsgrad (Punkte / Max × 100), Note nach dem be
 4. Widerspricht die Lehrkraft einer Transkription, prüfe die Stelle erneut in hoher Auflösung. Stimmt deine Lesung trotzdem, sag das offen und prüfe, ob sie eine andere Klausur meint – erfinde keine Antwort.
 5. Restliche Klausuren korrigieren, dabei gleiche Antworttypen vergleichen (Konsistenzprüfung).
 6. Auffälligkeiten wie identische Fehlermuster in mehreren Klausuren neutral als Hinweis nennen, nicht bewerten.
+7. **Durchsicht der Lehrkraft einlesen:** Kommentiert die Lehrkraft die Bewertungsbögen als PDF (Markierungen, Notizen), die Kommentare auslesen (`pypdf`: `/Annots` je Seite, `/Contents`, `/Rect`; markierten Text mit `pdfplumber` über die Rechteckkoordinaten holen) und über die y-Position der Tabellenzeile der Teilaufgabe zuordnen. Neue Punktzahlen, Namen und Wünsche zur Rückmeldung als Tabelle vorlegen (Teilaufgabe · bisher · neu · Kommentar); Mehrdeutiges (zwei Werte für eine Zeile, Notiz zwischen zwei Zeilen, unklarer Kriterienblock) als kurze Rückfrage mit eigenem Vorschlag. Fragen der Lehrkraft („wieso …?“) im Scan prüfen und beantworten. Nach Bestätigung Excel und Bewertungsbögen neu erzeugen, Summen per Code nachrechnen. Wiederkehrende Änderungen (z. B. Folgefehler, Belege auf anderen Seiten) in den Regelkatalog aufnehmen und auf alle Klausuren anwenden.
 
 ## 10. Ausgaben
 
@@ -140,7 +146,7 @@ Zu **jeder** korrigierten Klausur immer einen Bewertungsbogen erzeugen, ohne eig
 - **Layout „Klar · Band“** mit dem Baukasten von **material-gestalten** (`../material-gestalten/skripte/klar.py`, HTML + Chromium): `K.Profil(...)` mit Fach, Jahrgang, Thema, Fachfarbe + hell, Logo (ab `layout.logo_ab_klasse`), Lehrkraft-Kürzel, Schuljahr, `noten` (bestätigter Schlüssel), `notenpunkte=True` und `unterschrift2="Kenntnisnahme"` in der Oberstufe. Nie ein eigenes ReportLab-Layout bauen; nur wenn Chromium nicht startet, ReportLab-Notlösung und das im Lieferhinweis sagen.
 - **Kopf** (`folge_kopf`-Band): Logo, „<Art> · <Fach> · <Jahrgang>“, Thema; rechts bei Arbeiten mit Schüler-Code nur „Code: KV001“, sonst Feld „Name“ (nur ausfüllen, wenn die Lehrkraft die Namen ausdrücklich will; sonst leer zum Eintragen).
 - **Punktetabelle** je Teilaufgabe: Nr. · Schwerpunkt (aus dem Erwartungshorizont) · max. · BE (farbiges Kästchen: grün = voll, orange = teilweise, rot = 0) · Rückmeldung. Experimente mit getrennten Kriterienblöcken (z. B. Planung / Durchführung) als eigene Zeilen. Teile mit einer Linie in der Fachfarbe trennen, Summenzeile.
-- **Rückmeldungen** kurz und für Schüler:innen verständlich: was gelungen ist, was fehlt, bei geschlossenen Aufgaben die richtige Lösung. Keine Hinweise auf Alternativbewertungen, ⚑-Fälle oder interne Regeln; keine Vergleiche mit anderen Schüler:innen.
+- **Rückmeldungen zur Selbstkontrolle**, je Zeile im Muster **„✓ gelungen ✗ fehlt/falsch → Richtig: …“** (✓ grün, ✗ rot, „→ Richtig:“ in der Fachfarbe fett; Legende unter der Tabelle: „✓ gelungen · ✗ fehlt oder falsch · → Richtig: so hättest du es lösen können – vergleiche mit deiner Klausur.“). „→ Richtig“ enthält die erwartete Lösung aus dem Erwartungshorizont knapp mit Gleichung, Wert oder Rechenweg, auch bei nicht bearbeiteten Aufgaben. Bei falschen Rechnungen nennen, was gerechnet wurde, und **begründen, warum die richtigen Werte gewählt werden** (z. B. „an B wird zuerst Bromid oxidiert, 1,07 V bleibt; an A entsteht ab −0,99 V Wasserstoff → 2,06 V“). Folgefehler ausdrücklich als solche benennen („passt zu deinem Wert“). Experimente: Teilpunkte je Kriterium in Klammern („Skizze (2/3: Polung fehlt)“). Halbe Punkte mit Komma („2,5“). Du-Form, keine Hinweise auf Alternativbewertungen, ⚑-Fälle oder interne Regeln; keine Vergleiche mit anderen Schüler:innen.
 - **Ergebnis** (Kasten): erreichte BE / Gesamt-BE = %, Note bzw. Notenpunkte im Notenfeld; darunter der Notenschlüssel mit hervorgehobener Spalte; Fußnote zur Rundungsregel.
 - **Kommentar** im orangen Merkkasten (2–3 Sätze: Stärke, wichtigste Lücke, konkreter Übungstipp), darunter Unterschriftzeilen „Datum, Unterschrift Lehrkraft (Kürzel)“ | „Unterschrift Erziehungsberechtigte“ bzw. Oberstufe „Kenntnisnahme“. Mündliche Leistung nur, wenn die Layout-Datei es vorsieht.
 - Eigene CSS-Klassen nicht wie Klassen des Baukastens benennen (z. B. **nicht** `teil`, `kopf`, `material`, `aufgabe`) – sie erben sonst dessen Raster und zerstören die Tabelle.
@@ -178,6 +184,8 @@ Beim Start schätzen, wie lange die Durchsicht durch die Lehrkraft dauert (Minut
 - Alle Seiten jeder Klausur gefunden, Zusatzblätter zugeordnet? Codes auf allen Seiten gleich, keine Dubletten, unsichere Codes geklärt?
 - Keine „leer“-Wertung ohne Prüfung in hoher Auflösung?
 - Jede Punktvergabe begründet, ⚑-Fälle mit günstiger Wertung und strengerer Alternative?
+- Ganze Klausur nach Belegen durchsucht (spätere Seiten, Skizzen, Protokoll), Folgefehler und richtige Ansätze angerechnet, kein Abzug für Formales ohne Grundlage im Erwartungshorizont?
+- Rückmeldungen im Muster ✓ / ✗ / → Richtig, mit Begründung der richtigen Werte?
 - Regelkatalog auf alle Klausuren gleich angewendet?
 - Summen und Noten per Code geprüft, nur der bestätigte Schlüssel verwendet, Lücken zugunsten der Schüler:innen aufgerundet?
 - Notengrenzfälle markiert?
