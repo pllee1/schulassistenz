@@ -16,7 +16,6 @@ Ausführliche Einrichtung: [plugin/README.md](plugin/README.md)
 
 - `.claude-plugin/marketplace.json` – Marketplace-Eintrag
 - `plugin/` – das Plugin (Skills und Werkzeuge: Startseite, Pseudonymisierer, Schulassistenz-Helfer, Abschluss-Check)
-- `plugin/.mcp.json` – optionaler MCP-Server `comfyui` (comfyui-mcp, Version fest) für lokal erzeugte Bilder; Regeln in `plugin/skills/plakat-gestalten/referenzen/bildgenerierung.md`
 - `updater/` – Windows-Skript, das die Werkzeuge im Datenordner automatisch aktuell hält ([LIESMICH](updater/LIESMICH.md))
 
 ## Gestaltung der Werkzeuge
