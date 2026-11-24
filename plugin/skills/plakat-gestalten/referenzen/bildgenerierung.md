@@ -1,6 +1,6 @@
 # Bilder mit ComfyUI erzeugen (optional)
 
-Gilt für **material-gestalten** und **plakat-gestalten**. Voraussetzung: Die Tools des MCP-Servers `comfyui` sind in der Sitzung vorhanden (Claude-Desktop-App mit laufendem ComfyUI auf dem Rechner der Lehrkraft, Einrichtung in `plugin/README.md`, Abschnitt „Bilder mit ComfyUI“). Fehlen sie, diesen Weg überspringen, nicht nachfragen und nichts installieren.
+Gilt für **material-gestalten** und **plakat-gestalten**. Voraussetzung: Die Tools des MCP-Servers `comfyui` sind in der Sitzung vorhanden (lokal in der Claude-Desktop-App eingetragen, in Chats als `…comfyui__…`-Tools durchgereicht; ComfyUI läuft auf dem Rechner der Lehrkraft; Einrichtung in `plugin/README.md`, Abschnitt „Bilder mit ComfyUI“). Nicht über den Browser auf ComfyUI zugreifen. Fehlen sie, diesen Weg überspringen, nicht nachfragen und nichts installieren.
 
 ## 1. Grundregel: genau → zeichnen, gegenständlich → ComfyUI
 
@@ -23,20 +23,20 @@ Verboten: reale Personen und Lernende, Fotos von Lernenden als Vorlage, Logos, M
 
 ## 2. Ablauf
 
-1. **Erreichbar?** `get_system_stats` aufrufen. Antwortet ComfyUI nicht: einen Satz an die Lehrkraft („ComfyUI läuft nicht. Starte es, dann erzeuge ich die Bilder.“) und weiter mit Platzhalter (Abschnitt 4).
-2. **Modelle:** `list_local_models` und nur vorhandene Modelle nutzen. **Ohne Rückfrage nie** `download_model`, Custom Nodes installieren, `restart_comfyui` oder Civitai/Hugging Face nutzen.
+1. **Erreichbar?** `health_check` (oder `get_system_stats`) aufrufen. Antwortet ComfyUI nicht: einen Satz an die Lehrkraft („ComfyUI läuft nicht. Starte es, dann erzeuge ich die Bilder.“) und weiter mit Platzhalter (Abschnitt 4).
+2. **Modelle und Workflow:** `list_local_models` und `list_workflows`; nur vorhandene Modelle nutzen. Gibt es einen gespeicherten Workflow `bildkarte-klein.json` (FLUX.2 [klein], Text zu Bild), immer diesen verwenden: `get_workflow` (Format `api`), im Knoten mit Titel „Prompt“ (`PrimitiveStringMultiline`) den Text ersetzen, bei `SaveImage` den `filename_prefix` auf `KI_<Motiv>` setzen, Breite/Höhe in den `PrimitiveInt`-Knoten „Width“/„Height“ anpassen und mit `enqueue_workflow` starten. `generate_image` nur, wenn kein solcher Workflow existiert und ein Checkpoint-Modell vorhanden ist (FLUX.2 liegt unter `diffusion_models` und funktioniert damit nicht). **Ohne Rückfrage nie** `download_model`, Custom Nodes installieren, `restart_comfyui` oder Civitai/Hugging Face nutzen.
 3. **Prompt** auf Englisch, einheitlich für das ganze Material:
    - Stil: `flat vector illustration, children's book style, soft muted colors, clean outlines, plain white background, single centered subject, no text`
-   - Negativ: `text, letters, words, numbers, watermark, signature, logo, frame, photo, realistic, scary, blurry, extra limbs`
+   - Negativ (nur bei Modellen mit Negativ-Prompt, nicht bei FLUX.2 [klein] mit CFG 1): `text, letters, words, numbers, watermark, signature, logo, frame, photo, realistic, scary, blurry, extra limbs`
    - Motiv knapp und konkret („a red apple“, „a child watering plants in a school garden“). Farben nach der Naturpalette des Illustrationsstils, die Fachfarbe höchstens als Akzent.
    - Format: Bildkarte 1024 × 1024, Situationsbild 1216 × 832 (quer), Plakat-Blickfang nach Fläche. Bei Sets denselben Seed-Bereich und Prompt-Rahmen verwenden.
-4. **Erzeugen:** `generate_image`, je Motiv 2–3 Varianten.
-5. **Ansehen und prüfen** (`get_image`, Aktion `view`), jede Variante:
+4. **Erzeugen:** je Motiv 2–3 Varianten (Seed im Knoten `RandomNoise` ändern oder Zufall lassen). Status mit `get_job_status`; ein Bild dauert etwa 5–25 Sekunden.
+5. **Ansehen und prüfen** (`list_assets` → `view_image` mit der `asset_id`), jede Variante:
    - Stimmt das Motiv fachlich und sachlich (Anzahl Beine, Blätter, Finger, Form)? Kein Text und keine Pseudo-Schrift im Bild?
    - Kindgerecht, freundlich, eindeutig erkennbar auch klein (Bildkarte 25 mm)?
    - Graustufen-Probe (mit Python/PIL in Graustufen umwandeln und ansehen): Bleibt das Motiv auf dem Schwarz-Weiß-Kopierer erkennbar?
    - Passt keine Variante: Prompt einmal schärfen. Danach Platzhalter statt eines schlechten Bildes.
-6. **Übernehmen:** beste Variante aus dem Ausgabeordner von ComfyUI (`get_image`, Aktion `list_outputs`) in den Ordner der Einheit kopieren, Name `KI_<Motiv>.png`. Beschriftungen setzt das Layout (`bild` bzw. SVG-Text), nie das Bildmodell.
+6. **Übernehmen:** `view_image` legt eine Kopie in der Sitzung ab (Pfad steht in der Antwort); diese Datei weiterverwenden. Sonst liegt das Bild im Ausgabeordner von ComfyUI (Desktop unter Windows: `%LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Shared\output`). Im Ordner der Einheit als `KI_<Motiv>.png` ablegen. Beschriftungen setzt das Layout (`bild` bzw. SVG-Text), nie das Bildmodell.
 
 ## 3. Kennzeichnung und Ablage
 

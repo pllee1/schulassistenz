@@ -90,12 +90,22 @@ Die Knöpfe der Startseite schicken diese Aufträge mit Platzhaltern an Claude. 
 
 Für Bildkarten, Wortspeicher- und Situationsbilder kann Claude Bilder **lokal auf deinem PC** erzeugen, wenn dort ComfyUI läuft. Versuchsskizzen, Schaltungen, Querschnitte und Diagramme zeichnet Claude weiterhin selbst, weil KI-Bilder dabei Details erfinden.
 
-1. **ComfyUI** installieren (ComfyUI Desktop oder das Windows-Portable-Paket; eine NVIDIA-Grafikkarte mit mind. 8 GB ist sinnvoll) und mindestens ein Bildmodell laden, z. B. ein SDXL-Modell. Lizenz des Modells prüfen.
-2. **Node.js** ab 22.14 (LTS) installieren.
-3. ComfyUI starten, dann die Claude-Desktop-App neu starten. Der Server `comfyui` im Plugin findet ComfyUI selbst (Port 8188 oder 8000).
-4. Test: „Prüfe, ob ComfyUI erreichbar ist.“
+1. **ComfyUI Desktop** installieren (NVIDIA-Grafikkarte mit mind. 8 GB sinnvoll). Unter „Vorlagen“ die Text-zu-Bild-Vorlage **FLUX.2 [klein] 4B** öffnen, den **Distilled**-Knoten aktivieren (Strg + B, Base-Knoten und dessen Save-Image ausschalten), fehlende Modelle laden, bei `vae_name` `flux2-vae.safetensors` wählen, mit Run testen und den Workflow als **`bildkarte-klein`** speichern.
+2. **Node.js** installieren: PowerShell öffnen, `winget install OpenJS.NodeJS.LTS`, danach PowerShell neu öffnen und mit `node -v` prüfen.
+3. **Claude ganz beenden** (Taskleiste → Claude-Symbol → Beenden). Dann in der Claude-App unter Einstellungen → Desktop-App → Lokale MCP-Server → **Konfiguration bearbeiten** die Datei `claude_desktop_config.json` im Editor öffnen und direkt hinter die erste `{` einfügen (mit Komma am Ende, sonst nichts ändern):
+   ```
+     "mcpServers": {
+       "comfyui": {
+         "command": "cmd",
+         "args": ["/c", "npx", "-y", "comfyui-mcp@0.16.0"],
+         "env": { "COMFYUI_URL": "http://127.0.0.1:8188" }
+       }
+     },
+   ```
+   Am besten bei beendetem Claude bearbeiten, sonst kann Claude den Eintrag beim Beenden überschreiben.
+4. ComfyUI starten, Claude starten. Unter „Lokale MCP-Server“ steht dann `comfyui` mit „Läuft“. Test im Chat: „Erzeuge eine Bildkarte: ein Igel.“
 
-Ohne ComfyUI bleibt alles wie bisher: Claude setzt dann Platzhalter mit einem Prompt-Vorschlag. Die Meldung, dass der Server `comfyui` nicht verbunden ist, kannst du ignorieren. Es werden nur Modelle genutzt, die du selbst installiert hast; Claude lädt ohne Rückfrage nichts nach.
+Der Server gehört bewusst nicht ins Plugin: Server aus Plugins laufen in Claudes Cloud-Umgebung und erreichen dein ComfyUI nicht. Ohne ComfyUI setzt Claude Platzhalter mit einem Prompt-Vorschlag. Es werden nur Modelle genutzt, die du selbst installiert hast.
 
 ## Updates
 
