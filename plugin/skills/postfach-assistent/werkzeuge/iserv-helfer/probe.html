@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Schulassistenz-Helfer · Schnittstellen-Probe</title>
+<style>
+ /* Design „Graphit & Heft“ */
+ @font-face{font-family:"SA Lora";src:url("schriften/Lora-Bold.ttf");font-weight:700}
+ @font-face{font-family:"SA Work Sans";src:url("schriften/WorkSans-Regular.ttf");font-weight:400}
+ @font-face{font-family:"SA Work Sans";src:url("schriften/WorkSans-Bold.ttf");font-weight:700}
+ :root{color-scheme:dark}
+ body{font-family:"SA Work Sans","Segoe UI",system-ui,sans-serif;max-width:820px;margin:24px auto;padding:0 16px;color:#efe8da;background:#191816;line-height:1.45}
+ h1{font-family:"SA Lora",Georgia,serif;font-size:26px;display:flex;align-items:center;gap:12px} h1 img{width:36px;height:36px}
+ h2{font-family:"SA Lora",Georgia,serif;font-size:17px;margin:0 0 8px}
+ a{color:#8fb3e8}
+ .karte{background:#22201d;border:1px solid #38342f;border-left:4px solid #e9786a;border-radius:4px 12px 12px 4px;padding:16px;margin:12px 0}
+ .karte.aus{opacity:.45}
+ label{display:block;font-size:13px;color:#aaa196;margin-top:8px}
+ input[type=text]{padding:7px;border:1px solid #38342f;border-radius:8px;width:min(420px,100%);background:#191816;color:#efe8da;font:inherit;box-sizing:border-box}
+ button{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid #8fb3e8;background:#8fb3e8;color:#101a2b;font-weight:700;cursor:pointer;margin:6px 6px 0 0}
+ button.b2{background:transparent;color:#efe8da;border-color:#38342f;font-weight:400}
+ button:disabled{opacity:.45;cursor:default}
+ .info{font-size:13px;color:#aaa196} .ok{color:#8fcf9f} .err{color:#f28b7d}
+ ul{margin:6px 0 0;padding-left:20px} li{margin:3px 0}
+ textarea{width:100%;min-height:340px;box-sizing:border-box;font-family:Consolas,monospace;font-size:12px;background:#191816;color:#efe8da;border:1px solid #38342f;border-radius:8px;padding:8px;white-space:pre}
+ .zaehler{font-family:"SA Lora",Georgia,serif;font-size:20px}
+</style></head><body>
+<h1><img src="icon48.png" alt="">Schnittstellen-Probe</h1>
+<p class="info">Einmalige Prüfung: Über welche Datenadressen füllen IServ und WebUntis ihre eigenen Seiten? Damit kann der Helfer später dort lesen, statt Mails und Pläne vom Bildschirm abzulesen.</p>
+<div class="karte" style="border-left-color:#8fcf9f">
+ <h2>Was die Probe tut und was nicht</h2>
+ <ul class="info">
+  <li>Sie notiert nur <b>Adressen</b> (Zahlen, Kennungen und Suchwerte unkenntlich) und <b>Feldnamen mit Datentyp</b>, zum Beispiel „subject: text“.</li>
+  <li>Inhalte wie Mailtexte, Namen, Noten oder Fehlzeiten werden nicht gespeichert und stehen nicht im Bericht.</li>
+  <li>Sie liest nur. In IServ und WebUntis wird nichts geändert, angelegt oder verschickt.</li>
+  <li>Der Bericht bleibt in diesem Browser. Weitergeben kannst nur du ihn, per Kopieren.</li>
+ </ul>
+</div>
+
+<div class="karte" id="k1">
+ <h2>1. Adressen</h2>
+ <label for="iserv">IServ deiner Schule</label><input type="text" id="iserv" placeholder="https://meine-schule.de">
+ <label for="wu">WebUntis deiner Schule</label><input type="text" id="wu" placeholder="https://meine-schule.webuntis.com">
+ <p class="info">Ein Feld darf leer bleiben, dann wird nur das andere geprüft.</p>
+ <button id="start">Aufzeichnung starten</button> <span id="startInfo" class="err"></span>
+</div>
+
+<div class="karte aus" id="k2">
+ <h2>2. Einmal durchklicken (etwa 3 Minuten)</h2>
+ <p class="info">Die Aufzeichnung läuft höchstens 15 Minuten. Melde dich wie gewohnt an und öffne jede dieser Seiten kurz. Diese Seite hier bleibt offen.</p>
+ <button class="b2" id="wuAuf" disabled>WebUntis öffnen</button><button class="b2" id="iservAuf" disabled>IServ öffnen</button>
+ <ul class="info">
+  <li><b>WebUntis:</b> dein Stundenplan, eine Stunde anklicken (Klassenbuch-Eintrag mit Lehrstoff und Hausaufgaben), Prüfungen, Abwesenheiten deiner Klasse, Vertretungen.</li>
+  <li><b>IServ:</b> Posteingang, eine Mail öffnen, Kalender, Messenger (einen Raum öffnen).</li>
+ </ul>
+ <p><span class="zaehler" id="zahl">0</span> <span class="info">Datenadressen bisher aufgezeichnet</span></p>
+ <button id="fertig" disabled>Beenden und auswerten</button> <button class="b2" id="abbruch" disabled>Abbrechen und alles verwerfen</button>
+ <p id="lauf" class="info"></p>
+</div>
+
+<div class="karte aus" id="k3">
+ <h2>3. Bericht</h2>
+ <p class="info">Lies kurz drüber. Sollte doch etwas Persönliches darin stehen, lösche die Zeile, bevor du den Bericht weitergibst. Dann kopieren und im Projekt bei Claude einfügen.</p>
+ <textarea id="bericht" spellcheck="false" placeholder="Hier erscheint der Bericht."></textarea>
+ <button id="kopieren" disabled>Bericht kopieren</button><button class="b2" id="speichern" disabled>Als Textdatei speichern</button><button class="b2" id="loeschen" disabled>Bericht löschen</button>
+ <span id="berichtInfo" class="ok"></span>
+</div>
+<script src="probe.js"></script>
+</body></html>
