@@ -22,6 +22,8 @@ Chrome zeigt beim Start manchmal den Hinweis „Erweiterungen im Entwicklermodus
 7. **Design (ab 0.11):** Startseite, Mail-Fenster, Einstellungen, Pseudonymisierer und Abschluss-Check haben das Design „Graphit & Heft“ (dunkles Graphit, Heftlinien, roter Rand) und ein neues Symbol (Heft mit Häkchen). Die Schriften Lora und Work Sans liegen im Ordner `schriften/` (freie OFL-Lizenz, Lizenztexte daneben).
 8. **LEB-online (ab 0.12):** In LEB-online (Noten PLUS) erscheint beim Anlegen und Bewerten einer Leistungsüberprüfung oben rechts ein Helfer-Kasten. Er füllt Noten ein, die du in der Notenübersicht der Startseite mit „Nach LEB-online“ bereitgelegt hast. Speichern klickst du selbst (Anleitung: `startseite/Anleitung.md`, Abschnitt „Nach LEB-online übertragen“).
 
+9. **Schnittstellen-Probe (ab 0.29, einmalig):** Auf der Einstellungsseite unten „Probe öffnen“. Du trägst die Adressen von IServ und WebUntis ein, startest die Aufzeichnung und klickst einmal durch Stundenplan, Klassenbuch, Posteingang, Kalender und Messenger. Der Helfer notiert dabei nur, über welche Datenadressen die Seiten ihre Daten holen und wie die Felder heißen (z. B. „subject: text“). Inhalte, Namen und Zahlenwerte werden nicht gespeichert, es wird nur gelesen, und der Bericht verlässt den Browser nur, wenn du ihn selbst kopierst.
+
 Ändert sich eine Kürzelliste, holt die Startseite sie beim nächsten Öffnen von selbst. Eine zusätzlich hineingezogene Liste bleibt erhalten und steht beim Rückweg zuerst.
 
 **Neuer PC (ab 0.28):** `Neuer-PC-einrichten.cmd` im Datenordner doppelklicken. Dein Name und die Kürzel P1, P2 … kommen über die Startseite („Übernehmen“) mit.

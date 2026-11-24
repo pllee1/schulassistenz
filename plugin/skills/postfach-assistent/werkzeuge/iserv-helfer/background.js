@@ -503,3 +503,6 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
   kbExport(m).then(antwort).catch(e => antwort({ ok: false, fehler: "Helfer-Fehler (" + String((e && e.message) || e) + ")." }));
   return true;
 });
+
+/* Schnittstellen-Probe (ab 0.29): eigener Baustein, siehe probe-bg.js */
+importScripts("probe-bg.js");
