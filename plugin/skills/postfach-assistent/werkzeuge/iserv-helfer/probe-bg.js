@@ -14,8 +14,10 @@ const prUrsprung = t => { try { const u = new URL(/^https?:\/\//i.test(t) ? t : 
 
 /* ---------- Unkenntlich machen ---------- */
 const PR_PARAM = /^[A-Za-z_][\w.\[\]-]{0,39}$/;
-function prWert(v) {
+function prWert(v, k, pfad) {
   if (v === "") return "";
+  if (/reports\.do$/i.test(pfad || "") && /^name$/i.test(k || "") && /^[A-Za-z]{3,40}$/.test(v)) return v;                   // Name des Berichts
+  if (/^format$/i.test(k || "") && /^(pdf|csv|xlsx?|json|ics|html?|txt|xml)$/i.test(v)) return v.toLowerCase();   // Exportformat
   if (/^(true|false)$/.test(v)) return v;
   if (/^[A-Z][A-Z_]{1,23}$/.test(v)) return v;                       // Aufzählungen wie TEACHER, MY_TIMETABLE
   if (/^\d{4}-?\d{2}-?\d{2}(T.*)?$/.test(v) || /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(v) || /^1\d{12}$/.test(v)) return "<datum>";
@@ -44,7 +46,7 @@ function prMaskUrl(url, ziel) {
   else if (/\.webuntis\.com$/i.test(u.hostname)) wo = "WebUntis(andere Adresse)";
   else wo = "fremd:" + u.hostname.replace(/[^a-z0-9.-]/gi, "").slice(0, 60);
   const namen = [...new Set([...u.searchParams.keys()])].sort();
-  const q = namen.map(k => (PR_PARAM.test(k) ? k : "<…>") + "=" + [...new Set(u.searchParams.getAll(k).map(prWert))].join("|"));
+  const q = namen.map(k => (PR_PARAM.test(k) ? k : "<…>") + "=" + [...new Set(u.searchParams.getAll(k).map(v => prWert(v, k, u.pathname)))].join("|"));
   const pfad = prMaskPfad(u.pathname);
   return { wo, pfad, text: wo + " " + pfad + (q.length ? " ?" + q.join(" &") : ""), sig: wo + " " + pfad + "?" + namen.map(k => PR_PARAM.test(k) ? k : "<…>").join("&") };
 }
@@ -130,7 +132,7 @@ async function prMerken(e) {
     await prSess.set({ saProbeFunde });
   });
 }
-const PR_FILTER = { urls: ["https://*.webuntis.com/*", "https://*/iserv/*"], types: ["xmlhttprequest"] };
+const PR_FILTER = { urls: ["https://*.webuntis.com/*", "https://*/iserv/*"], types: ["xmlhttprequest", "sub_frame"] };
 const prEigen = r => r.tabId < 0 && r.initiator && r.initiator.startsWith("chrome-extension://");
 if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
   chrome.webRequest.onBeforeRequest.addListener(r => {
@@ -148,6 +150,141 @@ if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
     const typ = ((r.responseHeaders || []).find(h => /^content-type$/i.test(h.name)) || {}).value || "";
     prMerken({ m: r.method, url: r.url, status: r.statusCode, typ: typ.split(";")[0].trim(), koerper }).catch(() => {});
   }, PR_FILTER, ["responseHeaders"]);
+}
+
+/* ---------- Automatischer Rundgang (ab 0.30) ----------
+   Öffnet in einem eigenen Tab nacheinander die Menüseiten von IServ und WebUntis, damit die Aufzeichnung alle Bereiche
+   sieht, ohne dass die Lehrkraft jede Seite selbst anklickt. Es werden nur Seiten geöffnet (wie ein Klick im Menü),
+   keine Knöpfe gedrückt und keine Formulare abgeschickt. Adressen, die nach Abmelden, Löschen, Anlegen, Senden,
+   Herunterladen o. Ä. aussehen, werden ausgelassen. Von jeder Seite werden nur Beschriftungen der Bedienoberfläche
+   notiert (Überschriften, Reiter, Knöpfe, Tabellenspalten, Exportmöglichkeiten), keine Tabelleninhalte. */
+const PR_NICHT = /(log-?out|abmeld|sign-?out|delete|remove|l(oe|ö|%C3%B6)sch|sudo|\/su(\/|$)|admin|switch|locale|toggle|dismiss|download|export|print|\.pdf|\.zip|\/new(\/|$)|create|\/add(\/|$)|edit|upload|import|send|compose|write|reset|password|passwort|2fa|token|oauth|saml|impersonat|profil)/i;
+function prZiele(sys, origin, roh) {
+  const map = new Map();
+  for (const l of roh) {
+    let u; try { u = new URL(l.href); } catch (e) { continue; }
+    if (u.origin !== origin || PR_NICHT.test(u.pathname + u.search + u.hash)) continue;
+    let key;
+    if (sys === "IServ") {
+      const m = u.pathname.match(/^\/iserv\/([^\/]+)/);
+      if (!m || u.search || /^(app|auth|public|css|js|assets|static|login)$/i.test(m[1])) continue;
+      key = m[1].toLowerCase();
+    } else {
+      if (/\.(js|css|png|svg|ico)$/i.test(u.pathname)) continue;
+      key = u.pathname.replace(/\/$/, "") + u.hash.split("?")[0];
+      if (key === "" || /^\/WebUntis$/i.test(key)) continue;
+    }
+    const text = String(l.text || "").replace(/\d+/g, "").replace(/\s+/g, " ").trim().slice(0, 40);
+    const alt = map.get(key);
+    if (!alt || u.pathname.length < new URL(alt.href).pathname.length) map.set(key, { href: u.origin + u.pathname + (sys === "IServ" ? "" : u.search + u.hash), text: text || (alt && alt.text) || "" });
+    else if (!alt.text && text) alt.text = text;
+  }
+  return [...map.values()].slice(0, 35);
+}
+// Die folgenden drei Funktionen laufen in der Seite (chrome.scripting) und müssen ohne äußere Namen auskommen.
+function prSeiteMenue() {
+  const links = () => {
+    const eng = document.querySelectorAll("nav a[href], aside a[href], [role=navigation] a[href], [role=menu] a[href], [class*=sidebar] a[href], [class*=Sidebar] a[href], [class*=menu] a[href], [class*=Menu] a[href]");
+    const quelle = eng.length >= 5 ? eng : document.querySelectorAll("a[href]");
+    return [...quelle].slice(0, 500).map(a => ({ href: a.href, text: (a.innerText || a.getAttribute("title") || a.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim().slice(0, 40) }));
+  };
+  // Eingeklappte Menügruppen aufklappen (nur in Menübereichen), damit Unterpunkte sichtbar werden
+  const zu = [...document.querySelectorAll("nav [aria-expanded=false], aside [aria-expanded=false], [role=navigation] [aria-expanded=false], [class*=sidebar] [aria-expanded=false], [class*=Sidebar] [aria-expanded=false], [class*=menu] [aria-expanded=false]")].slice(0, 30);
+  for (const el of zu) { try { el.click(); } catch (e) {} }
+  return new Promise(r => setTimeout(() => r({ links: links(), aufgeklappt: zu.length, anmeldung: !!document.querySelector("input[type=password]") }), zu.length ? 900 : 50));
+}
+function prSeiteFakten() {
+  const sauber = s => (s || "").replace(/\s+/g, " ").trim();
+  const gut = s => s.length >= 3 && s.length <= 32 && !/\d/.test(s) && !/@/.test(s);
+  const sammeln = (sel, max) => { const set = new Set(); for (const el of document.querySelectorAll(sel)) { const t = sauber(el.innerText || el.value || el.getAttribute("aria-label") || el.getAttribute("title")); if (gut(t)) set.add(t); if (set.size >= max) break; } return [...set]; };
+  const exporte = [];
+  for (const a of document.querySelectorAll("a[href]")) {
+    const h = a.href || "", t = sauber(a.innerText || a.title);
+    if (/reports\.do|[?&]format=|\.(pdf|csv|xlsx?)(\?|$)|export|download/i.test(h) || /^(pdf|csv|excel|export\w*|drucken|bericht\w*)$/i.test(t)) exporte.push({ href: /^https:/.test(h) ? h.slice(0, 600) : "", text: gut(t) ? t : "" });
+    if (exporte.length >= 25) break;
+  }
+  for (const b of document.querySelectorAll("button,[role=button],input[type=button],input[type=submit]")) {
+    const t = sauber(b.innerText || b.value || b.title || b.getAttribute("aria-label"));
+    if (/pdf|csv|excel|export|drucken|bericht/i.test(t) && gut(t) && exporte.length < 40) exporte.push({ href: "", text: t });
+  }
+  return { eingebettet: window !== top, anmeldung: !!document.querySelector("input[type=password]"), h: sammeln("h1,h2", 4), reiter: sammeln("[role=tab], .nav-tabs a, .tabs a", 12),
+    knoepfe: sammeln("button, a.btn, [role=button], input[type=submit], input[type=button]", 20), spalten: sammeln("th, [role=columnheader]", 25), felder: sammeln("label", 20), exporte,
+    zeilen: document.querySelectorAll("tbody tr, [role=row]").length };
+}
+async function prSkript(tabId, func, alle) {
+  try { const r = await chrome.scripting.executeScript({ target: { tabId, allFrames: !!alle }, func }); return r.map(x => x.result).filter(Boolean); } catch (e) { return []; }
+}
+function prLaden(tabId, url) {
+  return new Promise(res => {
+    let fertig = false;
+    const ende = () => { if (fertig) return; fertig = true; chrome.tabs.onUpdated.removeListener(h); clearTimeout(t); res(); };
+    const h = (id, info) => { if (id === tabId && info.status === "complete") ende(); };
+    chrome.tabs.onUpdated.addListener(h);
+    const t = setTimeout(ende, 10000);
+    chrome.tabs.update(tabId, { url }).catch(ende);
+  });
+}
+async function prRundgang(zurueckTab) {
+  const z = await prZustand(); if (!z) return;
+  await prSeriell(() => prSess.set({ saProbe: { ...z, zeit: Date.now() } }));       // die 15 Minuten beginnen neu
+  await chrome.storage.local.set({ saProbeAn: Date.now() });
+  const melden = t => prSess.set({ saProbeTourLauf: { text: t, zeit: Date.now() } });
+  const funde = async () => ((await prSess.get("saProbeFunde")).saProbeFunde || []);
+  const seiten = [];
+  await melden("Tab wird geöffnet");
+  const tab = await chrome.tabs.create({ url: "about:blank", active: true });
+  try {
+    for (const [sys, origin, start] of [["IServ", z.iserv, z.iserv + "/iserv/"], ["WebUntis", z.wu, z.wu + "/WebUntis/"]]) {
+      if (!origin) continue;
+      await melden(sys + ": Menü lesen");
+      await prLaden(tab.id, start); await prPause(3500);
+      const m = (await prSkript(tab.id, prSeiteMenue, false))[0] || { links: [], aufgeklappt: 0, anmeldung: false };
+      const ziele = prZiele(sys, origin, m.links || []);
+      if (sys === "WebUntis") {
+        const { saWuSeite } = await chrome.storage.local.get("saWuSeite");
+        if (typeof saWuSeite === "string" && saWuSeite.startsWith(origin + "/") && !PR_NICHT.test(saWuSeite)) ziele.push({ href: saWuSeite, text: "Berichte (gemerkte Seite der Fehlzeiten-Ampel)" });
+      }
+      seiten.push({ sys, kopf: true, links: (m.links || []).length, ziele: ziele.length, aufgeklappt: m.aufgeklappt || 0, anmeldung: !!m.anmeldung });
+      let i = 0;
+      for (const zl of ziele) {
+        i++; await melden(sys + ": Seite " + i + " von " + ziele.length);
+        const vor = new Set((await funde()).map(f => f.key));
+        await prLaden(tab.id, zl.href); await prPause(2500); await prKette.catch(() => {});
+        const fakten = await prSkript(tab.id, prSeiteFakten, true);
+        let gelandet = ""; try { gelandet = (await chrome.tabs.get(tab.id)).url || ""; } catch (e) {}
+        seiten.push({ sys, text: zl.text, url: zl.href, gelandet, fakten, daten: (await funde()).filter(f => !vor.has(f.key)).map(f => f.m + " " + f.text).slice(0, 15) });
+        await prSess.set({ saProbeTour: seiten });
+      }
+    }
+  } finally {
+    await prSess.set({ saProbeTour: seiten });
+    await prSess.remove("saProbeTourLauf");
+    try { await chrome.tabs.remove(tab.id); } catch (e) {}
+    if (zurueckTab) try { await chrome.tabs.update(zurueckTab, { active: true }); } catch (e) {}
+  }
+}
+// Rundgang als Berichtsteil und als Liste der Bereiche für die Wunschliste
+function prTourBericht(seiten, ziel) {
+  const zeilen = [], bereiche = [];
+  const liste = (titel, a) => { if (a && a.length) zeilen.push("    " + titel + ": " + a.join(" · ")); };
+  for (const s of seiten) {
+    if (s.kopf) { zeilen.push("-- " + s.sys + ": " + s.links + " Menü-Links gelesen, " + s.ziele + " Seiten besucht" + (s.aufgeklappt ? ", " + s.aufgeklappt + " Menügruppen aufgeklappt" : "") + (s.anmeldung ? "  ACHTUNG: Anmeldeseite, bitte erst anmelden" : "") + " --"); continue; }
+    const m = prMaskUrl(s.url, ziel) || { text: "?", pfad: "?" };
+    const g = s.gelandet ? prMaskUrl(s.gelandet, ziel) : null;
+    const f = s.fakten || [];
+    const alle = k => [...new Set(f.flatMap(x => x[k] || []))];
+    const name = s.text || m.pfad.split("/").filter(Boolean).pop() || "?";
+    zeilen.push("[" + s.sys + "] " + name + "   " + m.text.replace(/^\S+ /, "") + (g && g.pfad !== m.pfad ? "   → gelandet auf " + g.pfad : "") + (f.some(x => x.anmeldung) ? "   (Anmeldeseite)" : ""));
+    liste("Überschriften", alle("h").slice(0, 5)); liste("Reiter", alle("reiter").slice(0, 12)); liste("Knöpfe", alle("knoepfe").slice(0, 20));
+    liste("Tabellenspalten", alle("spalten").slice(0, 25)); liste("Eingabefelder", alle("felder").slice(0, 15));
+    const ex = [...new Set(f.flatMap(x => x.exporte || []).map(e => (e.text || "Link") + (e.href ? " (" + ((prMaskUrl(e.href, ziel) || {}).text || "?") + ")" : "")))].slice(0, 12);
+    liste("Export", ex);
+    const zeilenZahl = Math.max(0, ...f.map(x => x.zeilen || 0)); if (zeilenZahl) zeilen.push("    Tabellenzeilen auf der Seite: " + zeilenZahl);
+    if (f.some(x => x.eingebettet)) zeilen.push("    enthält eingebettete Seite(n)");
+    zeilen.push("    Datenadressen dieser Seite (" + (s.daten || []).length + ")" + ((s.daten || []).length ? ":" : ""), ...(s.daten || []).map(d => "      " + d));
+    bereiche.push({ sys: s.sys, name, pfad: m.pfad, daten: (s.daten || []).length, spalten: alle("spalten").slice(0, 8), export: ex.length > 0 });
+  }
+  return { zeilen, bereiche };
 }
 
 /* ---------- Auswertung ---------- */
@@ -244,7 +381,9 @@ async function prAuswerten() {
   let kopf = {};
   if (ziel.wu) { const w = await prWebUntis(ziel.wu, melden); kopf = w.kopf; teile.push("== WebUntis: bekannte Adressen ==", ...w.text, ""); }
   if (ziel.iserv) teile.push("== IServ: bekannte Adressen ==", ...(await prIServ(ziel.iserv, melden)), "");
-  const { saProbeFunde = [] } = await prSess.get("saProbeFunde");
+  const { saProbeFunde = [], saProbeTour = [] } = await prSess.get(["saProbeFunde", "saProbeTour"]);
+  const tour = prTourBericht(saProbeTour, ziel);
+  if (saProbeTour.length) teile.push("== Rundgang: gefundene Bereiche (bitte hier besonders auf Namen achten) ==", ...tour.zeilen, "");
   const eigene = saProbeFunde.filter(f => !f.extern), fremde = saProbeFunde.filter(f => f.extern);
   teile.push("== Mitgeschnitten: Adressen, die die Seiten selbst aufgerufen haben (" + eigene.length + ") ==");
   let i = 0;
@@ -265,8 +404,9 @@ async function prAuswerten() {
   const filter = await prNamenFilter();
   const { text, n } = filter(teile.join("\n"));
   const bericht = text + "\n\nNamensprüfung: " + (n ? n + " Treffer aus deinen Kürzellisten wurden durch <Name> ersetzt." : "kein Name aus deinen Kürzellisten gefunden.") + "\n";
-  await chrome.storage.local.set({ saProbeBericht: { text: bericht, zeit: Date.now() } });
-  await prSess.remove(["saProbeFunde", "saProbeLauf", "saProbe"]);
+  const bereiche = tour.bereiche.map(b => ({ ...b, name: filter(b.name).text, spalten: b.spalten.map(x => filter(x).text) }));
+  await chrome.storage.local.set({ saProbeBericht: { text: bericht, zeit: Date.now(), bereiche } });
+  await prSess.remove(["saProbeFunde", "saProbeLauf", "saProbe", "saProbeTour", "saProbeTourLauf"]);
 }
 async function prBefehl(m, sender) {
   if (m.op === "quelle") {                                                            // vom Inhaltsskript auf IServ-Seiten
@@ -277,9 +417,10 @@ async function prBefehl(m, sender) {
   if (!sender || !String(sender.url || "").startsWith(chrome.runtime.getURL(""))) return { ok: false, fehler: "Nur von der Probe-Seite." };
   if (m.op === "status") {
     const z = await prZustand();
-    const d = await prSess.get(["saProbeFunde", "saProbeLauf"]);
+    const d = await prSess.get(["saProbeFunde", "saProbeLauf", "saProbeTourLauf", "saProbeTour"]);
     const l = await chrome.storage.local.get(["saProbeBericht", "saKalHost", "saWuSeite"]);
     return { ok: true, laeuft: !!z, seit: z ? z.zeit : 0, funde: (d.saProbeFunde || []).length, auswertung: d.saProbeLauf && Date.now() - d.saProbeLauf.zeit < 60000 ? d.saProbeLauf.text : "",
+      rundgang: d.saProbeTourLauf && Date.now() - d.saProbeTourLauf.zeit < 60000 ? d.saProbeTourLauf.text : "", besucht: (d.saProbeTour || []).filter(s => !s.kopf).length,
       bericht: l.saProbeBericht || null, iserv: (z && z.iserv) || prUrsprung(l.saKalHost || ""), wu: (z && z.wu) || prUrsprung(l.saWuSeite || "") };
   }
   if (m.op === "start") {
@@ -287,9 +428,17 @@ async function prBefehl(m, sender) {
     if (!iserv && !wu) return { ok: false, fehler: "Bitte mindestens eine Adresse eintragen (https://…)." };
     if (wu && !/\.webuntis\.com$/i.test(new URL(wu).hostname)) return { ok: false, fehler: "Die WebUntis-Adresse muss auf .webuntis.com enden." };
     await prSeriell(() => prSess.set({ saProbe: { zeit: Date.now(), iserv, wu }, saProbeFunde: [] }));
-    await prSess.remove("saProbeLauf");
+    await prSess.remove(["saProbeLauf", "saProbeTour", "saProbeTourLauf"]);
     await chrome.storage.local.set({ saProbeAn: Date.now() });
     return { ok: true, iserv, wu };
+  }
+  if (m.op === "rundgang") {
+    if (!(await prZustand())) return { ok: false, fehler: "Bitte zuerst die Aufzeichnung starten." };
+    const { saProbeTourLauf } = await prSess.get("saProbeTourLauf");
+    if (saProbeTourLauf && Date.now() - saProbeTourLauf.zeit < 60000) return { ok: false, fehler: "Der Rundgang läuft schon." };
+    await prSess.set({ saProbeTourLauf: { text: "Rundgang beginnt", zeit: Date.now() } });
+    prRundgang(sender.tab && sender.tab.id).catch(() => prSess.remove("saProbeTourLauf"));
+    return { ok: true };
   }
   if (m.op === "auswerten") {
     const { saProbe } = await prSess.get("saProbe");
@@ -299,8 +448,8 @@ async function prBefehl(m, sender) {
     return { ok: true };
   }
   if (m.op === "loeschen") {
-    await prSeriell(() => prSess.remove(["saProbe", "saProbeFunde", "saProbeLauf"]));
-    await chrome.storage.local.remove(["saProbeBericht", "saProbeAn"]);
+    await prSeriell(() => prSess.remove(["saProbe", "saProbeFunde", "saProbeLauf", "saProbeTour", "saProbeTourLauf"]));
+    await chrome.storage.local.remove(["saProbeBericht", "saProbeAn", "saProbeWunsch"]);
     return { ok: true };
   }
   return { ok: false, fehler: "Unbekannter Befehl" };

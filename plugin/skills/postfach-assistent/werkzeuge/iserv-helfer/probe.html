@@ -20,6 +20,12 @@
  .info{font-size:13px;color:#aaa196} .ok{color:#8fcf9f} .err{color:#f28b7d}
  ul{margin:6px 0 0;padding-left:20px} li{margin:3px 0}
  textarea{width:100%;min-height:340px;box-sizing:border-box;font-family:Consolas,monospace;font-size:12px;background:#191816;color:#efe8da;border:1px solid #38342f;border-radius:8px;padding:8px;white-space:pre}
+ textarea.klein{min-height:70px;white-space:pre-wrap;font-family:inherit;font-size:14px}
+ .wz{display:grid;grid-template-columns:minmax(150px,1.1fr) 160px minmax(160px,2fr);gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #38342f}
+ .wz small{display:block;color:#aaa196;font-size:12px}
+ .wz select,.wz input{font:inherit;padding:6px;border:1px solid #38342f;border-radius:8px;background:#191816;color:#efe8da;width:100%;box-sizing:border-box}
+ .sys{font-family:"SA Lora",Georgia,serif;margin:12px 0 2px}
+ @media(max-width:640px){.wz{grid-template-columns:1fr}}
  .zaehler{font-family:"SA Lora",Georgia,serif;font-size:20px}
 </style></head><body>
 <h1><img src="icon48.png" alt="">Schnittstellen-Probe</h1>
@@ -43,20 +49,32 @@
 </div>
 
 <div class="karte aus" id="k2">
- <h2>2. Einmal durchklicken (etwa 3 Minuten)</h2>
- <p class="info">Die Aufzeichnung läuft höchstens 15 Minuten. Melde dich wie gewohnt an und öffne jede dieser Seiten kurz. Diese Seite hier bleibt offen.</p>
+ <h2>2. Rundgang</h2>
+ <p class="info">Bitte vorher in IServ und WebUntis angemeldet sein. Der Helfer öffnet einen eigenen Tab und geht dort alle Menüseiten nacheinander durch. Das dauert zwei bis fünf Minuten. Er öffnet nur Seiten und drückt keine Knöpfe. Seiten zum Abmelden, Löschen, Anlegen, Senden oder Herunterladen lässt er aus. Lass den Tab in der Zeit einfach laufen.</p>
+ <button id="rundgang" disabled>Automatischen Rundgang starten</button> <span id="tourInfo" class="info"></span>
+ <details><summary class="info">Zusätzlich selbst klicken (für Einzelheiten, die der Rundgang nicht öffnet)</summary>
+ <p class="info">Der Rundgang öffnet nur Übersichtsseiten. Was dahinter liegt, kannst du vor oder nach dem Rundgang selbst anklicken, solange die Aufzeichnung läuft (höchstens 15 Minuten).</p>
  <button class="b2" id="wuAuf" disabled>WebUntis öffnen</button><button class="b2" id="iservAuf" disabled>IServ öffnen</button>
  <ul class="info">
-  <li><b>WebUntis:</b> dein Stundenplan, eine Stunde anklicken (Klassenbuch-Eintrag mit Lehrstoff und Hausaufgaben), Prüfungen, Abwesenheiten deiner Klasse, Vertretungen.</li>
-  <li><b>IServ:</b> Posteingang, eine Mail öffnen, Kalender, Messenger (einen Raum öffnen).</li>
+  <li><b>WebUntis:</b> eine Stunde im Stundenplan anklicken (Lehrstoff, Hausaufgaben), bei den Fehlzeiten eine Klasse wählen und den Bericht einmal erzeugen.</li>
+  <li><b>IServ:</b> eine Mail öffnen, einen Elternbrief öffnen, im Messenger einen Raum öffnen.</li>
  </ul>
+ </details>
  <p><span class="zaehler" id="zahl">0</span> <span class="info">Datenadressen bisher aufgezeichnet</span></p>
  <button id="fertig" disabled>Beenden und auswerten</button> <button class="b2" id="abbruch" disabled>Abbrechen und alles verwerfen</button>
  <p id="lauf" class="info"></p>
 </div>
 
+<div class="karte aus" id="kw">
+ <h2>3. Was soll der Helfer davon können?</h2>
+ <p class="info">Das hat der Rundgang gefunden. Kreuze an, was dir im Alltag helfen würde, und schreib dazu, was du dir wünschst. Deine Antworten stehen am Ende des Berichts.</p>
+ <div id="wunsch"></div>
+ <label for="frei">Fehlt etwas, das du in IServ oder WebUntis regelmäßig von Hand machst?</label>
+ <textarea id="frei" class="klein" spellcheck="true" placeholder="z. B. Fehlzeiten-Bericht als PDF je Kind, Elternbriefe mit Rücklauf, Vertretungsplan …"></textarea>
+</div>
+
 <div class="karte aus" id="k3">
- <h2>3. Bericht</h2>
+ <h2>4. Bericht</h2>
  <p class="info">Lies kurz drüber. Sollte doch etwas Persönliches darin stehen, lösche die Zeile, bevor du den Bericht weitergibst. Dann kopieren und im Projekt bei Claude einfügen.</p>
  <textarea id="bericht" spellcheck="false" placeholder="Hier erscheint der Bericht."></textarea>
  <button id="kopieren" disabled>Bericht kopieren</button><button class="b2" id="speichern" disabled>Als Textdatei speichern</button><button class="b2" id="loeschen" disabled>Bericht löschen</button>
