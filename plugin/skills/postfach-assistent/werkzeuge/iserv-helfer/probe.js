@@ -22,7 +22,7 @@ function wunschBauen() {
     if (b.sys !== sys) { sys = b.sys; const h = document.createElement("div"); h.className = "sys"; h.textContent = sys; box.append(h); }
     const k = schluessel(b), w = wunsch[k] || (wunsch[k] = { w: "", t: "" });
     const z = document.createElement("div"); z.className = "wz";
-    const n = document.createElement("div"); n.textContent = b.name;
+    const n = document.createElement("div"); n.textContent = (b.tiefe > 1 ? "↳ " : "") + b.name; if (b.tiefe > 1) n.style.paddingLeft = (b.tiefe - 1) * 14 + "px";
     const kl = document.createElement("small");
     kl.textContent = [b.daten ? b.daten + " Datenadresse" + (b.daten === 1 ? "" : "n") : "keine Datenadresse gesehen", b.export ? "Export vorhanden" : "", b.spalten && b.spalten.length ? "Spalten: " + b.spalten.join(", ") : ""].filter(Boolean).join(" · ");
     n.append(kl);
@@ -38,12 +38,12 @@ function wunschBauen() {
 
 function zeigen(s) {
   if (!s || !s.ok) return;
-  if (!gefuellt) { $("#iserv").value = s.iserv || ""; $("#wu").value = s.wu || ""; gefuellt = true; }
+  if (!gefuellt) { $("#iserv").value = s.iserv || ""; $("#wu").value = s.wu || ""; $("#leb").value = s.leb || ""; gefuellt = true; }
   if (s.laeuft) ziel = { iserv: s.iserv, wu: s.wu };
   const wertet = !!s.auswertung, tour = !!s.rundgang;
   $("#k2").classList.toggle("aus", !s.laeuft && !wertet);
   $("#start").disabled = s.laeuft || wertet;
-  $("#iserv").disabled = $("#wu").disabled = s.laeuft || wertet;
+  $("#iserv").disabled = $("#wu").disabled = $("#leb").disabled = s.laeuft || wertet;
   $("#fertig").disabled = $("#abbruch").disabled = !s.laeuft || tour;
   $("#rundgang").disabled = !s.laeuft || tour;
   $("#tourInfo").textContent = tour ? s.rundgang + " …" : s.besucht ? s.besucht + " Seiten besucht. Jetzt „Beenden und auswerten“." : "";
@@ -64,7 +64,7 @@ const neu = () => frage({ op: "status" }).then(zeigen);
 
 $("#start").onclick = async () => {
   $("#startInfo").textContent = "";
-  const a = await frage({ op: "start", iserv: $("#iserv").value.trim(), wu: $("#wu").value.trim() });
+  const a = await frage({ op: "start", iserv: $("#iserv").value.trim(), wu: $("#wu").value.trim(), leb: $("#leb").value.trim() });
   if (!a.ok) { $("#startInfo").textContent = a.fehler || "Das hat nicht geklappt."; return; }
   ziel = { iserv: a.iserv, wu: a.wu }; neu();
 };
