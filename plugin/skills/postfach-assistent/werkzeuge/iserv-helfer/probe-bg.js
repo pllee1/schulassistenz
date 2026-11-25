@@ -162,9 +162,9 @@ if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
    LEB-online: nur Listen-Seiten (index.php), nie form.php oder Adressen mit „del“, und nur im schon offenen LEB-Tab,
    weil LEB nur eine Anmeldung gleichzeitig verträgt. Von jeder Seite werden nur Beschriftungen der Bedienoberfläche
    notiert (Überschriften, Reiter, Knöpfe, Tabellenspalten, Feldnamen, Exportmöglichkeiten), keine Tabelleninhalte. */
-const PR_NICHT = /(log-?out|abmeld|sign-?out|delete|remove|l(oe|ö|%C3%B6)sch|sudo|\/su([\/?#]|$)|admin|switch|locale|toggle|dismiss|download|export|print|\.pdf|\.zip|\.csv|\.xlsx?|\/new([\/?#]|$)|create|\/add([\/?#]|$)|edit|upload|import|send|compose|write|reset|password|passwort|2fa|token|oauth|saml|impersonat|profil|entfern|rss|feed|atom|\.xml|\.ics|ical|webcal|\.do\?.*format=|archiv(e|ier)|[?&]del(=|&|$)|mark|read=)/i;
+const PR_NICHT = /(log-?out|abmeld|sign-?out|delete|remove|l(oe|ö|%C3%B6)sch|sudo|\/su([\/?#]|$)|admin|switch|locale|toggle|dismiss|download|export|print|\.pdf|\.zip|\.csv|\.xlsx?|\/new([\/?#]|$)|create|\/add([\/?#]|$)|edit|upload|import|send|compose|write|reset|password|passwort|2fa|token|oauth|saml|impersonat|profil|entfern|rss|feed|atom|\.xml|\.ics|ical|webcal|\.do\?.*format=|archiv(e|ier)|[?&]del(=|&|$)|mark|read=|hide|ausblend|subscribe|accept|decline|reject|confirm|vote|join|leave|complete|erledig|annehm|ablehn|best(ae|ä|%C3%A4)tig|\/help([\/?#]|$))/i;
 const PR_SYS = {
-  IServ: { max: 70, tiefe: 2 },
+  IServ: { max: 90, tiefe: 2 },
   WebUntis: { max: 50, tiefe: 3 },
   LEB: { max: 30, tiefe: 3 }
 };
@@ -180,6 +180,9 @@ function prZiel(sys, origin, l) {
   if (sys === "IServ") {
     const m = u.pathname.match(/^\/iserv\/([^\/]+)/);
     if (!m || u.search || /^(app|auth|public|css|js|assets|static|login|logo|help|du)$/i.test(m[1])) return null;
+    // Keine Einzeleinträge öffnen (eine Mail, ein Forenbeitrag, eine Nachricht): Das Öffnen könnte sie als gelesen markieren, und ihr Titel gehört nicht in den Bericht
+    if (u.pathname.split("/").some(t => /\d/.test(t) && !/^v\d$/i.test(t))) return null;
+    if (m[1] === "file" && u.pathname.replace(/\/$/, "").split("/").length > 5) return null;                             // Dateien: nur die oberste Ebene, keine Ordner der Lehrkraft
     key = muster(u.pathname.replace(/\/$/, "")); href = u.origin + u.pathname;
   } else if (sys === "LEB") {
     if (!/\/lernstandskontrolle\//i.test(u.pathname) || !/(\/|\/index\.php)$/i.test(u.pathname)) return null;
@@ -191,7 +194,7 @@ function prZiel(sys, origin, l) {
     href = u.origin + u.pathname + u.search + u.hash;
   }
   // Beschriftung nur von Menüpunkten übernehmen; bei Links aus dem Seiteninhalt könnte sie ein Titel oder Name sein
-  return { key: sys + " " + key, href, text: !l.menue ? "" : String(l.text || "").replace(/\d+/g, "").replace(/\s+/g, " ").trim().slice(0, 40) };
+  return { key: sys + " " + key, href, text: !l.menue || /[:@\d]/.test(l.text || "") || String(l.text || "").length > 32 ? "" : String(l.text || "").replace(/\s+/g, " ").trim() };
 }
 // Die folgenden zwei Funktionen laufen in der Seite (chrome.scripting) und müssen ohne äußere Namen auskommen.
 function prSeiteMenue() {
@@ -202,7 +205,8 @@ function prSeiteMenue() {
     const out = [];
     for (const a of document.querySelectorAll("a[href]")) {
       const t = sauber(a.innerText || a.getAttribute("title") || a.getAttribute("aria-label")).slice(0, 40);
-      const imMenue = !!a.closest(MENUE);
+      const imMenue = !!a.closest(MENUE) && !a.closest(INHALT);
+      if (/hauptinhalt|skip to/i.test(t)) continue;
       if (!imMenue && (a.closest(INHALT) || t.length < 3 || t.length > 32 || /\d|@/.test(t))) continue;   // Links im Inhalt nur mit kurzer Beschriftung, nie aus Tabellen und Listen
       out.push({ href: a.href, text: t, menue: imMenue });
       if (out.length >= 600) break;
