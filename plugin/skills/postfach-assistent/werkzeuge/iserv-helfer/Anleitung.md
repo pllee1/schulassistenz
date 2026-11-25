@@ -73,6 +73,7 @@ Der Ordner heißt weiter `iserv-helfer`, damit dein Browser die Erweiterung beim
 Die Startseite kann auf „Heute“ einen Kasten **WebUntis** zeigen. Der Helfer liest dafür über deine Anmeldung im Browser, was WebUntis dir selbst anzeigt. Vier Bereiche, jeder mit eigenem Schalter unter ⚙ „Einrichtung & Daten“ › „WebUntis direkt lesen“. Anfangs ist alles aus, und solange alles aus ist, fragt der Helfer WebUntis nicht ab.
 
 - **Änderungen im Stundenplan:** Vertretung, Entfall, Raumwechsel, verlegte und zusätzliche Stunden, Aufsichten (diese und nächste Woche).
+  **Ab 0.33** stehen diese Änderungen auch in der Wochenansicht direkt an der Stunde (Entfall durchgestrichen, Vertretung und Raumwechsel markiert). Entfallene Stunden, die der Stundenplan-Link nicht mehr liefert, erscheinen als eigene Zeile.
 - **Prüfungen:** eingetragene Klassenarbeiten und Klausuren deiner Lerngruppen (sechs Wochen voraus).
 - **Hausaufgaben:** deine eigenen Einträge und, als Klassenleitung, die Hausaufgaben aller Fächer deiner Klasse (fällig ab heute).
 - **Offene Klassenbuch-Stunden:** Stunden der letzten sechs Wochen, in denen Anwesenheitskontrolle oder Lehrstoff fehlen.
