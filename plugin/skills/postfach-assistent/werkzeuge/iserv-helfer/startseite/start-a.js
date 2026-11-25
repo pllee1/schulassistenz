@@ -1815,6 +1815,8 @@ function spaetSpeichern(k){
   if(i>=0)R.eintraege[i].sk=n;else R.eintraege.push({k,kat:"A",st:"spät",sk:n,text:"",zeit:hhmm(new Date())});
   const j=R.eintraege.findIndex(e=>e.k===k&&e.kat==="A"&&e.st!=="spät");if(j>=0)R.eintraege.splice(j,1);
   R.spaetOffen=null;rasterSpeichernEntwurf();rasterZeichnen();
+  // Neu als „zu spät“ markiert: auf Wunsch sofort ins WebUntis-Klassenbuch (untis.js, eigener Schalter, anfangs aus). Nicht beim Ändern der Minuten.
+  if(i<0&&window.saUntis&&window.saUntis.spaetSofort)window.saUntis.spaetSofort(k);
 }
 function rasterEintragen(k,i){const [kat,st]=leisteSym()[i];eintragMachen(k,kat,st,kat==="MM"?R.skala:undefined)}
 function eintragMachen(k,kat,st,sk){

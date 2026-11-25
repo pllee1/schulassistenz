@@ -109,6 +109,7 @@
     einst.querySelector("#wu-schalter").innerHTML = TEILE.map(t => `<label class="wu-schalter"><input type="checkbox" data-wu="${t.id}"${s && s[t.id] === true ? " checked" : ""}><span><b>${esc(t.name)}</b><br><span class="note">${esc(t.text)}</span></span></label>`).join("")
       + `<p class="note" style="margin:10px 0 2px"><b>In WebUntis eintragen</b> (der Helfer schreibt nur hier, nur nach Vorschau und deinem Klick)</p><label class="wu-schalter"><input type="checkbox" id="wu-stoff-an"${stoffAn() ? " checked" : ""}><span><b>Lehrstoff aus der Live-Beobachtung</b><br><span class="note">Knopf „Lehrstoff“ in der Live-Beobachtung: Text eingeben, Vorschau ansehen, dann trägt der Helfer ihn bei der Stunde in WebUntis ein.</span></span></label>`
       + `<label class="wu-schalter"><input type="checkbox" id="wu-abw-an"${abwAn() ? " checked" : ""}><span><b>Abwesende aus der Live-Beobachtung</b><br><span class="note">Knopf „Abwesende“ in der Live-Beobachtung: Wer dort als krank oder fehlt markiert ist, wird nach Vorschau im Klassenbuch der Stunde als abwesend eingetragen. Dafür öffnet sich das Klassenbuch in einem neuen Tab. Verspätungen trägst du weiter selbst ein.</span></span></label>`
+      + `<label class="wu-schalter"><input type="checkbox" id="wu-spaet-an"${spaetAn() ? " checked" : ""}><span><b>Verspätung sofort eintragen</b><br><span class="note">Ohne Vorschau: Sobald du in der Live-Beobachtung „zu spät“ mit Minuten speicherst, trägt der Helfer die Verspätung in der gerade laufenden Stunde ein. WebUntis nimmt dafür die Uhrzeit dieses Moments, nicht deine Minuten. Das Klassenbuch öffnet sich kurz in einem Tab im Hintergrund.</span></span></label>`
       + `<label class="wu-adr">WebUntis-Adresse deiner Schule<input type="url" id="wu-host" class="mono" placeholder="https://deine-schule.webuntis.com" value="${esc(o)}"></label>`;
     einst.querySelectorAll("[data-wu]").forEach(c => c.addEventListener("change", () => {
       const neu = Object.assign({}, store.get("wu-direkt", {})); neu[c.dataset.wu] = c.checked; store.set("wu-direkt", neu);
@@ -117,6 +118,7 @@
     }));
     einst.querySelector("#wu-stoff-an").addEventListener("change", e => { store.set("wu-schreiben", Object.assign({}, store.get("wu-schreiben", {}), { stoff: e.target.checked })); stoffKnopf(); });
     einst.querySelector("#wu-abw-an").addEventListener("change", e => { store.set("wu-schreiben", Object.assign({}, store.get("wu-schreiben", {}), { abw: e.target.checked })); abwKnopf(); });
+    einst.querySelector("#wu-spaet-an").addEventListener("change", e => { store.set("wu-schreiben", Object.assign({}, store.get("wu-schreiben", {}), { spaet: e.target.checked })); });
     const feld = einst.querySelector("#wu-host");
     feld.addEventListener("change", async () => { const v = hostAus(feld.value.trim()); store.set("wu-host", v); if (!v) await einstZeichnen(); holen(); });
   }
@@ -257,7 +259,31 @@
       abwZeichnen();
     });
   }
-  if (raster) new MutationObserver(() => { const r = stGruppe(); if (!r || raster.hidden) { st = null; ab = null; return; } stoffKnopf(); abwKnopf(); }).observe(raster, { childList: true });
+  /* ---- Verspätung sofort eintragen (ab 0.39, Pauls Wunsch 25.11.): ohne Vorschau, in der laufenden Stunde ---- */
+  const spaetAn = () => (store.get("wu-schreiben", {}) || {}).spaet === true;
+  let sp = [];   // Meldungen dieser Stunde: { k, lage: "laeuft"|"ok"|"offen"|"fehler", text }
+  function spaetZeichnen() {
+    if (!raster) return;
+    let f = raster.querySelector("#r-spaet-feld");
+    const kopf = raster.querySelector(".r-kopf");
+    if (!sp.length || !kopf) { if (f) f.remove(); return; }
+    if (!f) { f = document.createElement("div"); f.id = "r-spaet-feld"; f.className = "wu-stoff wu-spaet"; kopf.insertAdjacentElement("afterend", f); }
+    f.innerHTML = sp.slice(-4).map(x => `<p class="note${x.lage === "fehler" || x.lage === "offen" ? " wu-hinweis" : ""}"><b>${esc(x.k)}</b> ${esc(x.text)}</p>`).join("") + `<button class="linkbtn" id="sp-zu">Ausblenden</button>`;
+    f.querySelector("#sp-zu").addEventListener("click", () => { sp = []; spaetZeichnen(); });
+  }
+  async function spaetSofort(k) {
+    if (!spaetAn()) return;
+    const r = stGruppe(), n = (r && r.namen && r.namen[k]) || {}, m = { k, lage: "laeuft", text: "Verspätung wird in WebUntis eingetragen …" };
+    sp.push(m); spaetZeichnen();
+    if (!n.vor || !n.nach) { m.lage = "fehler"; m.text = "hat keinen Namen in der Kürzelliste. Verspätung bitte selbst in WebUntis eintragen."; spaetZeichnen(); return; }
+    let a; try { const o = await host(); a = o ? await chrome.runtime.sendMessage({ cmd: "wu-abw", op: "spaet", host: o, kinder: [{ k, vor: n.vor, nach: n.nach }] }) : { ok: false, fehler: "Die WebUntis-Adresse deiner Schule fehlt noch (Einrichtung & Daten)." }; } catch (e) { a = { ok: false, fehler: "Der Helfer antwortet nicht. Bitte in WebUntis nachsehen." }; }
+    if (!a || !a.ok) { m.lage = "fehler"; m.text = ((a && a.fehler) || "Der Eintrag hat nicht geklappt.") + " Nicht eingetragen."; }
+    else if (a.unbekannt && a.unbekannt.length) { m.lage = "fehler"; m.text = "wurde in der Schülerliste dieser Stunde nicht gefunden. Verspätung bitte im geöffneten Klassenbuch selbst eintragen."; }
+    else if (a.bestaetigt) { m.lage = "ok"; m.text = "Verspätung in WebUntis eingetragen (" + hhmm(new Date()) + " Uhr)."; }
+    else { m.lage = "offen"; m.text = "Verspätung an WebUntis gesendet, aber nicht sichtbar bestätigt. Bitte im geöffneten Klassenbuch-Tab nachsehen."; }
+    spaetZeichnen();
+  }
+  if (raster) new MutationObserver(() => { const r = stGruppe(); if (!r || raster.hidden) { st = null; ab = null; sp = []; return; } stoffKnopf(); abwKnopf(); if (sp.length && !raster.querySelector("#r-spaet-feld")) spaetZeichnen(); }).observe(raster, { childList: true });
 
   einstZeichnen(); zeichnen();
   if (an().length) holen();
@@ -266,5 +292,5 @@
   /* Für die Wochenansicht (start-a.js): Änderungen eines Tages, Doppelstunden zusammengefasst. Leer, solange der Bereich aus ist. */
   const aenderungen = iso => !an().includes("plan") || !stand || !stand.daten || !stand.daten.plan ? []
     : planZeilen(stand.daten.plan.filter(x => x.tag === iso), true).map(x => ({ von: x.von, bis: x.bis, fach: x.fach, was: planWas(x), marke: planArt(x)[0], aus: /^CANCELL?ED$/i.test(x.status), raum: x.raum, raumAlt: x.raumAlt, text: x.text }));
-  window.saUntis = { holen, aenderungen, _test: { planArt, planWas, planZeilen } };
+  window.saUntis = { holen, aenderungen, spaetSofort, _test: { planArt, planWas, planZeilen } };
 })();
