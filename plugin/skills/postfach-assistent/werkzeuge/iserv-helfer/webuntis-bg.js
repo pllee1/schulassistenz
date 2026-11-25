@@ -3,7 +3,10 @@
    Hausaufgaben und offene Klassenbuch-Stunden. Für die Startseite, je Bereich einzeln schaltbar (anfangs alles aus).
    - Lesen: Es werden ausschließlich die unten aufgeführten Abfrage-Adressen aufgerufen (WUD_WEGE).
    - Ab 0.38 eine einzige schreibende Anfrage, eigener Schalter (anfangs aus): den Lehrstoff einer eigenen Stunde von heute eintragen
-     (wudStoffSchreiben). Nur nach Vorschau und Klick der Lehrkraft in der Live-Beobachtung. Sonst wird in WebUntis nichts geändert.
+     (wudStoffSchreiben). Nur nach Vorschau und Klick der Lehrkraft in der Live-Beobachtung.
+   - Ab 0.39, eigener Schalter (anfangs aus): Abwesende der Stunde im Klassenbuch eintragen (wudAbwSchreiben), ebenfalls nur nach Vorschau und Klick.
+     Dazu auf Wunsch (dritter Schalter, anfangs aus) die Verspätung eines Kindes sofort beim Markieren in der laufenden Stunde.
+     Sonst wird in WebUntis nichts geändert.
    - Nur von Seiten des Helfers aus aufrufbar, nur für Adressen der Form https://<schule>.webuntis.com.
    - Namen von Schüler:innen und Lehrkräften werden hier verworfen und nie weitergegeben. Freitexte (z. B. Vertretungstext) bleiben
      auf der Startseite in diesem Browser und gehen nicht an Claude. */
@@ -193,7 +196,93 @@ async function wudStoffSchreiben(o, ids, text) {
   return { ok: true, eingetragen: fertig.length, stimmt: jetzt.every(x => x.trim() === text) };
 }
 
+/* ---- Abwesende (ab 0.39): in der Live-Beobachtung als krank/fehlt Markierte im Klassenbuch der Stunde als abwesend eintragen ----
+   WebUntis führt Abwesenheiten je Stunde noch in der alten Klassenbuch-Seite. Der Helfer öffnet diese Seite der eigenen Stunde von heute
+   in einem neuen Tab und löst dort denselben Befehl aus wie der Knopf „Abwesend“ der Seite (für die zugeordneten Kinder, in einem Schritt).
+   Nur nach Vorschau und Klick der Lehrkraft. Die Namen für die Zuordnung kommen aus der Kürzelliste, bleiben in diesem Browser
+   und werden nur mit der Schülerliste der geöffneten Seite verglichen. Zurück an die Startseite gehen nur Kürzel. */
+function wudAbwInSeite(periodIds, kinder, befehl) {
+  // Läuft in der WebUntis-Seite selbst (kein Zugriff auf den Helfer). Gibt nur Kürzel zurück.
+  const norm = t => String(t || "").replace(/[äÄ]/g, "ae").replace(/[öÖ]/g, "oe").replace(/[üÜ]/g, "ue").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ß/g, "ss").toLowerCase().replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
+  const warte = ms => new Promise(r => setTimeout(r, ms));
+  const form = () => { try { const reg = window.require && window.require("dijit/registry"); const w = reg && reg.byId("classregPageForm"); return w && w.viewModel && Array.isArray(w.viewModel.students) ? w : null; } catch (e) { return null; } };
+  return (async () => {
+    let w = null; for (let i = 0; i < 60 && !(w = form()); i++) await warte(250);
+    if (!w) return { ok: false, fehler: "Die Klassenbuch-Seite von WebUntis ist nicht wie erwartet aufgebaut. Bitte die Abwesenden dort selbst eintragen." };
+    const vm = w.viewModel;
+    if (!vm.period || !periodIds.includes(vm.period.id)) return { ok: false, fehler: "WebUntis zeigt eine andere Stunde als gewählt. Es wurde nichts eingetragen." };
+    if (vm.absenceAllowed === false) return { ok: false, fehler: "WebUntis lässt für diese Stunde keine Abwesenheiten von dir zu." };
+    const aus = { ok: true, eingetragen: [], schon: [], unbekannt: [], bestaetigt: false }, ids = [], zu = {};
+    for (const k of kinder) {
+      const v = norm(k.vor), n = norm(k.nach);
+      const passt = vm.students.filter(s => {
+        const sv = norm(s.foreName), sn = norm(s.longName);
+        if (!v || !n || !sv || !sn) return false;
+        return sn === n && (sv === v || sv.split(" ")[0] === v.split(" ")[0]);
+      });
+      if (passt.length !== 1) { aus.unbekannt.push(k.k); continue; }
+      if (befehl === "multinsert" && passt[0].absent) { aus.schon.push(k.k); continue; }
+      ids.push(passt[0].id); zu[passt[0].id] = k.k;
+    }
+    if (!ids.length) { aus.bestaetigt = true; return aus; }
+    const bild = f => JSON.stringify([f.viewModel.students.filter(s => s.absent).map(s => s.id), (f.viewModel.absenceRows || []).length, JSON.stringify(f.viewModel.absenceRows || []).length]);
+    const vorher = bild(w);
+    try { w.submitCommand(befehl === "toolate" ? "toolate" : "multinsert", { selId: ids }); } catch (e) { return { ok: false, fehler: "WebUntis hat den Befehl nicht angenommen. Bitte die Abwesenden dort selbst eintragen." }; }
+    // Die Seite baut sich nach dem Befehl neu auf oder aktualisiert ihre Liste. Nachsehen, ob die Kinder jetzt als abwesend geführt werden.
+    for (let i = 0; i < 48; i++) {
+      await warte(250); const f = form(); if (!f) continue;
+      const jetzt = new Set(f.viewModel.students.filter(s => s.absent).map(s => s.id));
+      // Verspätung: WebUntis ändert die Abwesenheitsliste der Stunde (neuer Eintrag oder verkürzte Abwesenheit)
+      if (befehl === "toolate" ? bild(f) !== vorher : ids.every(id => jetzt.has(id))) { aus.bestaetigt = true; break; }
+    }
+    aus.eingetragen = ids.map(id => zu[id]);
+    return aus;
+  })();
+}
+async function wudAbwSchreiben(o, ids, kinder, spaet) {
+  ids = (Array.isArray(ids) ? ids : []).map(Number).filter(x => Number.isInteger(x) && x > 0);
+  kinder = (Array.isArray(kinder) ? kinder : []).filter(k => k && typeof k.k === "string").slice(0, 60).map(k => ({ k: k.k.slice(0, 20), vor: String(k.vor || "").slice(0, 80), nach: String(k.nach || "").slice(0, 80) }));
+  if (!kinder.length) throw new WudFehler("eingabe", spaet ? "Kein Kind angegeben." : "Niemand ist als abwesend markiert.");
+  const { t, pid } = await wudToken(o);
+  const stunden = await wudStunden(o, t, pid);
+  let ttid;
+  if (spaet) {
+    // Verspätung: WebUntis rechnet vom Stundenbeginn bis zur Uhrzeit des Eintrags. Deshalb nur in der gerade laufenden Stunde (bei Doppelstunden die laufende Einzelstunde reicht WebUntis selbst).
+    const d = new Date(), jetzt = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    const s = stunden.find(x => x.von <= jetzt && jetzt <= x.bis);
+    if (!s) throw new WudFehler("eingabe", "Gerade läuft laut WebUntis keine Stunde von dir. Die Verspätung bitte selbst eintragen.");
+    ids = s.ids; ttid = s.ids[0]; kinder = kinder.slice(0, 1);
+  } else {
+    if (!ids.length || ids.length > 4) throw new WudFehler("eingabe", "Keine Stunde gewählt.");
+    if (!stunden.some(s => ids.every(id => s.ids.includes(id)))) throw new WudFehler("eingabe", "Diese Stunde steht heute nicht in deinem Stundenplan.");
+    ttid = ids[0];
+  }
+  // Abwesende: Tab im Vordergrund, damit die Lehrkraft das Ergebnis sieht. Verspätung: im Hintergrund, schließt sich nach Bestätigung wieder.
+  const tab = await chrome.tabs.create({ url: o + "/WebUntis/embedded.do#classregpage?ttid=" + ttid, active: !spaet });
+  await new Promise(fertig => {
+    const ende = setTimeout(() => { chrome.tabs.onUpdated.removeListener(h); fertig(); }, 20000);
+    const h = (id, info) => { if (id === tab.id && info.status === "complete") { clearTimeout(ende); chrome.tabs.onUpdated.removeListener(h); fertig(); } };
+    chrome.tabs.onUpdated.addListener(h);
+  });
+  let r;
+  try { r = await chrome.scripting.executeScript({ target: { tabId: tab.id }, world: "MAIN", func: wudAbwInSeite, args: [ids, kinder, spaet ? "toolate" : "multinsert"] }); }
+  catch (e) { throw new WudFehler("antwort", "Die Klassenbuch-Seite von WebUntis ließ sich nicht öffnen. Bitte die Abwesenden dort selbst eintragen."); }
+  const aus = r && r[0] && r[0].result;
+  if (!aus) throw new WudFehler("antwort", "WebUntis hat nicht geantwortet. Bitte im geöffneten Tab nachsehen.");
+  // Hintergrund-Tab der Verspätung wieder schließen, wenn alles geklärt ist. Sonst bleibt er zum Nachsehen offen.
+  if (spaet && (!aus.ok || (aus.bestaetigt && !aus.unbekannt.length))) { try { await chrome.tabs.remove(tab.id); } catch (e) {} }
+  if (!aus.ok) throw new WudFehler("antwort", aus.fehler || "Der Eintrag hat nicht geklappt.");
+  return aus;
+}
+
 if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) chrome.runtime.onMessage.addListener((m, sender, antwort) => {
+  if (m && m.cmd === "wu-abw") {
+    if (!sender || !String(sender.url || "").startsWith(chrome.runtime.getURL(""))) { antwort({ ok: false, art: "intern", fehler: "Nur von der Startseite aus." }); return; }
+    const o = String(m.host || "").replace(/\/+$/, "");
+    if (!WUD_HOST.test(o)) { antwort({ ok: false, art: "adresse", fehler: "Die WebUntis-Adresse fehlt oder passt nicht (https://<schule>.webuntis.com)." }); return; }
+    wudAbwSchreiben(o, m.ids, m.kinder, m.op === "spaet").then(antwort).catch(e => antwort({ ok: false, art: e.art || "fehler", fehler: String((e && e.message) || e) }));
+    return true;
+  }
   if (m && m.cmd === "wu-stoff") {
     if (!sender || !String(sender.url || "").startsWith(chrome.runtime.getURL(""))) { antwort({ ok: false, art: "intern", fehler: "Nur von der Startseite aus." }); return; }
     const o = String(m.host || "").replace(/\/+$/, "");
