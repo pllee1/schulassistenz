@@ -162,7 +162,7 @@ if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
    LEB-online: nur Listen-Seiten (index.php), nie form.php oder Adressen mit „del“, und nur im schon offenen LEB-Tab,
    weil LEB nur eine Anmeldung gleichzeitig verträgt. Von jeder Seite werden nur Beschriftungen der Bedienoberfläche
    notiert (Überschriften, Reiter, Knöpfe, Tabellenspalten, Feldnamen, Exportmöglichkeiten), keine Tabelleninhalte. */
-const PR_NICHT = /(log-?out|abmeld|sign-?out|delete|remove|l(oe|ö|%C3%B6)sch|sudo|\/su([\/?#]|$)|admin|switch|locale|toggle|dismiss|download|export|print|\.pdf|\.zip|\.csv|\.xlsx?|\/new([\/?#]|$)|create|\/add([\/?#]|$)|edit|upload|import|send|compose|write|reset|password|passwort|2fa|token|oauth|saml|impersonat|profil|entfern|archiv(e|ier)|[?&]del(=|&|$)|mark|read=)/i;
+const PR_NICHT = /(log-?out|abmeld|sign-?out|delete|remove|l(oe|ö|%C3%B6)sch|sudo|\/su([\/?#]|$)|admin|switch|locale|toggle|dismiss|download|export|print|\.pdf|\.zip|\.csv|\.xlsx?|\/new([\/?#]|$)|create|\/add([\/?#]|$)|edit|upload|import|send|compose|write|reset|password|passwort|2fa|token|oauth|saml|impersonat|profil|entfern|rss|feed|atom|\.xml|\.ics|ical|webcal|\.do\?.*format=|archiv(e|ier)|[?&]del(=|&|$)|mark|read=)/i;
 const PR_SYS = {
   IServ: { max: 70, tiefe: 2 },
   WebUntis: { max: 50, tiefe: 3 },
@@ -257,7 +257,8 @@ function prLaden(tabId, url) {
   });
 }
 // Ein System abgehen: Startseite lesen, Links einsammeln, Seite für Seite besuchen, dabei neue Unterpunkte nachtragen
-async function prAbgehen(sys, origin, start, tabId, seiten, melden) {
+async function prAbgehen(sys, origin, start, tabId, seiten, melden, tabNeu) {
+  const tabDa = async () => { try { await chrome.tabs.get(tabId); return true; } catch (e) { return false; } };
   const grenze = PR_SYS[sys];
   const funde = async () => ((await prSess.get("saProbeFunde")).saProbeFunde || []);
   const kopf = { sys, kopf: true, links: 0, ziele: 0, aufgeklappt: 0, anmeldung: false, offen: 0 };
@@ -283,11 +284,17 @@ async function prAbgehen(sys, origin, start, tabId, seiten, melden) {
   let i = 0;
   while (schlange.length && i < grenze.max) {
     if (!(await prZustand())) break;                                                   // abgebrochen
+    if (!(await tabDa())) {                                                           // Tab wurde geschlossen (von der Seite oder von Hand)
+      kopf.tabVerloren = (kopf.tabVerloren || 0) + 1;
+      if (!tabNeu || kopf.tabVerloren > 3) { kopf.abbruch = true; break; }
+      tabId = await tabNeu();
+    }
     const zl = schlange.shift(); i++;
     await melden(sys + ": Seite " + i + " (noch " + schlange.length + " bekannt)");
     await prSeriell(async () => { const z = await prZustand(); if (z) await prSess.set({ saProbe: { ...z, zeit: Date.now() } }); });   // Aufzeichnung läuft weiter
     const vor = new Set((await funde()).map(f => f.key));
     await prLaden(tabId, zl.href); await prPause(1800); await prKette.catch(() => {});
+    if (!(await tabDa())) { seiten.push({ sys, text: zl.text, url: zl.href, gelandet: "", tiefe: zl.tiefe, fakten: [], daten: [], zu: true }); await prSess.set({ saProbeTour: seiten }); continue; }
     const fakten = await prSkript(tabId, prSeiteFakten, true);
     await lesen(zl.tiefe + 1);
     let gelandet = ""; try { gelandet = (await chrome.tabs.get(tabId)).url || ""; } catch (e) {}
@@ -306,8 +313,10 @@ async function prRundgang(zurueckTab) {
   try {
     if (z.iserv || z.wu) {
       tab = await chrome.tabs.create({ url: "about:blank", active: true });
-      if (z.iserv) await prAbgehen("IServ", z.iserv, z.iserv + "/iserv/", tab.id, seiten, melden);
-      if (z.wu) await prAbgehen("WebUntis", z.wu, z.wu + "/WebUntis/", tab.id, seiten, melden);
+      const tabNeu = async () => { tab = await chrome.tabs.create({ url: "about:blank", active: true }); return tab.id; };
+      if (z.iserv) await prAbgehen("IServ", z.iserv, z.iserv + "/iserv/", tab.id, seiten, melden, tabNeu);
+      try { await chrome.tabs.get(tab.id); } catch (e) { await tabNeu(); }
+      if (z.wu) await prAbgehen("WebUntis", z.wu, z.wu + "/WebUntis/", tab.id, seiten, melden, tabNeu);
     }
     if (z.leb) {
       // LEB-online verträgt nur eine Anmeldung: den schon offenen Tab benutzen, nie einen zweiten öffnen
@@ -340,7 +349,7 @@ function prTourBericht(seiten, ziel) {
   const liste = (titel, a) => { if (a && a.length) zeilen.push("    " + titel + ": " + a.join(" · ")); };
   for (const s of seiten) {
     if (s.kopf) {
-      zeilen.push("-- " + s.sys + (s.fehlt ? ": in keinem Tab geöffnet und angemeldet, deshalb übersprungen --" : ": " + s.links + " Links gelesen, " + s.ziele + " Seiten besucht" + (s.offen ? ", " + s.offen + " weitere nicht mehr besucht (Obergrenze)" : "") + (s.aufgeklappt ? ", " + s.aufgeklappt + "-mal Menügruppen aufgeklappt" : "") + (s.anmeldung ? "  ACHTUNG: Anmeldeseite, bitte erst anmelden" : "") + " --"));
+      zeilen.push("-- " + s.sys + (s.fehlt ? ": in keinem Tab geöffnet und angemeldet, deshalb übersprungen --" : ": " + s.links + " Links gelesen, " + s.ziele + " Seiten besucht" + (s.offen ? ", " + s.offen + " weitere nicht mehr besucht (Obergrenze)" : "") + (s.aufgeklappt ? ", " + s.aufgeklappt + "-mal Menügruppen aufgeklappt" : "") + (s.tabVerloren ? ", Tab " + s.tabVerloren + "-mal geschlossen und neu geöffnet" : "") + (s.abbruch ? ", ABGEBROCHEN, weil der Tab geschlossen wurde" : "") + (s.anmeldung ? "  ACHTUNG: Anmeldeseite, bitte erst anmelden" : "") + " --"));
       continue;
     }
     const m = prMaskUrl(s.url, ziel) || { text: "?", pfad: "?" };
@@ -348,7 +357,7 @@ function prTourBericht(seiten, ziel) {
     const f = s.fakten || [], weg = rahmen[s.sys] || new Set();
     const alle = k => [...new Set(f.flatMap(x => x[k] || []))].filter(t => !weg.has(t));
     const name = s.text || m.pfad.split("/").filter(x => x && !/^<|^index\.php$/.test(x)).slice(-2).join(" › ") || "?";
-    zeilen.push((s.tiefe > 1 ? "  ".repeat(s.tiefe - 1) + "↳ " : "") + "[" + s.sys + "] " + name + "   " + m.text.replace(/^\S+ /, "") + (g && g.pfad !== m.pfad ? "   → gelandet auf " + g.pfad : "") + (f.some(x => x.anmeldung) ? "   (Anmeldeseite)" : ""));
+    zeilen.push((s.tiefe > 1 ? "  ".repeat(s.tiefe - 1) + "↳ " : "") + "[" + s.sys + "] " + name + "   " + m.text.replace(/^\S+ /, "") + (g && g.pfad !== m.pfad ? "   → gelandet auf " + g.pfad : "") + (f.some(x => x.anmeldung) ? "   (Anmeldeseite)" : "") + (s.zu ? "   (diese Seite hat den Tab geschlossen)" : ""));
     liste("Überschriften", alle("h").slice(0, 5)); liste("Reiter", alle("reiter").slice(0, 12)); liste("Knöpfe", alle("knoepfe").slice(0, 20));
     liste("Tabellenspalten", alle("spalten").slice(0, 25)); liste("Eingabefelder", alle("felder").slice(0, 15)); liste("Feldnamen", alle("namen").slice(0, 40));
     const ex = [...new Set(f.flatMap(x => x.exporte || []).filter(e => !weg.has(e.text)).map(e => (e.text || "Link") + (e.href ? " (" + ((prMaskUrl(e.href, ziel) || {}).text || "?") + ")" : "")))].slice(0, 12);
