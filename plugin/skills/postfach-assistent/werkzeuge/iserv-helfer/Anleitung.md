@@ -82,15 +82,23 @@ Die WebUntis-Adresse deiner Schule nimmt der Helfer aus dem Stundenplan-Link. Fe
 
 Der Helfer liest nur: Er ruft ausschließlich die vier Abfragen auf, die auch WebUntis selbst für diese Seiten benutzt, und ändert nichts. Namen von Schüler:innen und Lehrkräften übernimmt er nicht (bei Prüfungen nur die Anzahl). Die Daten stehen nur im geöffneten Tab, werden nicht gespeichert und gehen nicht an Claude. Fehlzeiten kommen weiter über den Export (nächster Abschnitt), weil dort Namen stehen, die die Startseite erst durch Kürzel ersetzt.
 
-## IServ direkt lesen (ab 0.35)
+## Lehrstoff aus der Live-Beobachtung in WebUntis eintragen (ab 0.38)
+
+Das ist die einzige Stelle, an der der Helfer in WebUntis schreibt. Eigener Schalter unter ⚙ „Einrichtung & Daten“ › „WebUntis direkt lesen“ › „In WebUntis eintragen“, anfangs aus.
+
+Ist er an, steht im Kopf der Live-Beobachtung der Knopf **Lehrstoff**. Der Helfer liest deine Stunden von heute, wählt die laufende vor (änderbar) und zeigt, was dort schon eingetragen ist. Du schreibst den Text, klickst „Vorschau“ und siehst genau, was bei welcher Stunde eingetragen wird. Erst „Jetzt in WebUntis eintragen“ schreibt. Danach liest der Helfer den Eintrag zur Kontrolle zurück. Bei einer Doppelstunde bekommen beide Stunden denselben Text.
+
+Grenzen: nur eigene Stunden von heute, nur der Lehrstoff (keine Abwesenheiten, keine Hausaufgaben), höchstens 1000 Zeichen. Hängen an der Stunde Dateien oder lässt WebUntis den Eintrag nicht zu, trägt der Helfer nichts ein. Bitte keine Namen von Schüler:innen in den Lehrstoff schreiben.
+
+## IServ direkt lesen (ab 0.35, Mails anzeigen und abhaken ab 0.38)
 
 Wie bei WebUntis kann die Startseite auf „Heute“ einen Kasten **IServ** zeigen. Drei Bereiche, jeder mit eigenem Schalter unter ⚙ „Einrichtung & Daten“ › „IServ direkt lesen“, anfangs alles aus:
 
-- **Ungelesene Mails:** Anzahl im Posteingang, dazu Absender als Kürzel und Betreff (Namen im Betreff werden ersetzt) und die Zahl der Elternbriefe mit Neuigkeiten. Der Helfer liest nur die Liste und öffnet keine Mail, sie bleiben ungelesen. Mit dem Haken ✓ blendest du eine Mail im Kasten aus („wieder zeigen“ holt sie zurück). Das gilt nur auf der Startseite, in IServ bleibt die Mail ungelesen.
+- **Ungelesene Mails:** Anzahl im Posteingang, dazu Absender als Kürzel und Betreff (Namen im Betreff werden ersetzt) und die Zahl der Elternbriefe mit Neuigkeiten. Ein Klick auf eine Mail klappt ihren Text im Kasten auf (mit Kürzeln, mit „Namen zeigen“ im Klartext). In IServ bleibt sie dabei ungelesen. Der Haken ✓ markiert die Mail in IServ als gelesen, sie verschwindet aus dem Kasten. „rückgängig“ setzt die zuletzt abgehakte Mail wieder auf ungelesen. „In IServ antworten“ öffnet die Mail in IServ, dort schreibst und sendest du selbst. Anhänge öffnest du ebenfalls in IServ.
 - **Krankmeldungen heute** (braucht DieSchulApp in IServ): nur Kinder, die in deinen Kürzellisten stehen, als Kürzel mit Klasse, Dauer und Stunden. Die Notiz der Krankmeldung liest der Helfer nie.
 - **Offene Anträge** (DieSchulApp): Anzahl der noch nicht bearbeiteten Beurlaubungsanträge.
 
-Der Helfer liest nur (ausschließlich lesende Abrufe auf eine feste Liste von Adressen). Klarnamen ersetzt er schon im Hintergrund durch Kürzel. Mit „Namen zeigen“ im Kasten blendest du die Namen ein und wieder aus (anfangs aus). Das gilt nur für die Anzeige in diesem Browser. Unbekannte Absender bekommen wie im Helfer-Fenster ein Kürzel P1, P2 … (Zuordnung unter Einstellungen des Helfers › „Weitere Personen“). Nichts wird gespeichert, nichts geht an Claude.
+Der Helfer liest nur (ausschließlich lesende Abrufe auf eine feste Liste von Adressen). Einzige Ausnahme ist das Gelesen-Zeichen einer Mail, das er auf deinen Klick setzt oder zurücknimmt. Er löscht, verschiebt und sendet nichts. Klarnamen ersetzt er schon im Hintergrund durch Kürzel. Mit „Namen zeigen“ im Kasten blendest du die Namen ein und wieder aus (anfangs aus). Das gilt nur für die Anzeige in diesem Browser. Unbekannte Absender bekommen wie im Helfer-Fenster ein Kürzel P1, P2 … (Zuordnung unter Einstellungen des Helfers › „Weitere Personen“). Nichts wird gespeichert, nichts geht an Claude.
 
 ## LEB-online, Klassenbewertung: Textbausteine ablesen (ab 0.34, einmalig)
 

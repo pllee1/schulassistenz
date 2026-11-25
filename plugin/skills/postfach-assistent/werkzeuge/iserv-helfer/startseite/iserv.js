@@ -1,10 +1,10 @@
-/* Schulassistenz-Startseite · IServ direkt lesen (ab Helfer 0.35)
+/* Schulassistenz-Startseite · IServ direkt lesen (ab Helfer 0.35; Mail anzeigen und als gelesen markieren ab 0.38)
    Zeigt auf „Heute“, was der Helfer über deine Anmeldung aus IServ liest: ungelesene Mails, heutige Krankmeldungen deiner
    Schüler:innen und offene Anträge. Jeder Bereich hat einen eigenen Schalter (Einrichtung & Daten), anfangs ist alles aus.
-   Nur lesend. Der Helfer liefert Kürzel; Namen nur, solange im Kasten „Namen zeigen“ eingeschaltet ist. Die Daten bleiben in dieser Seite (kein Speichern, nichts geht an Claude). */
+   Lesend, mit einer Ausnahme: Der Haken an einer Mail markiert sie in IServ als gelesen (rücknehmbar). Der Helfer liefert Kürzel; Namen nur, solange im Kasten „Namen zeigen“ eingeschaltet ist. Die Daten bleiben in dieser Seite (kein Speichern, nichts geht an Claude). */
 (() => {
   const TEILE = [
-    { id: "mail", name: "Ungelesene Mails", text: "Anzahl im Posteingang, Absender als Kürzel und Betreff. Es wird keine Mail geöffnet, sie bleiben ungelesen." },
+    { id: "mail", name: "Ungelesene Mails", text: "Anzahl im Posteingang, Absender als Kürzel und Betreff. Ein Klick auf eine Mail zeigt ihren Text (sie bleibt ungelesen), der Haken ✓ markiert sie in IServ als gelesen." },
     { id: "krank", name: "Krankmeldungen heute", text: "nur Kinder aus deinen Kürzellisten, als Kürzel (braucht DieSchulApp in IServ)" },
     { id: "antraege", name: "Offene Anträge", text: "Anzahl noch nicht bearbeiteter Beurlaubungsanträge (DieSchulApp)" }
   ];
@@ -12,6 +12,14 @@
   if (!sec) return;
   const an = () => { const s = store.get("is-direkt", {}); return TEILE.map(t => t.id).filter(id => s && s[id] === true); };
   let stand = null, lage = "", meldung = "", laeuft = false;
+  // Aufgeklappte Mails (nur in dieser Seite, nichts wird gespeichert) und die zuletzt per Haken als gelesen markierten (für „rückgängig“)
+  let offen = {}, erledigt = [], mailMeldung = "";
+  const mailLi = x => {
+    const o = offen[x.id], kann = x.mb && x.uid != null;
+    return `<li class="wu-z"><span class="wu-zeit">${esc(mailZeit(x.zeit))}</span><${kann ? `button type="button" data-is-auf="${esc(x.id)}" aria-expanded="${!!o}" title="Text der Mail hier anzeigen. In IServ bleibt sie ungelesen."` : "span"} class="wu-haupt is-auf">${wer(x.von, x.klar && x.klar.von)}${x.anhang ? ` <span class="wu-raum">mit Anhang</span>` : ""}<span class="wu-neben">${esc(namenAn() && x.klar ? x.klar.betreff : x.betreff)}</span></${kann ? "button" : "span"}>${kann ? `<button class="nx-mini is-weg" data-is-ok="${esc(x.id)}" title="In IServ als gelesen markieren"${x.wartet ? " disabled" : ""}>✓</button>` : ""}</li>`
+      + (o ? `<li class="is-text">${o.laedt ? `<p class="note">Mail wird geladen …</p>` : o.fehler ? `<p class="note">${esc(o.fehler)}</p>`
+        : `<div class="is-mailtext">${esc(o.text) || `<span class="note">Die Mail hat keinen Text.</span>`}</div><p class="note">${[o.gekuerzt ? "gekürzt, der ganze Text steht in IServ" : "", o.anhaenge ? `${o.anhaenge} ${o.anhaenge === 1 ? "Anhang" : "Anhänge"} (nur in IServ zu öffnen)` : "", o.ungelesen === false ? "IServ führt diese Mail jetzt als gelesen" : ""].filter(Boolean).join(" · ")}</p><p><button class="btn small" data-is-antw="${esc(x.id)}" title="Öffnet die Mail in IServ. Dort schreibst und sendest du die Antwort selbst.">In IServ antworten</button></p>`}</li>` : "");
+  };
   // Namen statt Kürzel: nur auf Wunsch, nur in dieser Seite. Ausgeschaltet fragt die Seite die Namen gar nicht erst an.
   const namenAn = () => store.get("is-namen", false) === true;
   const wer = (kuerzel, klar) => namenAn() && klar ? `${esc(klar)} <span class="wu-raum">${esc(kuerzel)}</span>` : esc(kuerzel);
@@ -51,14 +59,11 @@
       const fehlt = id => f[id] ? `<div class="wu-block"><h4>${esc(TEILE.find(t => t.id === id).name)}</h4><p class="note">${esc(f[id])}</p></div>` : "";
       if (stand) {
         h += `<div class="wu-raster">`;
-        if (teile.includes("mail")) h += d.mail ? (() => {
-          // „✓“ blendet eine Mail nur hier aus (in IServ bleibt sie ungelesen). Gemerkt wird nur ihre Nummer mit Datum.
-          const weg = new Set(store.get("is-mail-weg", [])), sicht = d.mail.liste.filter(x => !weg.has(x.id)), aus = d.mail.liste.length - sicht.length;
-          return block("Ungelesene Mails", Math.max(0, d.mail.ungelesen - aus), sicht.map(x => zeile(esc(mailZeit(x.zeit)), wer(x.von, x.klar && x.klar.von) + (x.anhang ? ` <span class="wu-raum">mit Anhang</span>` : ""), "", "", esc(namenAn() && x.klar ? x.klar.betreff : x.betreff))
-            .replace("</li>", `<button class="nx-mini is-weg" data-is-weg="${esc(x.id)}" title="Hier ausblenden. In IServ bleibt die Mail ungelesen.">✓</button></li>`)),
-            aus ? "Alle ungelesenen Mails sind hier ausgeblendet." : "Keine ungelesenen Mails im Posteingang.", 5,
-            [d.mail.ungelesen > d.mail.liste.length && d.mail.liste.length ? `und ${d.mail.ungelesen - d.mail.liste.length} ältere` : "", aus ? `${aus} ausgeblendet · <button class="linkbtn" id="is-weg-zurueck">wieder zeigen</button>` : "", d.mail.elternbriefe ? `${d.mail.elternbriefe} ${d.mail.elternbriefe === 1 ? "Elternbrief" : "Elternbriefe"} mit Neuigkeiten` : ""].filter(Boolean).join(" · "));
-        })() : fehlt("mail");
+        if (teile.includes("mail")) h += d.mail ? block("Ungelesene Mails", d.mail.ungelesen, d.mail.liste.map(mailLi), "Keine ungelesenen Mails im Posteingang.", 5,
+          [mailMeldung ? esc(mailMeldung) : "", d.mail.ungelesen > d.mail.liste.length && d.mail.liste.length ? `und ${d.mail.ungelesen - d.mail.liste.length} ältere` : "",
+            erledigt.length ? `${erledigt.length} als gelesen markiert · <button class="linkbtn" id="is-ok-zurueck">${erledigt.length === 1 ? "rückgängig" : "letzte rückgängig"}</button>` : "",
+            d.mail.elternbriefe ? `${d.mail.elternbriefe} ${d.mail.elternbriefe === 1 ? "Elternbrief" : "Elternbriefe"} mit Neuigkeiten` : ""].filter(Boolean).join(" · "))
+          : fehlt("mail");
         if (teile.includes("krank")) h += d.krank ? block("Krankmeldungen heute", d.krank.meine.length, d.krank.meine.map(x => {
           const ganz = x.stVon == null || (x.stVon <= 1 && x.stBis >= 6);
           return zeile(namenAn() && x.klar ? "" : esc(x.kuerzel), namenAn() && x.klar ? wer(x.kuerzel, x.klar) + ` <span class="wu-raum">${esc(x.klasse || "")}</span>` : esc(x.klasse || ""), x.beurlaubung ? "Beurlaubung" : x.schriftlich ? "schriftlich" : "gemeldet", x.schriftlich ? "" : "warn",
@@ -71,9 +76,31 @@
     sec.innerHTML = h;
     const k = (id, f) => { const b = sec.querySelector(id); if (b) b.addEventListener("click", f); };
     k("#is-neu", () => holen());
-    k("#is-namen", () => { store.set("is-namen", !namenAn()); if (!namenAn() && stand && stand.daten) { for (const x of ((stand.daten.mail || {}).liste || [])) delete x.klar; for (const x of ((stand.daten.krank || {}).meine || [])) delete x.klar; } zeichnen(); if (namenAn()) holen(); });
-    sec.querySelectorAll("[data-is-weg]").forEach(b => b.addEventListener("click", () => { const l = store.get("is-mail-weg", []).filter(x => x !== b.dataset.isWeg); l.push(b.dataset.isWeg); store.set("is-mail-weg", l.slice(-300)); zeichnen(); }));
-    k("#is-weg-zurueck", () => { store.set("is-mail-weg", []); zeichnen(); });
+    k("#is-namen", () => { store.set("is-namen", !namenAn()); if (!namenAn() && stand && stand.daten) { for (const x of ((stand.daten.mail || {}).liste || [])) delete x.klar; for (const x of ((stand.daten.krank || {}).meine || [])) delete x.klar; } offen = {}; zeichnen(); if (namenAn()) holen(); });
+    const mailVon = id => (((stand && stand.daten && stand.daten.mail) || {}).liste || []).find(x => x.id === id);
+    const auftrag = async (x, op) => { const o = await host(); try { return await chrome.runtime.sendMessage({ cmd: "is-mail", host: o, op, mb: x.mb, uid: x.uid, namen: namenAn() }); } catch (e) { return { ok: false, fehler: "Der Helfer antwortet nicht. Bitte die Seite neu laden." }; } };
+    sec.querySelectorAll("[data-is-auf]").forEach(b => b.addEventListener("click", async () => {
+      const id = b.dataset.isAuf, x = mailVon(id); if (!x) return;
+      if (offen[id]) { delete offen[id]; zeichnen(); return; }
+      offen[id] = { laedt: true }; zeichnen();
+      const r = await auftrag(x, "zeigen");
+      if (!offen[id]) return;
+      offen[id] = r && r.ok ? r : { fehler: (r && r.fehler) || "Die Mail konnte nicht geladen werden." }; zeichnen();
+    }));
+    sec.querySelectorAll("[data-is-ok]").forEach(b => b.addEventListener("click", async () => {
+      const x = mailVon(b.dataset.isOk); if (!x || x.wartet) return;
+      x.wartet = true; mailMeldung = ""; zeichnen();
+      const r = await auftrag(x, "gelesen"); delete x.wartet;
+      if (r && r.ok) { const m = stand.daten.mail; m.liste = m.liste.filter(y => y !== x); m.ungelesen = Math.max(0, m.ungelesen - 1); delete offen[x.id]; erledigt.push({ mb: x.mb, uid: x.uid }); }
+      else mailMeldung = (r && r.fehler) || "Die Mail konnte nicht als gelesen markiert werden.";
+      zeichnen();
+    }));
+    sec.querySelectorAll("[data-is-antw]").forEach(b => b.addEventListener("click", async () => { const x = mailVon(b.dataset.isAntw); if (!x) return; const r = await auftrag(x, "antworten"); if (!(r && r.ok)) { mailMeldung = (r && r.fehler) || "Die Mail ließ sich nicht in IServ öffnen."; zeichnen(); } }));
+    k("#is-ok-zurueck", async () => {
+      const x = erledigt[erledigt.length - 1]; if (!x) return;
+      const r = await auftrag(x, "ungelesen");
+      if (r && r.ok) { erledigt.pop(); mailMeldung = ""; holen(); } else { mailMeldung = (r && r.fehler) || "Das Zurücknehmen hat nicht geklappt."; zeichnen(); }
+    });
     k("#is-h", () => { store.set("is-zu", !store.get("is-zu", false)); zeichnen(); });
     const auf = async weg => { const o = await host(); if (o) chrome.runtime.sendMessage({ cmd: "tab", url: o + weg }); };
     k("#is-auf", () => auf("/iserv/mail")); k("#is-login", () => auf("/iserv/"));

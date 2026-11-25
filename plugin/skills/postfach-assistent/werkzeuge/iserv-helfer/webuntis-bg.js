@@ -1,7 +1,9 @@
 /* Schulassistenz-Helfer · WebUntis direkt lesen (ab 0.32)
    Liest über die Anmeldung im Browser, was WebUntis der Lehrkraft selbst anzeigt: Stundenplan mit Vertretungen, Prüfungen,
    Hausaufgaben und offene Klassenbuch-Stunden. Für die Startseite, je Bereich einzeln schaltbar (anfangs alles aus).
-   - Nur lesend: Es werden ausschließlich die unten aufgeführten Abfrage-Adressen aufgerufen (WUD_WEGE). Nichts wird in WebUntis geändert.
+   - Lesen: Es werden ausschließlich die unten aufgeführten Abfrage-Adressen aufgerufen (WUD_WEGE).
+   - Ab 0.38 eine einzige schreibende Anfrage, eigener Schalter (anfangs aus): den Lehrstoff einer eigenen Stunde von heute eintragen
+     (wudStoffSchreiben). Nur nach Vorschau und Klick der Lehrkraft in der Live-Beobachtung. Sonst wird in WebUntis nichts geändert.
    - Nur von Seiten des Helfers aus aufrufbar, nur für Adressen der Form https://<schule>.webuntis.com.
    - Namen von Schüler:innen und Lehrkräften werden hier verworfen und nie weitergegeben. Freitexte (z. B. Vertretungstext) bleiben
      auf der Startseite in diesem Browser und gehen nicht an Claude. */
@@ -10,7 +12,8 @@ const WUD_WEGE = [
   /^rest\/view\/v1\/timetable\/entries\?[\w=&%.:-]*$/,
   /^rest\/view\/v1\/exams\?[\w=&%.:-]*$/,
   /^rest\/view\/v1\/classreg\/homework\/(list|meta)$/,
-  /^rest\/view\/v1\/classreg\/open-periods(\/meta)?$/
+  /^rest\/view\/v1\/classreg\/open-periods(\/meta)?$/,
+  /^rest\/view\/v1\/classreg\/lesson-topics\/period\/\d+$/
 ];
 class WudFehler extends Error { constructor(art, text) { super(text); this.art = art; } }
 
@@ -131,7 +134,73 @@ async function wudLesen(o, teile) {
   });
   return { ok: true, stand: Date.now(), daten: aus, fehler };
 }
+/* ---- Lehrstoff (ab 0.38): eigene Stunden von heute lesen und, nach Vorschau und Klick der Lehrkraft, den Lehrstoff eintragen ---- */
+const WUD_STOFF_MAX = 1000;
+async function wudStunden(o, t, pid) {
+  const heute = new Date(); heute.setHours(12, 0, 0, 0); const iso = wudIso(heute);
+  const j = await wudJson(o, t, "rest/view/v1/timetable/entries?start=" + iso + "&end=" + iso + "&format=1&resourceType=TEACHER&resources=" + encodeURIComponent(pid) + "&periodTypes=&timetableType=MY_TIMETABLE&layout=START_TIME");
+  const roh = []; for (const tag of (j && j.days) || []) for (const g of tag.gridEntries || []) roh.push(g);
+  const plan = wudPlan(j), aus = [];
+  roh.forEach((g, i) => {
+    const e = plan[i], ids = (Array.isArray(g.ids) ? g.ids : []).filter(x => Number.isInteger(x) && x > 0);
+    if (!e || e.tag !== iso || !ids.length || !/^(NORMAL_TEACHING_PERIOD|ADDITIONAL_PERIOD)$/.test(e.art) || /^CANCELL?ED$/i.test(e.status)) return;
+    aus.push({ ids, tag: e.tag, von: e.von, bis: e.bis, fach: e.fach, klasse: e.klasse });
+  });
+  return aus.sort((a, b) => a.von.localeCompare(b.von));
+}
+async function wudThema(o, t, periodId) {
+  const j = await wudJson(o, t, "rest/view/v1/classreg/lesson-topics/period/" + periodId);
+  const x = ((j && j.periodTopics) || []).find(y => y && y.period && y.period.id === periodId);
+  if (!x) return { periodId, text: "", kann: false, anhaenge: 0, roh: null };
+  const th = x.topic || null;
+  return { periodId, text: String((th && th.text) || ""), kann: x.canSave === true, anhaenge: ((th && th.attachments) || []).length, roh: th };
+}
+async function wudStoffLesen(o) {
+  const { t, pid } = await wudToken(o);
+  const stunden = await wudStunden(o, t, pid);
+  for (const s of stunden) { s.themen = []; for (const id of s.ids) { const th = await wudThema(o, t, id); s.themen.push({ periodId: id, text: th.text, kann: th.kann, anhaenge: th.anhaenge }); } }
+  return { ok: true, stand: Date.now(), stunden };
+}
+// Die einzige schreibende Anfrage des Helfers an WebUntis. Feste Adresse, fester Aufbau; nur eigene Stunden von heute.
+async function wudStoffSchreiben(o, ids, text) {
+  text = String(text == null ? "" : text).replace(/\r/g, "").trim();
+  if (!text) throw new WudFehler("eingabe", "Der Lehrstoff ist leer.");
+  if (text.length > WUD_STOFF_MAX) throw new WudFehler("eingabe", "Der Lehrstoff ist zu lang (höchstens " + WUD_STOFF_MAX + " Zeichen).");
+  ids = (Array.isArray(ids) ? ids : []).map(Number).filter(x => Number.isInteger(x) && x > 0);
+  if (!ids.length || ids.length > 4) throw new WudFehler("eingabe", "Keine Stunde gewählt.");
+  const { t, pid } = await wudToken(o);
+  const stunde = (await wudStunden(o, t, pid)).find(s => ids.every(id => s.ids.includes(id)));
+  if (!stunde) throw new WudFehler("eingabe", "Diese Stunde steht heute nicht in deinem Stundenplan.");
+  const fertig = [];
+  for (const id of ids) {
+    const th = await wudThema(o, t, id);
+    if (!th.kann) throw new WudFehler("recht", "WebUntis lässt für diese Stunde keinen Lehrstoff zu." + (fertig.length ? " Die erste Stunde ist bereits eingetragen." : ""));
+    if (th.anhaenge) throw new WudFehler("eingabe", "An dieser Stunde hängen Dateien. Bitte den Lehrstoff dort direkt in WebUntis ändern.");
+    const topic = { periodId: id, text, attachments: [] };
+    if (th.roh && th.roh.id) topic.id = th.roh.id;
+    if (th.roh && th.roh.methodId) topic.methodId = th.roh.methodId;
+    let r;
+    try {
+      r = await fetch(o + "/WebUntis/api/rest/view/v1/classreg/lesson-topics", { method: "PUT", credentials: "omit", cache: "no-store",
+        headers: { Authorization: "Bearer " + t, Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify({ forceBlock: false, topic }) });
+    } catch (e) { throw new WudFehler("netz", "WebUntis ist gerade nicht erreichbar." + (fertig.length ? " Die erste Stunde ist bereits eingetragen." : "")); }
+    if (r.status === 401) throw new WudFehler("abgemeldet", "Bitte in diesem Browser bei WebUntis anmelden.");
+    if (!r.ok) throw new WudFehler(r.status === 403 ? "recht" : "antwort", "WebUntis hat den Eintrag abgelehnt (" + r.status + ")." + (fertig.length ? " Die erste Stunde ist bereits eingetragen." : ""));
+    fertig.push(id);
+  }
+  // Zur Kontrolle zurücklesen
+  const jetzt = []; for (const id of ids) jetzt.push((await wudThema(o, t, id)).text);
+  return { ok: true, eingetragen: fertig.length, stimmt: jetzt.every(x => x.trim() === text) };
+}
+
 if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) chrome.runtime.onMessage.addListener((m, sender, antwort) => {
+  if (m && m.cmd === "wu-stoff") {
+    if (!sender || !String(sender.url || "").startsWith(chrome.runtime.getURL(""))) { antwort({ ok: false, art: "intern", fehler: "Nur von der Startseite aus." }); return; }
+    const o = String(m.host || "").replace(/\/+$/, "");
+    if (!WUD_HOST.test(o)) { antwort({ ok: false, art: "adresse", fehler: "Die WebUntis-Adresse fehlt oder passt nicht (https://<schule>.webuntis.com)." }); return; }
+    (m.op === "schreiben" ? wudStoffSchreiben(o, m.ids, m.text) : wudStoffLesen(o)).then(antwort).catch(e => antwort({ ok: false, art: e.art || "fehler", fehler: String((e && e.message) || e) }));
+    return true;
+  }
   if (!m || m.cmd !== "wu-direkt") return;
   if (!sender || !String(sender.url || "").startsWith(chrome.runtime.getURL(""))) { antwort({ ok: false, art: "intern", fehler: "Nur von der Startseite aus." }); return; }
   const o = String(m.host || "").replace(/\/+$/, "");
