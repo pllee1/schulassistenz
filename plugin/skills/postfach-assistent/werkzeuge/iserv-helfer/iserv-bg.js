@@ -1,8 +1,12 @@
 /* Schulassistenz-Helfer · IServ direkt lesen (ab 0.35)
    Liest über die Anmeldung im Browser: ungelesene Mails im Posteingang, heutige Krankmeldungen (DieSchulApp) und offene Anträge.
    Für die Startseite, je Bereich einzeln schaltbar (anfangs alles aus).
-   - Nur lesend: ausschließlich GET auf die unten aufgeführten Adressen (ISD_WEGE). Es wird nur die Liste der Mails gelesen,
-     nie eine einzelne Mail geöffnet. Der Ungelesen-Zähler bleibt dadurch unverändert (am 25.11.2026 geprüft).
+   - Lesen: ausschließlich GET auf die unten aufgeführten Adressen (ISD_WEGE). Der Kasten liest nur die Liste der Mails;
+     der Ungelesen-Zähler bleibt dadurch unverändert (am 25.11.2026 geprüft).
+   - Ab 0.36 auf ausdrücklichen Klick der Lehrkraft: eine Mail anzeigen (IServ markiert sie dabei als gelesen, der Helfer setzt sie
+     sofort wieder auf ungelesen) und per Haken als gelesen markieren. Das ist das Einzige, was der Helfer in IServ ändert:
+     das Gelesen-Zeichen einzelner Mails (isdGelesen, feste Adresse und fester Aufbau der Anfrage). Er löscht, verschiebt und sendet nichts.
+     „Antworten“ öffnet die Mail nur in IServ, geschrieben und gesendet wird dort von der Lehrkraft.
    - Nur von Seiten des Helfers aus aufrufbar.
    - Klarnamen verlassen diesen Baustein nur, wenn die Lehrkraft im Kasten „Namen zeigen“ einschaltet (dann zusätzlich zu den Kürzeln,
      nur für die Anzeige in der Startseite dieses Browsers). Sonst gilt: Absender und Betreff werden hier mit der Kürzelliste ersetzt (unbekannte Absender
@@ -15,6 +19,7 @@ const ISD_WEGE = [
   /^\/iserv\/app\/navigation\/badges$/,
   /^\/iserv\/mail\/api\/v2\/account\/[^/?#]+\/mailbox$/,
   /^\/iserv\/mail\/api\/v2\/account\/[^/?#]+\/message\?flag%5Bseen%5D=false&limit=\d+&offset=0&order=desc&sort=date&mailbox%5B%5D=[\w%.~-]+$/,
+  /^\/iserv\/mail\/api\/v2\/account\/[^/?#]+\/mailbox\/[\w%.~-]+\/message\/\d+$/,
   /^\/iserv\/dieschulapp\/api\/1\.0\/sickNotes\/\?filterBy=[\w:().,-]+$/,
   /^\/iserv\/dieschulapp\/api\/1\.0\/user-requests-to-school\/student-absences\/meta\/\?filterBy=accepted:is\(null\)$/
 ];
@@ -77,7 +82,7 @@ async function isdLesen(o, teile, namen) {
       const l = await isdHolen(o, basis + "/message?flag%5Bseen%5D=false&limit=25&offset=0&order=desc&sort=date&mailbox%5B%5D=" + encodeURIComponent(inbox.mailboxId));
       liste = ((l && l.items) || []).filter(x => x.read === false).map(x => {
         const a = (x.from || [])[0] || {};
-        return { id: String((x.id && x.id.uid) != null ? x.id.uid : "") + "@" + String(x.date || "").slice(0, 19), zeit: String(x.date || ""), von: isdPerson(a.personal || a.mailbox || "", N, true) || "?", betreff: isdErsetzen(x.subject, N).slice(0, 140), anhang: (x.attachmentCount || 0) > 0,
+        return { id: String((x.id && x.id.uid) != null ? x.id.uid : "") + "@" + String(x.date || "").slice(0, 19), mb: String((x.id && x.id.mailboxId) || ""), uid: x.id && x.id.uid, zeit: String(x.date || ""), von: isdPerson(a.personal || a.mailbox || "", N, true) || "?", betreff: isdErsetzen(x.subject, N).slice(0, 140), anhang: (x.attachmentCount || 0) > 0,
           klar: namen ? { von: String(a.personal || a.mailbox || "").slice(0, 80), betreff: String(x.subject || "").slice(0, 140) } : undefined };
       });
     }
@@ -110,12 +115,65 @@ async function isdLesen(o, teile, namen) {
   return { ok: true, stand: Date.now(), daten: aus, fehler };
 }
 
+/* ---- Einzelne Mail: anzeigen und Gelesen-Zeichen setzen (nur auf Klick der Lehrkraft) ---- */
+async function isdKonto(o) {
+  const html = await isdHolen(o, "/iserv/mail", true);
+  const m = html.match(/<script id="php-data" type="application\/json">([\s\S]*?)<\/script>/);
+  let konto = null; try { konto = Object.keys(JSON.parse(m[1]).accounts.valid)[0]; } catch (e) {}
+  if (!konto) throw new IsdFehler("antwort", "Das Mailkonto wurde auf der IServ-Mailseite nicht gefunden.");
+  return konto;
+}
+const ISD_MB = /^[A-Za-z0-9+/=_-]{1,200}$/;
+// Die einzige schreibende Anfrage des Helfers an IServ: Gelesen-Zeichen einer Mail setzen oder zurücknehmen
+async function isdGelesen(o, konto, mb, uid, gelesen) {
+  if (!ISD_MB.test(mb) || !Number.isInteger(uid) || uid < 0) throw new IsdFehler("intern", "Ungültige Mail-Kennung.");
+  let r;
+  try {
+    r = await fetch(o + "/iserv/mail/api/v2/account/" + encodeURIComponent(konto) + "/message", { method: "PATCH", credentials: "include", cache: "no-store",
+      headers: { Accept: "application/json", "Content-Type": "application/json", "X-ISERV-CSRF-PROTECTION": "yes pls" },
+      body: JSON.stringify({ patch: { read: gelesen === true }, messages: { [mb]: [uid] } }) });
+  } catch (e) { throw new IsdFehler("netz", "IServ ist gerade nicht erreichbar."); }
+  if (r.status === 401 || r.status === 403) throw new IsdFehler("abgemeldet", "IServ hat die Änderung abgelehnt. Bitte bei IServ anmelden und noch einmal versuchen.");
+  if (!r.ok) throw new IsdFehler("antwort", "IServ antwortet mit " + r.status + ".");
+  return true;
+}
+const isdHtmlText = h => String(h || "").replace(/<(style|script)[\s\S]*?<\/\1>/gi, " ").replace(/<br\s*\/?>|<\/(p|div|li|tr|h\d)>/gi, "\n").replace(/<[^>]+>/g, " ")
+  .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, "&");
+async function isdMail(o, m) {
+  const mb = String(m.mb || ""), uid = Number(m.uid);
+  if (!ISD_MB.test(mb) || !Number.isInteger(uid) || uid < 0) throw new IsdFehler("intern", "Ungültige Mail-Kennung.");
+  const konto = await isdKonto(o);
+  if (m.op === "gelesen" || m.op === "ungelesen") { await isdGelesen(o, konto, mb, uid, m.op === "gelesen"); return { ok: true }; }
+  if (m.op === "antworten") {
+    // Öffnet die Mail in IServ in einem neuen Tab, dort antwortet die Lehrkraft selbst. Der Helfer schreibt und sendet keine Mail.
+    let ordner = ""; try { ordner = atob(mb.replace(/-/g, "+").replace(/_/g, "/")); } catch (e) {}
+    if (!ordner || /[\u0000-\u001f]/.test(ordner)) throw new IsdFehler("intern", "Der Ordner der Mail ist unbekannt.");
+    await chrome.tabs.create({ url: o + "/iserv/mail/" + encodeURIComponent(konto) + "/" + encodeURIComponent(ordner) + "/" + uid });
+    return { ok: true };
+  }
+  if (m.op !== "zeigen") throw new IsdFehler("intern", "Unbekannter Auftrag.");
+  const j = await isdHolen(o, "/iserv/mail/api/v2/account/" + encodeURIComponent(konto) + "/mailbox/" + encodeURIComponent(mb) + "/message/" + uid);
+  // IServ markiert die Mail beim Abruf als gelesen. Angezeigt heißt hier noch nicht erledigt: sofort wieder auf ungelesen setzen.
+  let zurueck = true; try { await isdGelesen(o, konto, mb, uid, false); } catch (e) { zurueck = false; }
+  const c = (j && j.content) || {};
+  let text = (c.plain || []).map(x => (x && x.content) || "").join("\n").trim();
+  if (!text) text = isdHtmlText((c.rich || []).map(x => (x && x.content) || "").join("\n"));
+  text = text.replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  const lang = text.length > 6000; if (lang) text = text.slice(0, 6000);
+  const anhaenge = ((j && j.attachments) || []).length;
+  if (m.namen === true) return { ok: true, text, gekuerzt: lang, anhaenge, ungelesen: zurueck };
+  const N = await isdNamen();
+  const aus = isdErsetzen(text, N);
+  return { ok: true, text: aus, gekuerzt: lang, anhaenge, ungelesen: zurueck };
+}
+
 if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) chrome.runtime.onMessage.addListener((m, sender, antwort) => {
-  if (!m || m.cmd !== "is-direkt") return;
+  if (!m || (m.cmd !== "is-direkt" && m.cmd !== "is-mail")) return;
   if (!sender || !String(sender.url || "").startsWith(chrome.runtime.getURL(""))) { antwort({ ok: false, art: "intern", fehler: "Nur von der Startseite aus." }); return; }
   const o = String(m.host || "").replace(/\/+$/, "");
   const teile = (Array.isArray(m.teile) ? m.teile : []).filter(x => ["mail", "krank", "antraege"].includes(x));
   if (!ISD_HOST.test(o)) { antwort({ ok: false, art: "adresse", fehler: "Die IServ-Adresse fehlt oder passt nicht (https://deine-schule.de)." }); return; }
+  if (m.cmd === "is-mail") { isdMail(o, m).then(antwort).catch(e => antwort({ ok: false, art: e.art || "fehler", fehler: String((e && e.message) || e) })); return true; }
   if (!teile.length) { antwort({ ok: true, stand: Date.now(), daten: {}, fehler: {} }); return; }
   isdLesen(o, teile, m.namen === true).then(antwort).catch(e => antwort({ ok: false, art: e.art || "fehler", fehler: String((e && e.message) || e) }));
   return true;
