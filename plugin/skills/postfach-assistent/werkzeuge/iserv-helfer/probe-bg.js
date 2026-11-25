@@ -325,7 +325,11 @@ async function prRundgang(zurueckTab) {
     if (z.leb) {
       // LEB-online verträgt nur eine Anmeldung: den schon offenen Tab benutzen, nie einen zweiten öffnen
       let lebTab = null;
-      try { lebTab = (await chrome.tabs.query({ url: z.leb + "/*" })).find(t => /\/lernstandskontrolle\//.test(t.url || "") && /[?&]sid=/.test(t.url || "")) || null; } catch (e) {}
+      let lebTabs = [];
+      try { lebTabs = await chrome.tabs.query({ url: z.leb + "/*" }); } catch (e) {}
+      if (!lebTabs.length) try { lebTabs = (await chrome.tabs.query({})).filter(t => String(t.url || "").startsWith(z.leb + "/")); } catch (e) {}
+      lebTabs = lebTabs.filter(t => /\/lernstandskontrolle\//i.test(t.url || ""));
+      lebTab = lebTabs.find(t => /[?&]sid=/.test(t.url || "")) || lebTabs[0] || null;                                    // am liebsten der Tab mit Sitzungskennung in der Adresse
       if (!lebTab) seiten.push({ sys: "LEB", kopf: true, links: 0, ziele: 0, aufgeklappt: 0, anmeldung: false, offen: 0, fehlt: true });
       else {
         const zurueck = lebTab.url;
@@ -509,6 +513,7 @@ async function prBefehl(m, sender) {
     const l = await chrome.storage.local.get(["saProbeBericht", "saKalHost", "saWuSeite", "saLebOrigin"]);
     return { ok: true, laeuft: !!z, seit: z ? z.zeit : 0, funde: (d.saProbeFunde || []).length, auswertung: d.saProbeLauf && Date.now() - d.saProbeLauf.zeit < 60000 ? d.saProbeLauf.text : "",
       rundgang: d.saProbeTourLauf && Date.now() - d.saProbeTourLauf.zeit < 60000 ? d.saProbeTourLauf.text : "", besucht: (d.saProbeTour || []).filter(s => !s.kopf).length,
+      tourHinweis: (d.saProbeTour || []).filter(s => s.kopf).map(s => s.fehlt ? s.sys + ": kein offener, angemeldeter Tab gefunden" : s.anmeldung ? s.sys + ": nicht angemeldet, bitte erst anmelden" : s.abbruch ? s.sys + ": abgebrochen, weil der Tab geschlossen wurde" : !s.ziele ? s.sys + ": keine Menüpunkte gefunden" : s.sys + ": " + s.ziele + " Seiten").join(" · "),
       bericht: l.saProbeBericht || null, iserv: (z && z.iserv) || prUrsprung(l.saKalHost || ""), wu: (z && z.wu) || prUrsprung(l.saWuSeite || ""), leb: z ? z.leb || "" : prUrsprung(l.saLebOrigin || "") };
   }
   if (m.op === "start") {
