@@ -49,8 +49,9 @@ Kurz fragen, nur was fehlt:
    - Je Kind zwei Varianten (knapp und ausführlicher) anbieten, wenn die Lehrkraft das möchte.
 4. **Fachlehrkraft:** Ergebnis als Liste für die Klassenleitung (Kürzel der eigenen Lerngruppe, Stufe AV, Stufe SV, Stichwort). Die Klassenleitung kennt andere Kürzel oder Namen; die Zuordnung macht die Lehrkraft beim Übertragen lokal.
 5. **Klassenleitung:** Lädt die Lehrkraft die pseudonymisierten Vorschläge der Kolleginnen und Kollegen hoch (über **dokument-analyse**), daraus eine Sammeltabelle Kürzel × Fach mit AV/SV. Markieren: weit auseinanderliegende Einschätzungen (zwei Stufen und mehr), fehlende Rückmeldungen, Kinder mit D/E in mehreren Fächern. Vorschlag für die Konferenz je Kind, als offen.
-6. Ausgabe: **Serienbrief-Tabelle** (.xlsx) mit Spalten `Kuerzel | AV | SV | Bemerkung` plus Blatt `Klassenliste` und Word-Vorlage nach lernstandsakte, Abschnitt 6. Für Einzeltexte reicht der Rückweg im **Pseudonymisierer**.
-7. Nach Festlegung (Lehrkraft oder Konferenz) in die Akte: `Datum | Beleg | ASV HJ 1: AV B, SV A; Bemerkung übernommen | Quelle: Zeugniskonferenz <Datum> | bestätigt`.
+6. Wird die **Liste für LEB-online** verlangt (Schulassistenz-Helfer füllt damit das Formular „Klassenbewertung“ vor, die Lehrkraft speichert selbst): eine Zeile je Kind in einem Codeblock, nur Kürzel, genau so: `I07 | AV: b | SV: c | AV-Bemerkung: Zusatz | SV-Bemerkung: Zusatz | Zeugnis: Bemerkung`. Stufen als Kleinbuchstaben a bis e. Den Standardsatz der Stufe setzt der Helfer aus der Auswahlliste der Schule davor, deshalb nur den Zusatz schreiben (ganze Sätze, das Kürzel an der Stelle des Vornamens, kein Zeichen `|` im Text). Felder ohne Vorschlag weglassen.
+7. Ausgabe: **Serienbrief-Tabelle** (.xlsx) mit Spalten `Kuerzel | AV | SV | Bemerkung` plus Blatt `Klassenliste` und Word-Vorlage nach lernstandsakte, Abschnitt 6. Für Einzeltexte reicht der Rückweg im **Pseudonymisierer**.
+8. Nach Festlegung (Lehrkraft oder Konferenz) in die Akte: `Datum | Beleg | ASV HJ 1: AV B, SV A; Bemerkung übernommen | Quelle: Zeugniskonferenz <Datum> | bestätigt`.
 
 ## 4. Konferenz vorbereiten (Klassenleitung/Tutor)
 
