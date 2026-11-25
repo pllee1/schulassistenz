@@ -82,6 +82,14 @@ Die WebUntis-Adresse deiner Schule nimmt der Helfer aus dem Stundenplan-Link. Fe
 
 Der Helfer liest nur: Er ruft ausschließlich die vier Abfragen auf, die auch WebUntis selbst für diese Seiten benutzt, und ändert nichts. Namen von Schüler:innen und Lehrkräften übernimmt er nicht (bei Prüfungen nur die Anzahl). Die Daten stehen nur im geöffneten Tab, werden nicht gespeichert und gehen nicht an Claude. Fehlzeiten kommen weiter über den Export (nächster Abschnitt), weil dort Namen stehen, die die Startseite erst durch Kürzel ersetzt.
 
+## Lehrstoff aus der Live-Beobachtung in WebUntis eintragen (ab 0.37)
+
+Das ist die einzige Stelle, an der der Helfer in WebUntis schreibt. Eigener Schalter unter ⚙ „Einrichtung & Daten“ › „WebUntis direkt lesen“ › „In WebUntis eintragen“, anfangs aus.
+
+Ist er an, steht im Kopf der Live-Beobachtung der Knopf **Lehrstoff**. Der Helfer liest deine Stunden von heute, wählt die laufende vor (änderbar) und zeigt, was dort schon eingetragen ist. Du schreibst den Text, klickst „Vorschau“ und siehst genau, was bei welcher Stunde eingetragen wird. Erst „Jetzt in WebUntis eintragen“ schreibt. Danach liest der Helfer den Eintrag zur Kontrolle zurück. Bei einer Doppelstunde bekommen beide Stunden denselben Text.
+
+Grenzen: nur eigene Stunden von heute, nur der Lehrstoff (keine Abwesenheiten, keine Hausaufgaben), höchstens 1000 Zeichen. Hängen an der Stunde Dateien oder lässt WebUntis den Eintrag nicht zu, trägt der Helfer nichts ein. Bitte keine Namen von Schüler:innen in den Lehrstoff schreiben.
+
 ## IServ direkt lesen (ab 0.35, Mails anzeigen und abhaken ab 0.36)
 
 Wie bei WebUntis kann die Startseite auf „Heute“ einen Kasten **IServ** zeigen. Drei Bereiche, jeder mit eigenem Schalter unter ⚙ „Einrichtung & Daten“ › „IServ direkt lesen“, anfangs alles aus:
