@@ -46,7 +46,7 @@ function zeigen(s) {
   $("#iserv").disabled = $("#wu").disabled = $("#leb").disabled = s.laeuft || wertet;
   $("#fertig").disabled = $("#abbruch").disabled = !s.laeuft || tour;
   $("#rundgang").disabled = !s.laeuft || tour;
-  $("#tourInfo").textContent = tour ? s.rundgang + " …" : s.besucht ? "Rundgang fertig: " + s.besucht + " Seiten besucht. Jetzt „Beenden und auswerten“." : "";
+  $("#tourInfo").textContent = tour ? s.rundgang + " …" : s.tourHinweis ? "Rundgang fertig. " + s.tourHinweis + "." + (s.besucht ? " Jetzt „Beenden und auswerten“." : "") : "";
   $("#wuAuf").disabled = !s.laeuft || !ziel.wu; $("#iservAuf").disabled = !s.laeuft || !ziel.iserv;
   $("#zahl").textContent = s.funde || 0;
   $("#lauf").textContent = wertet ? "Auswertung läuft: " + s.auswertung + " …" : s.laeuft ? "Aufzeichnung läuft seit " + new Date(s.seit).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr." : "";
