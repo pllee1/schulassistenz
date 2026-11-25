@@ -82,6 +82,10 @@ Die WebUntis-Adresse deiner Schule nimmt der Helfer aus dem Stundenplan-Link. Fe
 
 Der Helfer liest nur: Er ruft ausschließlich die vier Abfragen auf, die auch WebUntis selbst für diese Seiten benutzt, und ändert nichts. Namen von Schüler:innen und Lehrkräften übernimmt er nicht (bei Prüfungen nur die Anzahl). Die Daten stehen nur im geöffneten Tab, werden nicht gespeichert und gehen nicht an Claude. Fehlzeiten kommen weiter über den Export (nächster Abschnitt), weil dort Namen stehen, die die Startseite erst durch Kürzel ersetzt.
 
+## LEB-online, Klassenbewertung: Textbausteine ablesen (ab 0.34, einmalig)
+
+Vorstufe für „Claude schlägt Bemerkungen zum Arbeits- und Sozialverhalten vor, der Helfer füllt vor“. Öffnest du in LEB-online unter Klassenbewertungen das Bewertungsformular eines Kindes, erscheint unten rechts ein Kasten „Textbausteine ablesen“. Ein Klick zeigt den Aufbau des Formulars (Feldnamen, Feldarten) und die Auswahllisten der Textbausteine. Eingetragene Werte liest der Helfer nicht, Überschriften macht er unkenntlich, und der Text läuft zusätzlich durch deine Kürzelliste. Er klickt nichts, ruft nichts auf und speichert nichts. Den Text kopierst du selbst und gibst ihn an Claude.
+
 ## Was die Erweiterung ersetzt
 
 - Alle Namen aus der Kürzelliste (auch „Nachname, Vorname“ und Teile von Doppelnamen) und deinen eigenen Namen.
