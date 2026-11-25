@@ -68,6 +68,19 @@ Für die Fehlzeiten-Ampel der Startseite. WebUntis erzeugt jeden Bericht beim Kl
 
 Der Ordner heißt weiter `iserv-helfer`, damit dein Browser die Erweiterung beim Update wiederfindet.
 
+## WebUntis direkt lesen (ab 0.32)
+
+Die Startseite kann auf „Heute“ einen Kasten **WebUntis** zeigen. Der Helfer liest dafür über deine Anmeldung im Browser, was WebUntis dir selbst anzeigt. Vier Bereiche, jeder mit eigenem Schalter unter ⚙ „Einrichtung & Daten“ › „WebUntis direkt lesen“. Anfangs ist alles aus, und solange alles aus ist, fragt der Helfer WebUntis nicht ab.
+
+- **Änderungen im Stundenplan:** Vertretung, Entfall, Raumwechsel, verlegte und zusätzliche Stunden, Aufsichten (diese und nächste Woche).
+- **Prüfungen:** eingetragene Klassenarbeiten und Klausuren deiner Lerngruppen (sechs Wochen voraus).
+- **Hausaufgaben:** deine eigenen Einträge und, als Klassenleitung, die Hausaufgaben aller Fächer deiner Klasse (fällig ab heute).
+- **Offene Klassenbuch-Stunden:** Stunden der letzten sechs Wochen, in denen Anwesenheitskontrolle oder Lehrstoff fehlen.
+
+Die WebUntis-Adresse deiner Schule nimmt der Helfer aus dem Stundenplan-Link. Fehlt der, trägst du sie neben den Schaltern ein (https://deine-schule.webuntis.com). Bist du bei WebUntis abgemeldet, zeigt der Kasten einen Knopf zum Anmelden. Dein Passwort sieht der Helfer nie.
+
+Der Helfer liest nur: Er ruft ausschließlich die vier Abfragen auf, die auch WebUntis selbst für diese Seiten benutzt, und ändert nichts. Namen von Schüler:innen und Lehrkräften übernimmt er nicht (bei Prüfungen nur die Anzahl). Die Daten stehen nur im geöffneten Tab, werden nicht gespeichert und gehen nicht an Claude. Fehlzeiten kommen weiter über den Export (nächster Abschnitt), weil dort Namen stehen, die die Startseite erst durch Kürzel ersetzt.
+
 ## Was die Erweiterung ersetzt
 
 - Alle Namen aus der Kürzelliste (auch „Nachname, Vorname“ und Teile von Doppelnamen) und deinen eigenen Namen.
