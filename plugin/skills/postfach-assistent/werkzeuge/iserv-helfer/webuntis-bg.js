@@ -2,7 +2,7 @@
    Liest über die Anmeldung im Browser, was WebUntis der Lehrkraft selbst anzeigt: Stundenplan mit Vertretungen, Prüfungen,
    Hausaufgaben und offene Klassenbuch-Stunden. Für die Startseite, je Bereich einzeln schaltbar (anfangs alles aus).
    - Lesen: Es werden ausschließlich die unten aufgeführten Abfrage-Adressen aufgerufen (WUD_WEGE).
-   - Ab 0.37 eine einzige schreibende Anfrage, eigener Schalter (anfangs aus): den Lehrstoff einer eigenen Stunde von heute eintragen
+   - Ab 0.38 eine einzige schreibende Anfrage, eigener Schalter (anfangs aus): den Lehrstoff einer eigenen Stunde von heute eintragen
      (wudStoffSchreiben). Nur nach Vorschau und Klick der Lehrkraft in der Live-Beobachtung. Sonst wird in WebUntis nichts geändert.
    - Nur von Seiten des Helfers aus aufrufbar, nur für Adressen der Form https://<schule>.webuntis.com.
    - Namen von Schüler:innen und Lehrkräften werden hier verworfen und nie weitergegeben. Freitexte (z. B. Vertretungstext) bleiben
@@ -134,7 +134,7 @@ async function wudLesen(o, teile) {
   });
   return { ok: true, stand: Date.now(), daten: aus, fehler };
 }
-/* ---- Lehrstoff (ab 0.37): eigene Stunden von heute lesen und, nach Vorschau und Klick der Lehrkraft, den Lehrstoff eintragen ---- */
+/* ---- Lehrstoff (ab 0.38): eigene Stunden von heute lesen und, nach Vorschau und Klick der Lehrkraft, den Lehrstoff eintragen ---- */
 const WUD_STOFF_MAX = 1000;
 async function wudStunden(o, t, pid) {
   const heute = new Date(); heute.setHours(12, 0, 0, 0); const iso = wudIso(heute);

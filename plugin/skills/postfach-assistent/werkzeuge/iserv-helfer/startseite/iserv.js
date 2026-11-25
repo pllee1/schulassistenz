@@ -1,4 +1,4 @@
-/* Schulassistenz-Startseite · IServ direkt lesen (ab Helfer 0.35; Mail anzeigen und als gelesen markieren ab 0.36)
+/* Schulassistenz-Startseite · IServ direkt lesen (ab Helfer 0.35; Mail anzeigen und als gelesen markieren ab 0.38)
    Zeigt auf „Heute“, was der Helfer über deine Anmeldung aus IServ liest: ungelesene Mails, heutige Krankmeldungen deiner
    Schüler:innen und offene Anträge. Jeder Bereich hat einen eigenen Schalter (Einrichtung & Daten), anfangs ist alles aus.
    Lesend, mit einer Ausnahme: Der Haken an einer Mail markiert sie in IServ als gelesen (rücknehmbar). Der Helfer liefert Kürzel; Namen nur, solange im Kasten „Namen zeigen“ eingeschaltet ist. Die Daten bleiben in dieser Seite (kein Speichern, nichts geht an Claude). */

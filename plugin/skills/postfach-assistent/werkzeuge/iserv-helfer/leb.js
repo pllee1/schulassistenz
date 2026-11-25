@@ -434,5 +434,27 @@
     if ($("#neu")) $("#neu").addEventListener("click", () => location.reload());
   }
 
+  // Stand in LEB-online für die Notenübersicht merken: welche Leistungsüberprüfungen es gibt und wie viele Noten eingetragen sind.
+  // Liest nur Bezeichnung, Datum, Art und zählt gewählte Noten; Namen werden nicht übertragen.
+  async function standMelden() {
+    if (!istListeL || !sid || !bereich) return;
+    const gid = U.searchParams.get(gParam(bereich)); if (!gid) return;
+    const zeilen = tabelleZeilen(document); const liste = [];
+    for (const z of zeilen.slice(0, 40)) {
+      const e = { bez: z.bezeichnung, datum: z.datum, art: /schrift/i.test(z.art) ? 2 : /m(ü|ue)ndl|fachspez/i.test(z.art) ? 1 : 0, noten: null, von: null };
+      try {
+        const url = `bewertungsform.php?sid=${encodeURIComponent(sid)}&${gParam(bereich)}=${encodeURIComponent(gid)}&${bereich === "kurse" ? "leistungen_kurse_id" : "leistungen_id"}=${encodeURIComponent(z.id)}`;
+        const buf = await fetch(new URL(url, location.href), { credentials: "include" }).then(r => r.arrayBuffer());
+        const html = (() => { try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); } catch { return new TextDecoder("windows-1252").decode(buf); } })();
+        const d = new DOMParser().parseFromString(html, "text/html");
+        const sels = [...d.querySelectorAll('select[name^="note["]')];
+        if (sels.length) { e.von = sels.length; e.noten = sels.filter(s => { const o = s.querySelector("option[selected]"); const v = o ? parseInt(o.value, 10) : NaN; return v >= 1 && v <= 6; }).length; }
+      } catch { }
+      liste.push(e);
+    }
+    try { await chrome.runtime.sendMessage({ cmd: "leb-stand", bereich, id: gid, liste }); } catch { }
+  }
+  if (istListeL && !window.opener) standMelden();
+
   (istListeG ? listeGruppen() : istListeL ? listeLeistungen() : istBewerten ? bewerten() : anlegen()).catch(e => zeigen(`<div class="warn">Fehler: ${esc(e && e.message || e)}</div>`));
 })();

@@ -1,7 +1,7 @@
 /* Schulassistenz-Startseite · WebUntis direkt lesen (ab Helfer 0.32)
    Zeigt auf „Heute“, was der Helfer über deine Anmeldung aus WebUntis liest: Änderungen im Stundenplan, Prüfungen,
    Hausaufgaben und offene Klassenbuch-Stunden. Jeder Bereich hat einen eigenen Schalter (Einrichtung & Daten), anfangs ist alles aus.
-   Lesend, mit einer Ausnahme (ab 0.37, eigener Schalter, anfangs aus): Aus der Live-Beobachtung trägt der Helfer nach Vorschau und Klick
+   Lesend, mit einer Ausnahme (ab 0.38, eigener Schalter, anfangs aus): Aus der Live-Beobachtung trägt der Helfer nach Vorschau und Klick
    den Lehrstoff der Stunde in WebUntis ein. Die Daten bleiben in dieser Seite (kein Speichern, nichts geht an Claude). Namen von Personen liefert der Helfer nicht mit. */
 (() => {
   const TEILE = [
@@ -119,7 +119,7 @@
     feld.addEventListener("change", async () => { const v = hostAus(feld.value.trim()); store.set("wu-host", v); if (!v) await einstZeichnen(); holen(); });
   }
 
-  /* ---- Lehrstoff aus der Live-Beobachtung in WebUntis eintragen (ab 0.37) ----
+  /* ---- Lehrstoff aus der Live-Beobachtung in WebUntis eintragen (ab 0.38) ----
      Ablauf: Knopf „Lehrstoff“ im Kopf der Live-Beobachtung → Stunde wählen, Text schreiben → Vorschau → erst „Jetzt in WebUntis eintragen“ schreibt. */
   const stoffAn = () => (store.get("wu-schreiben", {}) || {}).stoff === true;
   const raster = $("#raster");

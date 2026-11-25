@@ -2191,15 +2191,21 @@ async function zeigeNoten(gidStart,opt){
         <div class="actions"><button class="btn primary small" id="na-ok">Übernehmen</button><button class="btn ghost small" id="ne-zu">Abbrechen</button></div></div>`}
     // Nach LEB-online: Quelle wählen, Vorschau, Paket für den Helfer bereitlegen
     const lebQ=lebQuellen(daten,kaSp,kaVon,gilt);
+    let lebStand=null;try{if(window.chrome&&chrome.storage&&chrome.storage.local)lebStand=((await chrome.storage.local.get("saLebStand")).saLebStand||{})[gid]||null}catch{}
+    const bzN=t=>String(t||"").toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/klausur|klassenarbeit|\bka\b/g,"ka").replace(/\b(nr|nummer)\b/g,"").replace(/[^a-z0-9]+/g," ").trim();
+    const inLeb=q=>{if(!lebStand)return null;const b=q.id==="mm"?null:bzN(q.titel);return b?lebStand.liste.find(e=>bzN(e.bez)===b)||null:null};
+    const lebStandHTML=lebStand&&lebStand.liste.length?`<div class="note n-lebstand"><strong>In LEB-online eingetragen</strong> (Stand ${esc(new Date(lebStand.zeit).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}))}): ${lebStand.liste.map(e=>`${esc(e.bez||"ohne Bezeichnung")}${e.datum?" ("+esc(e.datum)+")":""}${e.von!=null?` · ${e.noten}/${e.von} Noten`:""}`).join(" · ")}<br><span class="sub">Aktualisiert sich, sobald du in LEB-online die Leistungsüberprüfungen dieser Lerngruppe öffnest.</span></div>`:"";
     if(ed&&ed.typ==="leb"){const q=lebQ.find(x=>x.id===ed.q)||lebQ.find(x=>x.id==="mm")||lebQ[0];ed.q=q?q.id:null;
       if(q){if(ed.art==null)ed.art=q.art;if(q.id==="mm"&&!ed.von){const v=lebQuartal(sj,heuteISO());ed.von=v[0];ed.bis=v[1]}if(ed.bez==null)ed.bez=q.id==="mm"?lebMmBez(sj,ed.von):q.titel}
       const werte=q?lebWerte(q,daten,ed):{};
       const quartale=[1,2,3,4].map(n=>{const v=lebQuartal(sj,null,n);return `<option value="${v[0]}|${v[1]}"${ed.von===v[0]&&ed.bis===v[1]?" selected":""}>${n}. Quartal (${datumDE(v[0])}–${datumDE(v[1])})</option>`}).join("");
       edHTML=`<div class="n-edit"><div><strong>Nach LEB-online übertragen</strong> · ${esc(gid)}</div>
-        ${lebQ.length?`<div class="n-felder"><label>Was <select id="lb-q">${lebQ.map(x=>`<option value="${esc(x.id)}"${x.id===ed.q?" selected":""}>${esc(x.titel)}</option>`).join("")}</select></label>
+        ${lebQ.length?`<div class="n-felder"><label>Was <select id="lb-q">${lebQ.map(x=>`<option value="${esc(x.id)}"${x.id===ed.q?" selected":""}>${esc(x.titel)}${inLeb(x)?" (schon in LEB)":""}</option>`).join("")}</select></label>
         <label>Leistungsart in LEB <select id="lb-art"><option value="1"${+ed.art===1?" selected":""}>mündlich/fachspezifisch</option><option value="2"${+ed.art===2?" selected":""}>schriftlich</option></select></label>
         <label>Bezeichnung <input id="lb-bez" value="${esc(ed.bez||"")}" autocomplete="off"></label>
         ${q&&q.id==="mm"?`<label>Zeitraum <select id="lb-quartal"><option value="">eigener Zeitraum</option><option value="${sj}-08-01|${heuteISO()}"${ed.von===`${sj}-08-01`&&ed.bis===heuteISO()?" selected":""}>Schuljahresbeginn bis heute</option>${quartale}</select></label><label>von <input id="lb-von" type="date" value="${esc(ed.von)}"></label><label>bis <input id="lb-bis" type="date" value="${esc(ed.bis)}"></label>`:""}</div>
+        ${(()=>{if(!lebStand||!q)return "";const b=bzN(ed.bez||q.titel);const e=lebStand.liste.find(x=>bzN(x.bez)===b);
+          return e?`<p class="note"><strong>„${esc(e.bez)}“ steht schon in LEB-online</strong>${e.datum?" ("+esc(e.datum)+")":""}${e.von!=null?`, ${e.noten} von ${e.von} Noten eingetragen`:""}. Der Helfer legt dann nichts neu an, sondern füllt nur fehlende Noten und zeigt Abweichungen.</p>`:""})()}
         ${(()=>{const ohne=reihe.filter(k=>!(werte[k]&&werte[k].note!=null));if(!ohne.length||!q)return "";const aus=ohne.filter(k=>werte[k]&&werte[k].aussen);
           return `<p class="hinweis-warn"><strong>${ohne.length} von ${reihe.length} Kindern haben bei „${esc(q.titel)}“ keine Note</strong> (${esc(ohne.join(", "))}). Sie bleiben in LEB-online leer.${aus.length?` ${aus.length} davon haben Mitarbeitsnoten außerhalb des Zeitraums: Zeitraum prüfen.`:q.id!=="mm"&&lebQ.some(x=>x.id==="mm")?" Für die Mitarbeitsnote oben bei „Was“ die mündliche Note wählen.":""}</p>`})()}
         <div class="r-tab-wrap"><table class="r-tab n-tab"><thead><tr><th>Kürzel</th>${zeigN?"<th>Name (nur hier)</th>":""}<th>Note für LEB</th><th>aus</th></tr></thead><tbody>${reihe.map(k=>{const w=werte[k];return `<tr><td class="m">${esc(k)}</td>${zeigN?`<td>${esc(nameVon(k))}</td>`:""}<td class="m b">${w&&w.note!=null?w.note:"–"}</td><td>${w?esc(w.info):""}</td></tr>`}).join("")}</tbody></table></div>
@@ -2221,6 +2227,7 @@ async function zeigeNoten(gidStart,opt){
         ${np?"":`<button class="btn ${ed&&ed.typ==="leb"?"primary":"ghost"} small" id="n-leb" title="Noten für LEB-online bereitlegen; der Helfer trägt sie dort ein">Nach LEB-online</button>`}
         <button class="btn ghost small" id="n-druck">Drucken</button>
       </div>
+      ${lebStandHTML}
       ${meldung?`<div class="guard" id="n-guard">${esc(meldung)}</div>`:`<div class="guard" id="n-guard" hidden></div>`}
       ${aendHTML}${edHTML}
       <div class="r-tab-wrap"><table class="r-tab n-tab"><thead><tr><th>Kürzel</th>${zeigN?"<th>Name (nur hier)</th>":""}<th>Mitarbeit</th>${hatTests?"<th>Tests/sonst.</th>":""}<th>Ø mündl./sonst.</th>${kaSp.map(x=>`<th>Klausur ${esc(x)}</th>`).join("")}<th>Ø schriftl.</th><th>Zeugnis (Vorschlag)</th>${bearb?"<th></th>":""}</tr></thead>

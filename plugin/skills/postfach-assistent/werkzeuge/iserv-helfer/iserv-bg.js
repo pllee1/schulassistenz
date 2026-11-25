@@ -3,7 +3,7 @@
    Für die Startseite, je Bereich einzeln schaltbar (anfangs alles aus).
    - Lesen: ausschließlich GET auf die unten aufgeführten Adressen (ISD_WEGE). Der Kasten liest nur die Liste der Mails;
      der Ungelesen-Zähler bleibt dadurch unverändert (am 25.11.2026 geprüft).
-   - Ab 0.36 auf ausdrücklichen Klick der Lehrkraft: eine Mail anzeigen (IServ markiert sie dabei als gelesen, der Helfer setzt sie
+   - Ab 0.38 auf ausdrücklichen Klick der Lehrkraft: eine Mail anzeigen (IServ markiert sie dabei als gelesen, der Helfer setzt sie
      sofort wieder auf ungelesen) und per Haken als gelesen markieren. Das ist das Einzige, was der Helfer in IServ ändert:
      das Gelesen-Zeichen einzelner Mails (isdGelesen, feste Adresse und fester Aufbau der Anfrage). Er löscht, verschiebt und sendet nichts.
      „Antworten“ öffnet die Mail nur in IServ, geschrieben und gesendet wird dort von der Lehrkraft.
