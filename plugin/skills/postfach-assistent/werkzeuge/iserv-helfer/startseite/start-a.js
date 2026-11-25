@@ -1769,7 +1769,7 @@ function kinderListe(){
 }
 const anzeigeName=k=>{const n=R.namen[k];if(!n||!R.namenZeigen)return "";return [n.vor,n.nach?n.nach[0]+".":""].filter(Boolean).join(" ")};
 const symKnopf=([k,st,c],i,kind)=>`<button class="sym ${c}${k==="MM"&&R.skala==="np"?" eng":""}" data-i="${i}"${kind?` data-k="${esc(kind)}"`:""} title="${k==="!"?"Auffälligkeit, später ergänzen":k==="*"?"besondere Stärke oder Fortschritt":k==="MM"?"mündliche Mitarbeit ("+SKALEN[R.skala].name+")":k==="AV"?"Arbeitsverhalten":"Sozialverhalten"}">${esc(k==="MM"?st:symText(k,st))}</button>`;
-const chipHTML=i=>{const e=R.eintraege[i];return `<span class="r-chip${R.ersetze===i?" aktiv":""}"><button class="r-chip-w" data-i="${i}" title="Antippen und dann ein neues Symbol wählen, um diesen Eintrag zu ersetzen">${esc(symText(e.kat,e.st,e.sk,e.art))}${e.text?` <small>${esc(e.text.slice(0,40))}</small>`:""}</button><button class="r-chip-x" data-x="${i}" aria-label="Eintrag ${esc(symText(e.kat,e.st,e.sk,e.art))} löschen" title="Löschen">✕</button></span>`};
+const chipHTML=i=>{const e=R.eintraege[i];return `<span class="r-chip${R.ersetze===i?" aktiv":""}"><button class="r-chip-w" data-i="${i}" title="Antippen und dann ein neues Symbol wählen, um diesen Eintrag zu ersetzen">${esc(symText(e.kat,e.st,e.sk,e.art))}${e.text?` <small>${esc(e.text)}</small>`:""}</button><button class="r-chip-x" data-x="${i}" aria-label="Eintrag ${esc(symText(e.kat,e.st,e.sk,e.art))} löschen" title="Löschen">✕</button></span>`};
 function rasterNotizFeld(k){return R.ansicht==="liste"&&!R.anordnen?[...document.querySelectorAll("#r-kinder .r-notiz2")].find(x=>x.dataset.k===k):$("#r-notiz")}
 function rasterNotizBestaetigen(k){
   if(abwesend(k))return abwesendHinweis(k);
@@ -1988,14 +1988,16 @@ function notizPruefen(t){
 }
 function rasterUebersicht(){
   const sec=$("#raster");
-  const zeilen=R.eintraege.map((e,i)=>`<tr class="${e.kat==="!"&&!e.text?"fehlt":""}"><td class="m">${esc(e.zeit)}</td><td class="m">${esc(e.k)}</td><td>${esc(anzeigeName(e.k))}</td><td class="m">${esc(e.kat==="A"||e.kat==="NO"?symText(e.kat,e.st,e.sk,e.art):e.kat==="N"?"Notiz":e.kat==="!"?"!":e.kat==="*"?"*":e.kat==="MM"?"MM "+mmText(e.st,e.sk):e.kat+" "+e.st)}</td><td><input data-i="${i}" value="${esc(e.text)}" placeholder="${e.kat==="!"?"Bitte beobachtbar beschreiben":"Situation (optional)"}"></td><td><button class="btn ghost small" data-weg="${i}" aria-label="Eintrag löschen">✕</button></td></tr>`).join("");
+  const zeilen=R.eintraege.map((e,i)=>`<tr class="${e.kat==="!"&&!e.text?"fehlt":""}"><td class="m">${esc(e.zeit)}</td><td class="m">${esc(e.k)}</td><td>${esc(anzeigeName(e.k))}</td><td class="m">${esc(e.kat==="A"||e.kat==="NO"?symText(e.kat,e.st,e.sk,e.art):e.kat==="N"?"Notiz":e.kat==="!"?"!":e.kat==="*"?"*":e.kat==="MM"?"MM "+mmText(e.st,e.sk):e.kat+" "+e.st)}</td><td class="r-sit"><textarea data-i="${i}" rows="1" placeholder="${e.kat==="!"?"Bitte beobachtbar beschreiben":e.kat==="N"?"Notiz":"Situation (optional)"}">${esc(e.text)}</textarea></td><td><button class="btn ghost small" data-weg="${i}" aria-label="Eintrag löschen">✕</button></td></tr>`).join("");
   sec.innerHTML=`<div class="r-kopf"><h2>${esc(R.gid)} · Freigabe</h2><span class="uhr">${R.eintraege.length} Einträge</span><span class="sp"></span><button class="btn ghost small" id="r-zurueck">Zurück zur Beobachtung</button></div>
     ${R.eintraege.length?`<div class="r-tab-wrap"><table class="r-tab"><thead><tr><th>Zeit</th><th>Kürzel</th><th>Name (nur hier)</th><th>Was</th><th>Situation</th><th></th></tr></thead><tbody>${zeilen}</tbody></table></div>`:`<p>Keine Einträge in dieser Stunde.</p>`}
     <div class="guard" id="r-guard" hidden></div>
     <p class="note">Gespeichert wird je Kind in der Akte, nur mit Kürzel: mündliche Mitarbeit (als ${esc(SKALEN[R.skala].name)}) und Noten (Test, Abfrage, Referat …) unter „Leistungen“, AV, SV, !, *, Notizen und Anwesenheit (krank, fehlt, zu spät) unter „Arbeits- und Sozialverhalten“. Nur Beobachtbares, keine Deutungen oder Diagnosen.</p>
     ${(()=>{const a=R.eintraege.filter(e=>e.kat==="A");return a.length?`<p class="note"><strong>Fehlzeiten bitte auch ins Klassenbuch bzw. die Schulsoftware eintragen:</strong> ${a.map(e=>esc(e.k)+" "+esc(symText(e.kat,e.st,e.sk,e.art))).join(", ")}</p>`:""})()}
     <div class="actions"><button class="btn primary" id="r-speichern"${R.eintraege.length?"":" disabled"}>Freigeben und in Akten speichern</button><button class="btn ghost" id="r-verwerfen">Verwerfen</button><span class="toast" id="r-toast" role="status"></span></div>`;
-  sec.querySelectorAll("input[data-i]").forEach(inp=>inp.addEventListener("input",()=>{R.eintraege[+inp.dataset.i].text=inp.value.trim();rasterSpeichernEntwurf()}));
+  const hoch=t=>{t.style.height="auto";t.style.height=t.scrollHeight+2+"px"};
+  sec.querySelectorAll("textarea[data-i]").forEach(inp=>{hoch(inp);inp.addEventListener("input",()=>{hoch(inp);R.eintraege[+inp.dataset.i].text=inp.value.replace(/\s*\n\s*/g," ").trim();rasterSpeichernEntwurf()});
+    inp.addEventListener("keydown",ev=>{if(ev.key==="Enter"&&!ev.shiftKey)ev.preventDefault()})});
   sec.querySelectorAll("[data-weg]").forEach(b=>b.addEventListener("click",()=>{R.eintraege.splice(+b.dataset.weg,1);rasterSpeichernEntwurf();rasterUebersicht()}));
   $("#r-zurueck").addEventListener("click",()=>{R.ende=false;rasterZeichnen()});
   $("#r-verwerfen").addEventListener("click",()=>{if($("#r-verwerfen").dataset.sicher!=="1"){$("#r-verwerfen").dataset.sicher="1";$("#r-verwerfen").textContent="Wirklich verwerfen?";return}

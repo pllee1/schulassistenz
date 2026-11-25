@@ -155,7 +155,8 @@ footer{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 1
 .r-chip.aktiv{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
 .r-chip button{all:unset;cursor:pointer;padding:5px 9px;font-family:var(--f-mono);font-size:13px}
 .r-chip .r-chip-x{border-left:1px solid var(--line);color:var(--muted);padding:5px 8px}.r-chip .r-chip-x:hover{color:var(--err);background:var(--err-soft)}
-.r-chip small{font-family:var(--f-body);color:var(--muted)}
+.r-chip small{font-family:var(--f-body);color:var(--muted);white-space:normal;overflow-wrap:anywhere}
+.r-chip{max-width:100%}.r-chip .r-chip-w{white-space:normal}
 .r-meine .r-tipp{color:var(--muted);font-size:12px}
 .kind .e{font-family:var(--f-mono);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
 .kind.ziehen{cursor:grab}
@@ -213,6 +214,9 @@ footer{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 1
 .r-tab th,.r-tab td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
 .r-tab td.m{font-family:var(--f-mono)}
 .r-tab input{width:100%;padding:4px 6px;font-size:13.5px}
+.r-tab td.r-sit{min-width:240px;width:45%}
+.r-tab textarea{display:block;width:100%;box-sizing:border-box;padding:4px 6px;font:inherit;font-size:13.5px;line-height:1.4;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.r-tab textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
 .r-tab tr.fehlt td{background:var(--warn-soft)}
 .r-tab-wrap{overflow-x:auto}
 .kl-tab td{vertical-align:middle}
