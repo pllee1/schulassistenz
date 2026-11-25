@@ -506,3 +506,5 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
 
 /* Schnittstellen-Probe (ab 0.29): eigener Baustein, siehe probe-bg.js */
 importScripts("probe-bg.js");
+/* WebUntis direkt lesen (ab 0.32): eigener Baustein, siehe webuntis-bg.js */
+importScripts("webuntis-bg.js");
