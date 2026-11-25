@@ -4,7 +4,8 @@
    - Nur lesend: ausschließlich GET auf die unten aufgeführten Adressen (ISD_WEGE). Es wird nur die Liste der Mails gelesen,
      nie eine einzelne Mail geöffnet. Der Ungelesen-Zähler bleibt dadurch unverändert (am 25.11.2026 geprüft).
    - Nur von Seiten des Helfers aus aufrufbar.
-   - Klarnamen verlassen diesen Baustein nicht: Absender und Betreff werden hier mit der Kürzelliste ersetzt (unbekannte Absender
+   - Klarnamen verlassen diesen Baustein nur, wenn die Lehrkraft im Kasten „Namen zeigen“ einschaltet (dann zusätzlich zu den Kürzeln,
+     nur für die Anzeige in der Startseite dieses Browsers). Sonst gilt: Absender und Betreff werden hier mit der Kürzelliste ersetzt (unbekannte Absender
      bekommen wie im Helfer-Fenster P1, P2 …), Krankmeldungen werden nur für Kinder aus deinen Kürzellisten weitergegeben, als Kürzel.
      Die Notiz einer Krankmeldung (kann Gesundheitsangaben enthalten) wird nie gelesen. */
 try { if (typeof SAPseudo === "undefined") importScripts("pseudo.js"); } catch (e) {}
@@ -57,7 +58,7 @@ function isdPerson(name, N, neuErlaubt) {
 }
 
 const isdIso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-async function isdLesen(o, teile) {
+async function isdLesen(o, teile, namen) {
   const N = await isdNamen();
   const aus = {}, fehler = {};
   const teil = async (name, f) => { if (!teile.includes(name)) return; try { aus[name] = await f(); } catch (e) { if (e.art === "abgemeldet" || e.art === "netz") throw e; fehler[name] = String(e.message || e); } };
@@ -73,10 +74,11 @@ async function isdLesen(o, teile) {
     let briefe = null; try { const b = await isdHolen(o, "/iserv/app/navigation/badges"); if (typeof b.parentletter === "number") briefe = b.parentletter; } catch (e) { if (e.art === "abgemeldet" || e.art === "netz") throw e; }
     let liste = [];
     if (inbox.unreadCount > 0) {
-      const l = await isdHolen(o, basis + "/message?flag%5Bseen%5D=false&limit=8&offset=0&order=desc&sort=date&mailbox%5B%5D=" + encodeURIComponent(inbox.mailboxId));
+      const l = await isdHolen(o, basis + "/message?flag%5Bseen%5D=false&limit=25&offset=0&order=desc&sort=date&mailbox%5B%5D=" + encodeURIComponent(inbox.mailboxId));
       liste = ((l && l.items) || []).filter(x => x.read === false).map(x => {
         const a = (x.from || [])[0] || {};
-        return { zeit: String(x.date || ""), von: isdPerson(a.personal || a.mailbox || "", N, true) || "?", betreff: isdErsetzen(x.subject, N).slice(0, 140), anhang: (x.attachmentCount || 0) > 0 };
+        return { id: String((x.id && x.id.uid) != null ? x.id.uid : "") + "@" + String(x.date || "").slice(0, 19), zeit: String(x.date || ""), von: isdPerson(a.personal || a.mailbox || "", N, true) || "?", betreff: isdErsetzen(x.subject, N).slice(0, 140), anhang: (x.attachmentCount || 0) > 0,
+          klar: namen ? { von: String(a.personal || a.mailbox || "").slice(0, 80), betreff: String(x.subject || "").slice(0, 140) } : undefined };
       });
     }
     return { ungelesen: typeof inbox.unreadCount === "number" ? inbox.unreadCount : liste.length, liste, elternbriefe: briefe };
@@ -93,7 +95,8 @@ async function isdLesen(o, teile) {
       const key = k + "|" + x.sickFromDateAsString + "|" + x.sickTillDateAsString; if (da.has(key)) continue; da.add(key);
       meine.push({ kuerzel: k, klasse: String((u.mainCourse && u.mainCourse.name) || "").slice(0, 30), von: String(x.sickFromDateAsString || ""), bis: String(x.sickTillDateAsString || ""),
         stVon: typeof x.sickFromLessonNumber === "number" ? x.sickFromLessonNumber : null, stBis: typeof x.sickTillLessonNumber === "number" ? x.sickTillLessonNumber : null,
-        beurlaubung: x.type === "exeat", schriftlich: !!x.hasWrittenConfirmation, offen: x.status === "open" });   // note (Freitext) wird nie gelesen
+        beurlaubung: x.type === "exeat", schriftlich: !!x.hasWrittenConfirmation, offen: x.status === "open",
+        klar: namen ? (((u.forename || "") + " " + (u.surname || "")).trim() || String(u.displayname || "")).slice(0, 80) : undefined });   // note (Freitext) wird nie gelesen
     }
     return { schule: alle.length, meine: meine.sort((a, b) => a.kuerzel.localeCompare(b.kuerzel, "de", { numeric: true })) };
   });
@@ -114,6 +117,6 @@ if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage)
   const teile = (Array.isArray(m.teile) ? m.teile : []).filter(x => ["mail", "krank", "antraege"].includes(x));
   if (!ISD_HOST.test(o)) { antwort({ ok: false, art: "adresse", fehler: "Die IServ-Adresse fehlt oder passt nicht (https://deine-schule.de)." }); return; }
   if (!teile.length) { antwort({ ok: true, stand: Date.now(), daten: {}, fehler: {} }); return; }
-  isdLesen(o, teile).then(antwort).catch(e => antwort({ ok: false, art: e.art || "fehler", fehler: String((e && e.message) || e) }));
+  isdLesen(o, teile, m.namen === true).then(antwort).catch(e => antwort({ ok: false, art: e.art || "fehler", fehler: String((e && e.message) || e) }));
   return true;
 });
