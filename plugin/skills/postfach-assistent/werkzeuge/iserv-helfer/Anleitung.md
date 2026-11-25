@@ -90,6 +90,12 @@ Ist er an, steht im Kopf der Live-Beobachtung der Knopf **Lehrstoff**. Der Helfe
 
 Grenzen: nur eigene Stunden von heute, nur der Lehrstoff (keine Abwesenheiten, keine Hausaufgaben), höchstens 1000 Zeichen. Hängen an der Stunde Dateien oder lässt WebUntis den Eintrag nicht zu, trägt der Helfer nichts ein. Bitte keine Namen von Schüler:innen in den Lehrstoff schreiben.
 
+## Abwesende aus der Live-Beobachtung in WebUntis eintragen (ab 0.39)
+
+Zweiter Schalter unter „In WebUntis eintragen“, anfangs aus. Ist er an, steht im Kopf der Live-Beobachtung der Knopf **Abwesende**. Er sammelt alle, die du in der Stunde als „krank“ oder „fehlt“ markiert hast, und zeigt in der Vorschau, wer bei welcher Stunde eingetragen wird. Erst „Jetzt in WebUntis eintragen“ schreibt: Der Helfer öffnet das Klassenbuch der Stunde in einem neuen Tab und trägt die Kinder dort in einem Schritt als abwesend ein, so wie der Knopf „Abwesend“ der Seite. Danach siehst du, wer eingetragen wurde, wer schon abwesend war und wen der Helfer nicht gefunden hat.
+
+Grenzen: nur eigene Stunden von heute. Der Grund bleibt offen (krank und fehlt werden gleich eingetragen). Verspätungen überträgt der Helfer nicht, weil WebUntis dafür die Uhrzeit des Eintragens nimmt und nicht deine notierten Minuten. Die Zuordnung läuft über Vor- und Nachname aus deiner Kürzelliste, nur in diesem Browser. Kinder ohne Namen in der Liste oder mit abweichendem Namen trägst du im geöffneten Klassenbuch selbst ein.
+
 ## IServ direkt lesen (ab 0.35, Mails anzeigen und abhaken ab 0.38)
 
 Wie bei WebUntis kann die Startseite auf „Heute“ einen Kasten **IServ** zeigen. Drei Bereiche, jeder mit eigenem Schalter unter ⚙ „Einrichtung & Daten“ › „IServ direkt lesen“, anfangs alles aus:
