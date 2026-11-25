@@ -35,9 +35,9 @@
   }
   const planWas = x => /^BREAK_SUPERVISION$/i.test(x.art) ? "Aufsicht" : /^STAND_BY_PERIOD$/i.test(x.art) ? "Bereitschaft" : /^EVENT$/i.test(x.art) ? (x.name || "Veranstaltung") : [x.fach, x.klasse].filter(Boolean).join(" · ") || "Stunde";
   // Einzelstunden einer Doppelstunde mit gleicher Änderung zu einer Zeile zusammenfassen
-  function planZeilen(liste) {
+  function planZeilen(liste, alle) {
     const h = heuteIso(), aus = [];
-    for (const x of liste.filter(x => x.geaendert && x.tag >= h).sort((a, b) => (a.tag + a.von).localeCompare(b.tag + b.von))) {
+    for (const x of liste.filter(x => x.geaendert && (alle || x.tag >= h)).sort((a, b) => (a.tag + a.von).localeCompare(b.tag + b.von))) {
       const v = aus[aus.length - 1];
       if (v && v.tag === x.tag && v.bis === x.von && planWas(v) === planWas(x) && planArt(v)[0] === planArt(x)[0] && v.raum === x.raum && v.text === x.text) v.bis = x.bis;
       else aus.push({ ...x });
@@ -86,6 +86,7 @@
     k("#wu-wahl", wahl); k("#wu-wahl2", wahl);
   }
 
+  const wocheNeu = () => { try { if (typeof renderWoche === "function") renderWoche(); } catch (e) {} };
   async function holen() {
     const teile = an();
     if (!teile.length || laeuft) { zeichnen(); return; }
@@ -97,7 +98,7 @@
       if (r && r.ok) { stand = r; lage = ""; meldung = ""; }
       else { lage = (r && r.art) || "fehler"; meldung = (r && r.fehler) || ""; if (lage === "abgemeldet" || lage === "adresse") stand = null; }
     } catch (e) { lage = "fehler"; meldung = "Der Helfer antwortet nicht. Bitte die Seite neu laden."; }
-    finally { laeuft = false; zeichnen(); }
+    finally { laeuft = false; zeichnen(); wocheNeu(); }
   }
 
   /* Schalter unter „Einrichtung & Daten“ */
@@ -109,7 +110,7 @@
     einst.querySelectorAll("[data-wu]").forEach(c => c.addEventListener("change", () => {
       const neu = Object.assign({}, store.get("wu-direkt", {})); neu[c.dataset.wu] = c.checked; store.set("wu-direkt", neu);
       if (!an().length) { stand = null; lage = ""; }
-      holen();
+      wocheNeu(); holen();
     }));
     const feld = einst.querySelector("#wu-host");
     feld.addEventListener("change", async () => { const v = hostAus(feld.value.trim()); store.set("wu-host", v); if (!v) await einstZeichnen(); holen(); });
@@ -119,5 +120,8 @@
   if (an().length) holen();
   // Nach einer Pause (Tab war im Hintergrund) neu lesen, höchstens alle 10 Minuten
   document.addEventListener("visibilitychange", () => { if (!document.hidden && an().length && !laeuft && (!stand || Date.now() - stand.stand > 6e5)) holen(); });
-  window.saUntis = { holen, _test: { planArt, planWas, planZeilen } };
+  /* Für die Wochenansicht (start-a.js): Änderungen eines Tages, Doppelstunden zusammengefasst. Leer, solange der Bereich aus ist. */
+  const aenderungen = iso => !an().includes("plan") || !stand || !stand.daten || !stand.daten.plan ? []
+    : planZeilen(stand.daten.plan.filter(x => x.tag === iso), true).map(x => ({ von: x.von, bis: x.bis, fach: x.fach, was: planWas(x), marke: planArt(x)[0], aus: /^CANCELL?ED$/i.test(x.status), raum: x.raum, raumAlt: x.raumAlt, text: x.text }));
+  window.saUntis = { holen, aenderungen, _test: { planArt, planWas, planZeilen } };
 })();

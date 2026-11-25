@@ -856,14 +856,25 @@ function renderWoche(){
     const tag=document.createElement("div");tag.className="tag"+(iso===heute?" heute":"");
     tag.innerHTML=`<h5><span>${TAGE[i]} ${d.getDate()}.${d.getMonth()+1}.</span>${iso===heute?"<span>heute</span>":""}</h5>`;
     const std=plan.events.filter(e=>isoTag(e.start)===iso),ter=termineAm(iso,false,true);
-    const reihe=[...ter.filter(t=>t.ganz).map(t=>({t})),...[...std.map(e=>({e,z:hhmm(e.start)})),...ter.filter(t=>!t.ganz).map(t=>({t,z:t.zeit}))].sort((a,b)=>a.z.localeCompare(b.z))];
-    reihe.forEach(({e,t})=>{if(t){tag.appendChild(terEl(t));return}
-      const b=document.createElement("button");const aus=e.status==="CANCELLED"||/entf[aä]llt|ausfall|cancel/i.test((e.titel||"")+" "+(e.info||""));
-      const anders=!aus&&/vertret|verlegt|ge[aä]ndert|sonder/i.test((e.titel||"")+" "+(e.info||""));
+    // Änderungen aus „WebUntis direkt lesen“ (untis.js, nur wenn eingeschaltet): an die passende Stunde hängen, den Rest (z. B. Entfall) als eigene Zeile
+    const wu=window.saUntis&&window.saUntis.aenderungen?window.saUntis.aenderungen(iso):[];const wuZu=new Map();
+    const norm=x=>String(x||"").toLowerCase().replace(/[^a-z0-9äöüß]/g,"");
+    for(const pass of [1,2])for(const w of wu){if(w._e)continue;
+      const kand=std.filter(e=>!wuZu.has(e)&&hhmm(e.start)<=w.von&&(e.ende?w.von<hhmm(e.ende):hhmm(e.start)===w.von));
+      const e=pass===1?kand.find(e=>w.fach&&norm(e.titel).includes(norm(w.fach))):kand[0];
+      if(e){wuZu.set(e,w);w._e=true}}
+    const wuRest=wu.filter(w=>!w._e);
+    const reihe=[...ter.filter(t=>t.ganz).map(t=>({t})),...[...std.map(e=>({e,z:hhmm(e.start)})),...wuRest.map(w=>({w,z:w.von})),...ter.filter(t=>!t.ganz).map(t=>({t,z:t.zeit}))].sort((a,b)=>a.z.localeCompare(b.z))];
+    reihe.forEach(({e,t,w})=>{if(t){tag.appendChild(terEl(t));return}
+      if(w){const b=document.createElement("div");b.className="std wu "+(w.aus?"aus":"anders");
+        b.innerHTML=`<span class="z">${esc(w.von)}</span><b>${esc(w.was)}</b><small><span class="wu-m">${esc(w.marke)}</span>${esc(w.raum?" · "+w.raum:"")}</small>`;
+        b.title=[w.was,w.marke,w.raum,w.text].filter(Boolean).join(" · ")+" (aus WebUntis)";tag.appendChild(b);return}
+      const b=document.createElement("button");const u=wuZu.get(e);const aus=u?u.aus:e.status==="CANCELLED"||/entf[aä]llt|ausfall|cancel/i.test((e.titel||"")+" "+(e.info||""));
+      const anders=!aus&&(!!u||/vertret|verlegt|ge[aä]ndert|sonder/i.test((e.titel||"")+" "+(e.info||"")));
       b.className="std"+(aus?" aus":anders?" anders":"");
       const g=gruppeZu(e);
-      b.innerHTML=`<span class="z">${hhmm(e.start)}</span><b>${esc(g||e.titel||"Stunde")}</b><small>${esc([g?e.titel:"",e.raum].filter(Boolean).join(" · ")||" ")}</small>`;
-      b.title=[e.titel,e.raum,e.info].filter(Boolean).join(" · ");
+      b.innerHTML=`<span class="z">${hhmm(e.start)}</span><b>${esc(g||e.titel||"Stunde")}</b><small>${u?`<span class="wu-m">${esc(u.marke)}</span> · `:""}${esc([g?e.titel:"",u&&u.raum?u.raum:e.raum].filter(Boolean).join(" · ")||" ")}</small>`;
+      b.title=[e.titel,e.raum,e.info,u?u.marke+(u.raumAlt&&u.raumAlt!==u.raum?`, Raum ${u.raum} statt ${u.raumAlt}`:"")+(u.text?": "+u.text:"")+" (aus WebUntis)":""].filter(Boolean).join(" · ");
       b.addEventListener("click",()=>zeigeStunde(e));tag.appendChild(b);
     });
     if(!tag.querySelector(".std,.ter")){const l=document.createElement("span");l.className="leer";l.textContent=plan.events.length?"frei":"";tag.appendChild(l)}
