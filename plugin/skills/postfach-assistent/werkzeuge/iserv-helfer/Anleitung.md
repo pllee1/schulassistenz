@@ -82,6 +82,16 @@ Die WebUntis-Adresse deiner Schule nimmt der Helfer aus dem Stundenplan-Link. Fe
 
 Der Helfer liest nur: Er ruft ausschließlich die vier Abfragen auf, die auch WebUntis selbst für diese Seiten benutzt, und ändert nichts. Namen von Schüler:innen und Lehrkräften übernimmt er nicht (bei Prüfungen nur die Anzahl). Die Daten stehen nur im geöffneten Tab, werden nicht gespeichert und gehen nicht an Claude. Fehlzeiten kommen weiter über den Export (nächster Abschnitt), weil dort Namen stehen, die die Startseite erst durch Kürzel ersetzt.
 
+## IServ direkt lesen (ab 0.35)
+
+Wie bei WebUntis kann die Startseite auf „Heute“ einen Kasten **IServ** zeigen. Drei Bereiche, jeder mit eigenem Schalter unter ⚙ „Einrichtung & Daten“ › „IServ direkt lesen“, anfangs alles aus:
+
+- **Ungelesene Mails:** Anzahl im Posteingang, dazu Absender als Kürzel und Betreff (Namen im Betreff werden ersetzt) und die Zahl der Elternbriefe mit Neuigkeiten. Der Helfer liest nur die Liste und öffnet keine Mail, sie bleiben ungelesen. Mit dem Haken ✓ blendest du eine Mail im Kasten aus („wieder zeigen“ holt sie zurück). Das gilt nur auf der Startseite, in IServ bleibt die Mail ungelesen.
+- **Krankmeldungen heute** (braucht DieSchulApp in IServ): nur Kinder, die in deinen Kürzellisten stehen, als Kürzel mit Klasse, Dauer und Stunden. Die Notiz der Krankmeldung liest der Helfer nie.
+- **Offene Anträge** (DieSchulApp): Anzahl der noch nicht bearbeiteten Beurlaubungsanträge.
+
+Der Helfer liest nur (ausschließlich lesende Abrufe auf eine feste Liste von Adressen). Klarnamen ersetzt er schon im Hintergrund durch Kürzel. Mit „Namen zeigen“ im Kasten blendest du die Namen ein und wieder aus (anfangs aus). Das gilt nur für die Anzeige in diesem Browser. Unbekannte Absender bekommen wie im Helfer-Fenster ein Kürzel P1, P2 … (Zuordnung unter Einstellungen des Helfers › „Weitere Personen“). Nichts wird gespeichert, nichts geht an Claude.
+
 ## LEB-online, Klassenbewertung: Textbausteine ablesen (ab 0.34, einmalig)
 
 Vorstufe für „Claude schlägt Bemerkungen zum Arbeits- und Sozialverhalten vor, der Helfer füllt vor“. Öffnest du in LEB-online unter Klassenbewertungen das Bewertungsformular eines Kindes, erscheint unten rechts ein Kasten „Textbausteine ablesen“. Ein Klick zeigt den Aufbau des Formulars (Feldnamen, Feldarten) und die Auswahllisten der Textbausteine. Eingetragene Werte liest der Helfer nicht, Überschriften macht er unkenntlich, und der Text läuft zusätzlich durch deine Kürzelliste. Er klickt nichts, ruft nichts auf und speichert nichts. Den Text kopierst du selbst und gibst ihn an Claude.
