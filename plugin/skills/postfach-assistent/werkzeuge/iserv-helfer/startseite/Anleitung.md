@@ -178,6 +178,8 @@ Für Schulen mit LEB-online (Noten PLUS). Der Helfer füllt dort Formulare aus, 
 
 **Mit zwei Klicks (ab Helfer 0.22):** Steht eine korrigierte Klassenarbeit in den Akten, zeigt „Als Nächstes“ die Karte mit „Nach LEB-online“. Ein Klick darauf legt die Noten bereit, schaltet deinen angemeldeten LEB-Tab zur Lerngruppe, legt die Leistungsüberprüfung an und öffnet „Bewerten“ mit den Noten. Du prüfst und klickst „Speichern“. Dafür einmal in Chrome Pop-ups für LEB-online erlauben (Schloss-Symbol links in der Adresszeile › Website-Einstellungen › Pop-ups und Weiterleitungen: Zulassen).
 
+**Was steht schon in LEB-online? (ab Helfer 0.36):** Öffnest du in LEB-online die Leistungsüberprüfungen einer Lerngruppe, merkt sich der Helfer, welche es gibt (Bezeichnung, Datum) und wie viele Noten jeweils eingetragen sind. Die Notenübersicht zeigt das oben unter „In LEB-online eingetragen“, und bei „Was“ steht „(schon in LEB)“. Namen werden dabei nicht übernommen.
+
 Claude sieht dabei nichts: Die Zuordnung Name ↔ Kürzel passiert nur im Helfer in deinem Browser.
 
 ## Skala im Live-Raster

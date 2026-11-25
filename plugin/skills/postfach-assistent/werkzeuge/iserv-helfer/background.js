@@ -388,6 +388,17 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
     }).then(() => antwort({ ok: true })).catch(() => antwort({ ok: false }));
     return true;
   }
+  if (m.cmd === "leb-stand") {
+    if (!/^(kurse|klassen)$/.test(m.bereich || "") || !/^\d+$/.test(String(m.id || "")) || !Array.isArray(m.liste)) return;
+    (async () => {
+      const { ziele } = await lebZiele();
+      const gruppe = Object.keys(ziele).find(g => ziele[g].bereich === m.bereich && String(ziele[g].id) === String(m.id)) || `${m.bereich}:${m.id}`;
+      const liste = m.liste.slice(0, 40).map(e => ({ bez: String(e.bez || "").slice(0, 80), datum: String(e.datum || "").slice(0, 10), art: +e.art || 0, noten: Number.isInteger(e.noten) ? e.noten : null, von: Number.isInteger(e.von) ? e.von : null }));
+      const { saLebStand } = await chrome.storage.local.get("saLebStand");
+      await chrome.storage.local.set({ saLebStand: { ...(saLebStand || {}), [gruppe]: { zeit: Date.now(), liste } } });
+    })().catch(() => { });
+    return;
+  }
   if (m.cmd === "leb-ziel-holen") {
     lebZiele().then(({ ziele }) => antwort({ ziel: ziele[m.gruppe] || null })).catch(() => antwort({ ziel: null }));
     return true;
