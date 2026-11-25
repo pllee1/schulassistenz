@@ -508,3 +508,5 @@ chrome.runtime.onMessage.addListener((m, sender, antwort) => {
 importScripts("probe-bg.js");
 /* WebUntis direkt lesen (ab 0.32): eigener Baustein, siehe webuntis-bg.js */
 importScripts("webuntis-bg.js");
+/* IServ direkt lesen (ab 0.35): eigener Baustein, siehe iserv-bg.js */
+importScripts("iserv-bg.js");

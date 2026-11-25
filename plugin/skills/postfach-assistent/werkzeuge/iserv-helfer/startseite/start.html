@@ -474,7 +474,7 @@ h2.t,.tag-kopf h2,.wz-kopf h2,.lg-kopf h2{font-family:var(--f-display);font-weig
 .such-h{column-span:all;font-family:var(--f-display);font-style:italic;font-size:15px;color:var(--muted);margin:4px 0 8px}
 /* Einstellungen */
 /* WebUntis direkt lesen (ab 0.32) */
-#untis{margin-top:14px}
+#untis,#iservk{margin-top:14px}
 .wu-raster{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px 22px}
 .wu-block h4{margin:0 0 6px;font-size:13.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
 .wu-liste{list-style:none;margin:0;padding:0;display:grid;gap:5px}
@@ -490,7 +490,7 @@ h2.t,.tag-kopf h2,.wz-kopf h2,.lg-kopf h2{font-family:var(--f-display);font-weig
 .wu-marke.warn{background:var(--warn-soft);color:var(--warn)}
 .wu-mehr summary{cursor:pointer;font-size:12.5px;color:var(--accent);margin-top:6px}
 .wu-hinweis{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-#untis .nx-kopf{gap:8px 14px}#untis.zu .nx-kopf{margin-bottom:0}
+#untis .nx-kopf,#iservk .nx-kopf{gap:8px 14px}#untis.zu .nx-kopf,#iservk.zu .nx-kopf{margin-bottom:0}
 .wu-schalter{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:13.5px;cursor:pointer}
 .wu-schalter input{margin-top:3px;flex:none}
 .wu-adr{display:grid;gap:4px;font-size:12.5px;color:var(--muted);margin-top:8px}
@@ -585,6 +585,7 @@ h2.t,.tag-kopf h2,.wz-kopf h2,.lg-kopf h2{font-family:var(--f-display);font-weig
       </div>
       <section id="naechstes" class="karte" hidden aria-labelledby="nx-h"></section>
       <section id="untis" class="karte" hidden aria-labelledby="wu-h"></section>
+      <section id="iservk" class="karte" hidden aria-labelledby="is-h"></section>
     </div>
   </section>
 
@@ -621,6 +622,7 @@ h2.t,.tag-kopf h2,.wz-kopf h2,.lg-kopf h2{font-family:var(--f-display);font-weig
       <section class="karte"><h3>Schülerdaten</h3><p class="note" id="einst-daten-note"></p><div class="actions" id="einst-daten"></div></section>
       <section class="karte"><h3>Kalender und Stundenplan</h3><p class="note">Stundenplan-Link aus WebUntis, weitere Kalender (IServ, Schulkalender) und ihre Filter.</p><div class="actions" id="einst-kal"></div></section>
       <section class="karte" id="wu-einst"><h3>WebUntis direkt lesen</h3><p class="note">Der Helfer liest über deine Anmeldung im Browser und zeigt das Ergebnis auf „Heute“. Nur lesend, anfangs ist alles aus. Namen von Schüler:innen und Lehrkräften übernimmt er nicht, und nichts davon geht an Claude.</p><div id="wu-schalter"></div></section>
+      <section class="karte" id="is-einst"><h3>IServ direkt lesen</h3><p class="note">Der Helfer liest über deine Anmeldung im Browser und zeigt das Ergebnis auf „Heute“. Nur lesend, anfangs ist alles aus. Du siehst nur Kürzel, keine Klarnamen, und nichts davon geht an Claude.</p><div id="is-schalter"></div></section>
       <section class="karte"><h3>Bedienung</h3><p class="note"><kbd>/</kbd> Suche · <kbd>Esc</kbd> Fenster schließen · <kbd>Alt</kbd>+<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> Heute, Lerngruppen, Werkzeuge · <kbd>Alt</kbd>+<kbd>0</kbd> diese Seite. Namen: Doppelklick auf einen Namen ändert ihn in der Kürzelliste.</p><div class="actions" id="einst-bed"></div></section>
     </div>
     <h3 style="margin-top:6px">Dateien und Ordner</h3>
