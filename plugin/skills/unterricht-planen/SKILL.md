@@ -205,6 +205,12 @@ Jede Methode wird aus ihrer **Funktion** abgeleitet – aus dem Methodenpool ode
   - **Eindeutige Benennung:** Die Karte trägt die Aufgabennummer und bei gestuften Hilfen die Stufe (Hilfekarte 2a = Denkanstoß, 2b = Teilschritt, 2c = Teillösung zu Aufgabe 2). Auf der Karte selbst steht der Rückverweis („Hilfekarte 2a · zu AB 1, Aufgabe 2“).
   - **Keine verwaisten Karten:** Es gibt keine Hilfekarte ohne Verweis an einer Aufgabe und keinen Verweis ohne Karte. Vor der Ausgabe abgleichen: Liste der Karten ↔ Verweise an den Aufgaben.
   - **Kl. 1–4:** Verweis als Symbol (💡 + Kartennummer bzw. Kartenbild) statt Text.
+- **Rechnungen immer mit Legende und Beispielrechnung (Pflicht):** Sobald in Aufgabe, Material, Lehrerblatt oder Tafelbild eine Formel oder Rechnung vorkommt (z. B. n = m/M, c = n/V, ΔG = −z·F·ΔE, Dreisatz, Prozent-, Zins- oder Flächenrechnung), gehören zwei Bausteine dazu:
+  - **Legende** direkt an der Formel: jedes Formelzeichen mit Bedeutung und Einheit („n = Stoffmenge in mol · m = Masse in g · M = molare Masse in g/mol“), Konstanten mit Wert und Einheit (F = 96 485 C/mol), Indizes und Vorzeichen kurz erklärt (z. B. „ΔE = E(Akzeptor) − E(Donator)“).
+  - **Beispielrechnung**, Schritt für Schritt erklärt: Gegeben/Gesucht → Formel → ggf. umstellen → Werte mit Einheiten einsetzen → ausrechnen (Einheiten mitführen) → Ergebnis mit Einheit und Antwortsatz. Zu jedem Schritt ein kurzer Kommentar, was und warum gerechnet wird (Kommentarspalte oder Randnotiz).
+  - **Andere Zahlen bzw. anderer Kontext** als in der Aufgabe, damit die Beispielrechnung die Aufgabe nicht vorwegnimmt. Ist das Finden des Rechenwegs selbst das Lernziel, steht die Beispielrechnung als gestufte Hilfekarte bereit (an der Aufgabe verwiesen) statt offen auf dem AB; die Legende bleibt immer sichtbar.
+  - **Ort:** auf dem AB als Merk- oder Jokerkasten bei der Aufgabe, im Tafelbild als Musterrechnung mit Legende, im Lehrerblatt die vollständige Lösung im selben Schema.
+  - **Kl. 1–4:** Rechenweg bildlich (Plättchen, Zahlenstrahl, Rechenhaus) mit Symbolen und wenigen Worten statt Legende in Sätzen.
 - **Sprachbildung**: Satzanfänge/Formulierungshilfen für die fachtypischen Sprachhandlungen (erklären, begründen, vergleichen, beurteilen), Wortspeicher, Hilfen für Lernende mit Deutsch als Zweitsprache.
 - **Differenzierung**: gleiche Kernfrage, unterschiedliche Offenheit/Unterstützung; G/E, gA/eA oder sonderpädagogischer Förderbedarf ausweisen; Expertenaufgabe auf AFB III.
 - **Verbindliche Teilergebnisse und Rollen** aktivieren auch ruhige Lernende.
@@ -235,6 +241,7 @@ Ehrlich prüfen und Schwächen – wenn möglich – direkt im Plan verbessern. 
 | Sind Aufträge, Zeiten, Übergänge und Reserve klar? | | |
 | Ist die Methode die passendste (nicht nur die naheliegendste aus dem Pool), hat sie eine klare Funktion, und ist der Aufwand vertretbar? | | |
 | Bei Experimenten: Ist eine eigene Aufräumphase mit realistischer Zeit und Zuständigkeiten eingeplant (nicht in der Notbremse)? | | |
+| Bei Rechnungen: Hat jede Formel eine Legende (Zeichen, Bedeutung, Einheit) und gibt es eine erklärte Beispielrechnung mit anderen Zahlen? | | |
 
 Wird ein Situationsrätsel eingesetzt, kommt zusätzlich dessen Prüfliste („Prüfen vor dem Einsatz“) zur Anwendung – ebenfalls intern, ausgegeben nur in B, C oder F.
 
@@ -327,7 +334,7 @@ Kompakt, ca. eine Bildschirmseite bzw. eine A4-Seite (ohne Material). Kein Flie�
 |---|---|---|---|---|
 
 4. **Kernaufgabe** wörtlich (bei Situationsrätsel/Mystery: Rätsel- bzw. Einstiegstext, Lösung und Tipps in Kurzform)
-5. **Hilfen/Differenzierung**: höchstens 3 Stichpunkte; Hilfekarten mit Zuordnung nennen („Hilfekarten 2a–c → Aufgabe 2“) und an der jeweiligen Aufgabe verweisen (Schritt 7)
+5. **Hilfen/Differenzierung**: höchstens 3 Stichpunkte; Hilfekarten mit Zuordnung nennen („Hilfekarten 2a–c → Aufgabe 2“) und an der jeweiligen Aufgabe verweisen (Schritt 7); bei Rechnungen Legende und Beispielrechnung (Schritt 7) – in der Kernaufgabe bzw. im Material, nicht nur erwähnt
 6. **Sicherung & Exit-Ticket**: Tafelbild-Skizze bzw. Merksatz und eine Diagnosefrage
 7. **Hinweise** (nur wenn nötig, höchstens 3): Sicherheit, „[prüfen]“-Fakten, bewusste Kompromisse; ggf. eine Quellenzeile
 8. **Materialien**, wenn gewünscht oder vom Nutzer vorgesehen
@@ -403,7 +410,7 @@ B und C im gleichen Stil, zusätzliche Abschnitte als eigene Blöcke, Tiefenstru
 
 ## Weitergabe an andere Bausteine
 
-- **Material** (Arbeitsblätter, Hilfekarten, Exit-Ticket, Lehrerblatt, Tafelbild) auf Wunsch mit **material-gestalten** setzen; Nummern der Hilfekarten in Planung und Material gleich.
+- **Material** (Arbeitsblätter, Hilfekarten, Exit-Ticket, Lehrerblatt, Tafelbild) auf Wunsch mit **material-gestalten** setzen; Nummern der Hilfekarten in Planung und Material gleich; Legenden und Beispielrechnungen zu Rechnungen (Schritt 7) mitgeben.
 - **Lernplattform und Schul-KI:** Stehen sie im Profil (`werkzeuge.lernplattform`, `werkzeuge.schul_ki`) und gibt es dafür einen Skill der Lehrkraft (z. B. edumaps-selbstlern-map, paddy-agent), einmal anbieten, die Stunde dort aufzubereiten. Sonst nicht erwähnen.
 - **Gruppen-Akte:** Nach der Stunde (oder wenn die Lehrkraft Rückmeldung gibt) nach Bestätigung unter Unterricht in gruppe.md eintragen: `Datum | Beleg | DS05 Akkus und Recycling gehalten; Exit-Ticket: 15/20 richtig, Fehlvorstellung Strom wird verbraucht | Quelle: unterricht-planen | bestätigt`. Ergebnisse einzelner Kinder aus Exit-Tickets gehören über **beobachtung-dokumentieren** in die Kind-Akten, nicht in gruppe.md.
 - **Wochenplaner:** Vorbereitung, die außerhalb der Stunde Zeit kostet (Experiment aufbauen, Material kopieren, Chemikalien bestellen), nach Bestätigung als Aufgabe mit Frist (Stundendatum) und geschätzter Dauer in `planung/aufgaben.md`.
