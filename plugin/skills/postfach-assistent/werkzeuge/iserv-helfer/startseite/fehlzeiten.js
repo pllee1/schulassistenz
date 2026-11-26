@@ -747,5 +747,7 @@ ${gelb.map(z).join("\n")||"(niemand)"}
 Bitte prüfe die Auswertung und sag mir, was als Nächstes zu tun ist. Entwürfe für Elternbriefe nur nach Rückfrage.`});
 }
 
-window.saFehlzeiten={zeigen,aktualisieren:()=>seitenleiste().catch(()=>{}),_test:{pdfZeilen,nameAusDatei,textPseudo,namenWoerterLaden,vermerkeFuer,aktenSummen:()=>aktenSummen(),setF:x=>{F=x},tabelleLesen,verarbeiten,ampel,regeln,fristEnde,datumISO,pseudoZeilen,cfbStream,biffZeilen}};
+window.saFehlzeiten={zeigen,aktualisieren:()=>seitenleiste().catch(()=>{}),
+  /* ganze Fehltage je Kürzel aus dem gespeicherten Stand (für die Konferenz-Mappe) */
+  tage:async gid=>{const s=await standLesen(gid);return s?{stand:s.stand,quelle:s.quelle,tage:ganzeTage(s.zeilen)}:null},_test:{pdfZeilen,nameAusDatei,textPseudo,namenWoerterLaden,vermerkeFuer,aktenSummen:()=>aktenSummen(),setF:x=>{F=x},tabelleLesen,verarbeiten,ampel,regeln,fristEnde,datumISO,pseudoZeilen,cfbStream,biffZeilen}};
 })();

@@ -112,6 +112,10 @@ Der Helfer liest nur (ausschließlich lesende Abrufe auf eine feste Liste von Ad
 
 Vorstufe für „Claude schlägt Bemerkungen zum Arbeits- und Sozialverhalten vor, der Helfer füllt vor“. Öffnest du in LEB-online unter Klassenbewertungen das Bewertungsformular eines Kindes, erscheint unten rechts ein Kasten „Textbausteine ablesen“. Ein Klick zeigt den Aufbau des Formulars (Feldnamen, Feldarten) und die Auswahllisten der Textbausteine. Eingetragene Werte liest der Helfer nicht, Überschriften macht er unkenntlich, und der Text läuft zusätzlich durch deine Kürzelliste. Er klickt nichts, ruft nichts auf und speichert nichts. Den Text kopierst du selbst und gibst ihn an Claude.
 
+## Konferenz-Mappe aus LEB-online (ab 0.41)
+Für Zeugnis- und Pädagogische Konferenzen als Klassenleitung: In der Lerngruppe den Reiter **Konferenz** öffnen und einmal einschalten (anfangs aus). In LEB-online druckst du unter **Klassenbewertungen › Berichte** selbst die PDFs **„Lernstandskontrolle“** (Leistungsart beide, Schüler „Alle Schüler“) und **„Niveaustufen“** und ziehst sie in die Mappe. Der Helfer ruft LEB-online dafür nicht auf, liest die PDFs nur in diesem Fenster und ersetzt die Namen über die Kürzelliste der Lerngruppe.
+Angezeigt werden je Kind: Kurse E/G in Deutsch, Mathe, Englisch, NaWi (aktuell → nächstes Halbjahr), der Schnitt jedes Fachs aus den Einzelnoten (mündlich/fachspezifisch 60 %, schriftlich 40 %; änderbar in meine-einstellungen.js unter `konferenz: { muendlich: 60 }`), die ganzen Fehltage aus der Fehlzeiten-Ampel und eine Abschlussprognose nach AVO-Sek I mit Begründung (Regeln des Abschluss-Checks, ohne mündliches Prüfungsfach). Gespeichert wird nur mit Kürzeln unter `ausgaben/konferenz/`. „Tischvorlage mit Claude“ gibt die Tabelle an den Skill zeugnis-vorbereiten. Namen, die nicht zugeordnet werden konnten, stehen nur im Fenster. Einen unbekannten LEB-Bericht zeigt die Mappe als Aufbau ohne Namen zum Kopieren, damit er eingebaut werden kann.
+
 ## Was die Erweiterung ersetzt
 
 - Alle Namen aus der Kürzelliste (auch „Nachname, Vorname“ und Teile von Doppelnamen) und deinen eigenen Namen.

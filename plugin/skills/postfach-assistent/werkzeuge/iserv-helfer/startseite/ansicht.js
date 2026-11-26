@@ -8,7 +8,7 @@
 (function(){
 "use strict";
 const slot=$("#panel-slot"),dialog=$("#dialog"),dialogBox=dialog.querySelector(".dialog-box"),inhalt=$("#lg-inhalt");
-const REITER=[["akten","Akten"],["noten","Noten"],["fehlzeiten","Fehlzeiten"],["namen","Namen & Kürzel"]];
+const REITER=[["akten","Akten"],["noten","Noten"],["fehlzeiten","Fehlzeiten"],["konferenz","Konferenz"],["namen","Namen & Kürzel"]];
 const CLAUDE_GRUPPE=["korrektur","beob-note","zeugnis-noten","wiederholung","lernplaene-gruppe"];
 const S={v:"heute",gid:null,reiter:store.get("lg-reiter","akten"),tabAktiv:false,leer:0};
 const gruppeVon=gid=>ordner.gruppen.find(g=>g.id===gid);
@@ -101,6 +101,7 @@ function reiterZeigen(){
   if(S.reiter==="akten")return _zeigeGruppe(g);
   if(S.reiter==="noten"){const o=S.notenOpt;S.notenOpt=null;store.set("noten-gruppe",g.id);return _zeigeNoten(g.id,o)}
   if(S.reiter==="fehlzeiten"){store.set("fz-gruppe",g.id);if(_fz)return _fz(g.id);return inhaltLeer("Die Fehlzeiten-Ampel ist auf diesem Gerät nicht geladen.")}
+  if(S.reiter==="konferenz"){store.set("konf-gruppe",g.id);if(window.saKonferenz)return window.saKonferenz.zeigen(g.id);return inhaltLeer("Die Konferenz-Mappe ist auf diesem Gerät nicht geladen.")}
   if(S.reiter==="namen"){
     extra.hidden=false;
     const k=(t,fn,tipp)=>{const b=document.createElement("button");b.className="btn ghost small";b.textContent=t;if(tipp)b.title=tipp;b.addEventListener("click",fn);extra.appendChild(b)};
