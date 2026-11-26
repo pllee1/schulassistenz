@@ -72,10 +72,46 @@
     }
     const asv = d.faecher.length ? d.faecher.length + " Fächer" : (Object.keys(d.summen.av).length || Object.keys(d.summen.sv).length) ? "Zusammenfassung" : "nicht gefunden";
     badge.textContent = `Schulassistenz: für die Konferenz-Mappe gemerkt · Fehltage ${d.fehltage || "–"}${d.unent ? " (" + d.unent + " unent.)" : ""} · AV/SV der Fachlehrkräfte: ${asv}`;
+    fehltageKnopf(badge);
+  }
+  /* Fehltage aus der Fehlzeiten-Ampel vorausfüllen (Startseite legt sie mit Namen nur lokal bereit). Nur Felder setzen, nie speichern. */
+  const ohneAkz = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ß/g, "ss").toLowerCase();
+  const woerter = s => ohneAkz(s).split(/[^a-z]+/).filter(Boolean);
+  function kindFinden(liste, kandidaten) {
+    const texte = kandidaten.map(woerter); const treffer = [];
+    for (const k of liste) { const v = woerter(k.vor)[0], n = woerter(k.nach); if (!v || !n.length) continue;
+      if (texte.some(t => n.every(x => t.includes(x)) && t.includes(v))) treffer.push(k); }
+    return treffer.length === 1 ? treffer[0] : null;
+  }
+  let fz = null;
+  async function fehltageVorschlag() {
+    const { saKonfFehltage } = await chrome.storage.local.get("saKonfFehltage");
+    if (!saKonfFehltage || Date.now() - saKonfFehltage.zeit > 14 * 86400e3) return;
+    const k = kindFinden(saKonfFehltage.kinder || [], lesen().kandidaten); if (!k) return;
+    fz = { ...k, stand: saKonfFehltage.stand };
+  }
+  function fehltageKnopf(box) {
+    if (!fz) return;
+    const f1 = form.elements.fehltage, f2 = form.elements.fehltage_unentschuldigt; if (!f1) return;
+    const gleich = String(f1.value).trim() === String(fz.tage) && (!f2 || String(f2.value).trim() === String(fz.unent));
+    const zeile = document.createElement("div"); zeile.style.marginTop = "4px";
+    zeile.textContent = `WebUntis${fz.stand ? " (Stand " + fz.stand.split("-").reverse().join(".") + ")" : ""}: ${fz.tage} ganze Fehltage, davon ${fz.unent} unentschuldigt${fz.offen ? ", " + fz.offen + " noch offen" : ""}. `;
+    if (gleich) { const s = document.createElement("b"); s.textContent = "Stimmt mit dem Formular überein."; zeile.appendChild(s); }
+    else {
+      const b = document.createElement("button"); const alt = String(f1.value).trim();
+      b.textContent = alt ? `Eintragen (ersetzt ${alt}${f2 && f2.value ? "/" + f2.value : ""})` : "Eintragen";
+      b.style.cssText = "margin-left:4px;padding:3px 9px;border-radius:6px;border:1px solid #8fcf9f;background:#8fcf9f;color:#10221a;font-weight:700;cursor:pointer";
+      b.addEventListener("click", () => {
+        for (const [el, v] of [[f1, fz.tage], [f2, fz.unent]]) { if (!el) continue; el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); el.style.outline = "2px solid #8fcf9f"; }
+        b.replaceWith(Object.assign(document.createElement("b"), { textContent: "Eingetragen. Bitte prüfen und in LEB-online selbst speichern." }));
+      });
+      zeile.appendChild(b);
+    }
+    box.appendChild(zeile);
   }
   chrome.storage.local.get("saKonfAn").then(({ saKonfAn }) => {
     if (!saKonfAn) return;
-    merken().catch(() => {});
+    fehltageVorschlag().catch(() => {}).finally(() => merken().catch(() => {}));
     form.addEventListener("change", () => merken().catch(() => {}));
     // „AV / SV einblenden“ verändert die Seite: dann noch einmal lesen
     let t = null; new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => merken().catch(() => {}), 600); }).observe(document.body, { childList: true, subtree: true });

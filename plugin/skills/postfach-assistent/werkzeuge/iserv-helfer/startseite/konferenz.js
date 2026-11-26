@@ -261,8 +261,10 @@ async function zeilen(K){
     const kind=K.kinder[k];const fn=new Map(fachnoten(kind.noten||[]).map(x=>[x.fach,x]));const kurse=kurseEff(k,kind);
     const t=ft&&ft.tage&&ft.tage.get(k);const st=ft&&ft.stunden&&ft.stunden.get(k);const p=prognose(kind,K.jg,kurse);
     const l=kind.leb||null;
-    const fz=l&&l.fehltage!==""&&l.fehltage!=null?{text:`${l.fehltage}${l.unent&&l.unent!=="0"?" ("+l.unent+")":""}`,q:"LEB-online",tage:l.fehltage,unent:l.unent}
-      :t||st?{text:`${t?t.unentschuldigt+t.entschuldigt+t.offen:0} T${st?" · "+fmtStd(st.std)+" Std.":""}`,q:"Fehlzeiten-Ampel"+(ft.stand?" "+datumDE(ft.stand):""),tage:t?t.unentschuldigt+t.entschuldigt+t.offen:0,unent:t?t.unentschuldigt:0,std:st?st.std:null,ustd:st?st.unent:null}:null;
+    const versp=st&&st.versp?st.versp:0,vText=versp?` · ${versp}× zu spät`:"";
+    const ampelTip=`Fehlzeiten-Ampel${ft&&ft.stand?" (Stand "+datumDE(ft.stand)+")":""}: T = ganze Fehltage, Std. = Fehlstunden ohne Verspätungen${st&&st.unent?" (davon "+fmtStd(st.unent)+" unentschuldigt)":""}, zu spät = Zahl der Verspätungen`;
+    const fz=l&&l.fehltage!==""&&l.fehltage!=null?{text:`${l.fehltage}${l.unent&&l.unent!=="0"?" ("+l.unent+")":""}${vText}`,tip:`Fehltage laut LEB-online (Klassenbewertung); in Klammern: davon unentschuldigt${versp?". Verspätungen aus der "+ampelTip:""}`,tage:l.fehltage,unent:l.unent,versp}
+      :t||st?{text:`${t?t.unentschuldigt+t.entschuldigt+t.offen:0} T${st?" · "+fmtStd(st.std)+" Std.":""}${vText}`,tip:ampelTip,tage:t?t.unentschuldigt+t.entschuldigt+t.offen:0,unent:t?t.unentschuldigt:0,std:st?st.std:null,ustd:st?st.unent:null,versp}:null;
     return {k,kurse,fn,fz,asv:asvText(l),leb:l,p}});
   return {faecher,out,ftStand:ft&&ft.stand};
 }
@@ -271,9 +273,9 @@ const MARK={leb:"",hand:"✎",akte:"*",gruppe:"°"};
 const kursText=c=>!c||!c.a?"–":c.a+(c.n&&c.n!==c.a?"→"+c.n:"")+(MARK[c.q]||"");
 async function tabelle(K,form,namen){
   const {faecher,out,ftStand}=await zeilen(K);
-  const kopf=["Kuerzel",...(namen?["Vorname","Nachname"]:[]),"Kurs_D","Kurs_M","Kurs_E","Kurs_NW",...faecher.map(spalte),"Fehltage","davon_unent","Fehlstunden","AV_SV","Abschluss_erwartet_LEB","Prognose","Begruendung"];
+  const kopf=["Kuerzel",...(namen?["Vorname","Nachname"]:[]),"Kurs_D","Kurs_M","Kurs_E","Kurs_NW",...faecher.map(spalte),"Fehltage","davon_unent","Fehlstunden","Verspaetungen","AV_SV","Abschluss_erwartet_LEB","Prognose","Begruendung"];
   const z=out.map(x=>[x.k,...(namen?[(namen[x.k]||{}).vor||"",(namen[x.k]||{}).nach||""]:[]),...["D","M","E","NW"].map(s=>kursText(x.kurse[s])),...faecher.map(f=>{const v=x.fn.get(f);return v?`${fmt(v.wert)} (${v.anzahl})`:""}),
-    x.fz?String(x.fz.tage):"",x.fz?String(x.fz.unent||0):"",x.fz&&x.fz.std!=null?fmtStd(x.fz.std):"",x.asv,x.leb&&x.leb.erwartet||"",x.p?x.p.text.titel:"",x.p?x.p.text.gruende.join("; "):""]);
+    x.fz?String(x.fz.tage):"",x.fz?String(x.fz.unent||0):"",x.fz&&x.fz.std!=null?fmtStd(x.fz.std):"",x.fz&&x.fz.versp?String(x.fz.versp):"",x.asv,x.leb&&x.leb.erwartet||"",x.p?x.p.text.titel:"",x.p?x.p.text.gruende.join("; "):""]);
   const info=`# Konferenz-Mappe ${K.gid} · Stand ${K.stand} · Quellen: ${(K.quellen||[]).join(", ")} · Fachschnitt aus LEB-Einzelnoten (mündlich ${Math.round(anteilM()*100)} %, schriftlich ${100-Math.round(anteilM()*100)} %), in Klammern Zahl der Noten; Kurs „E→G“ = Wechsel zum nächsten Halbjahr, ✎ = von Hand, * = aus der Akte, ° = aus der eigenen Kurs-Lerngruppe; Fehltage aus LEB-online (Klassenbewertung), sonst ganze Tage aus der Fehlzeiten-Ampel${ftStand?" (Stand "+ftStand+")":""}; AV/SV: Stufen a–e der Fachlehrkräfte bzw. der Klassenbewertung; Prognose nach AVO-Sek I, ohne mündliches Prüfungsfach${namen?"":" · nur Kürzel"}`;
   if(form==="tsv")return [info,kopf.join("\t"),...z.map(r=>r.join("\t"))].join("\n")+"\n";
   if(form==="csv"){const q=v=>{v=String(v??"");return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return "﻿"+[kopf,...z].map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
@@ -309,8 +311,18 @@ async function zeigen(gid){
     K=(await laden(gid))||{gid,jg:jgAus(gid),stand:"",quellen:[],kinder:{}};if(!K.jg)K.jg=jgAus(gid,g&&g.gruppeText)}
   await zeichnen();
 }
+/* Fehltage für das LEB-Formular bereitlegen: ganze Fehltage aus der Fehlzeiten-Ampel je Kind, mit Namen NUR in diesem Browser
+   (chrome.storage.local saKonfFehltage), damit leb-konferenz.js im Bewertungsformular das richtige Kind findet und die Felder
+   vorausfüllen kann. Speichern in LEB-online bleibt bei der Lehrkraft. */
+async function fehltageBereitlegen(namen){
+  try{if(!(window.chrome&&chrome.storage&&chrome.storage.local))return;const ft=await fehltage(K.gid);if(!ft||!ft.tage)return;
+    const kinder=[];for(const [k,t] of ft.tage){const n=namen[k];if(!n||!n.nach)continue;kinder.push({vor:n.vor||"",nach:n.nach,tage:t.unentschuldigt+t.entschuldigt+t.offen,unent:t.unentschuldigt,offen:t.offen})}
+    for(const k of Object.keys(namen))if(!ft.tage.has(k)&&namen[k].nach)kinder.push({vor:namen[k].vor||"",nach:namen[k].nach,tage:0,unent:0,offen:0});
+    await chrome.storage.local.set({saKonfFehltage:{zeit:Date.now(),gid:K.gid,stand:ft.stand||"",quelle:ft.quelle||"",kinder}})}catch{}
+}
 async function zeichnen(meldung){
   const slot=$("#panel-slot");const namen=await namenLesen(K.gid);const zeigeNamen=store.get("namen-zeigen",true);
+  fehltageBereitlegen(namen);
   let lebInfo={neu:0,offen:0};try{lebInfo=await lebUebernehmen(namen)}catch{}
   const n=Object.keys(K.kinder).length;
   let tab="",aktenNeu=[];
@@ -319,12 +331,12 @@ async function zeichnen(meldung){
     const kursZelle=(x,s)=>{const c=x.kurse[s];if(c&&c.q==="leb")return `<td class="kurs" title="LEB-online Niveaustufen">${esc(kursText(c))}</td>`;
       const tip=!c?"In LEB nicht eingetragen: von Hand wählen (kommt auch in die Akte)":c.q==="hand"?"von Hand eingetragen":c.q==="akte"?"aus der Akte":`aus deiner Kurs-Lerngruppe ${c.g}`;
       return `<td class="kurs"><select class="kf-kurs${c?" "+c.q:""}" data-k="${esc(x.k)}" data-s="${s}" title="${esc(tip)}"><option value="">–</option><option${c&&c.a==="E"?" selected":""}>E</option><option${c&&c.a==="G"?" selected":""}>G</option></select>${c?`<span class="kf-q">${MARK[c.q]}</span>`:""}</td>`};
-    tab=`<div class="kf-wrap"><table class="kf-tab"><thead><tr><th>Kürzel</th><th title="Kurs Deutsch">D</th><th title="Kurs Mathematik">M</th><th title="Kurs Englisch">E</th><th title="Kurs Naturwissenschaften">NW</th>${t.faecher.map(f=>`<th title="${esc(f)}">${esc(spalte(f))}</th>`).join("")}<th title="Fehltage (davon unentschuldigt)">Fehlt.</th><th>AV / SV</th><th>Prognose (AVO)</th></tr></thead><tbody>`+
+    tab=`<div class="kf-wrap"><table class="kf-tab"><thead><tr><th>Kürzel</th><th title="Kurs Deutsch">D</th><th title="Kurs Mathematik">M</th><th title="Kurs Englisch">E</th><th title="Kurs Naturwissenschaften">NW</th>${t.faecher.map(f=>`<th title="${esc(f)}">${esc(spalte(f))}</th>`).join("")}<th title="Fehltage. Aus LEB-online: Zahl (davon unentschuldigt). Aus der Fehlzeiten-Ampel: T = ganze Tage, Std. = Fehlstunden; dazu Verspätungen. Zeiger auf eine Zelle für Einzelheiten.">Fehlt.</th><th>AV / SV</th><th>Prognose (AVO)</th></tr></thead><tbody>`+
       t.out.map(x=>{const nmn=namen[x.k]&&zeigeNamen?`<div class="nm">${esc([namen[x.k].vor,namen[x.k].nach].filter(Boolean).join(" "))}</div>`:"";
         const lebAbschl=x.leb&&(x.leb.erwartet||x.leb.errechnet)?`<li>LEB: ${x.leb.errechnet?"errechnet "+esc(x.leb.errechnet):""}${x.leb.errechnet&&x.leb.erwartet?", ":""}${x.leb.erwartet?"erwartet "+esc(x.leb.erwartet):""}</li>`:"";
         return `<tr><td class="k">${esc(x.k)}${nmn}</td>${["D","M","E","NW"].map(s=>kursZelle(x,s)).join("")}`+
           t.faecher.map(f=>{const v=x.fn.get(f);return v?`<td class="z${v.wert>=4.5?" schwach":""}" title="${esc(f)}: ${v.anzahl} ${v.anzahl===1?"Note":"Noten"}${v.m!=null?" · mündl. "+fmt(v.m):""}${v.s!=null?" · schriftl. "+fmt(v.s):""}">${fmt(v.wert)}</td>`:`<td class="z">–</td>`}).join("")+
-          `<td class="z" title="${x.fz?esc(x.fz.q):"keine Fehlzeiten"}">${x.fz?esc(x.fz.text):"–"}</td>`+
+          `<td class="z" title="${x.fz?esc(x.fz.tip):"keine Fehlzeiten bekannt"}">${x.fz?esc(x.fz.text):"–"}</td>`+
           `<td class="asv" title="${x.leb&&x.leb.faecher&&x.leb.faecher.length?esc(x.leb.faecher.map(f=>f.fach+": "+f.werte.join("/")).join(" · ")):""}">${x.asv?esc(x.asv):"–"}</td>`+
           `<td class="pg">${x.p?`<b>${esc(x.p.text.titel)}</b><ul>${x.p.text.gruende.map(g=>`<li>${esc(g)}</li>`).join("")}${lebAbschl}</ul>`:"–"}</td></tr>`}).join("")+
       `</tbody></table></div><p class="note">${esc(t.info.replace(/^# /,""))}</p>`}
