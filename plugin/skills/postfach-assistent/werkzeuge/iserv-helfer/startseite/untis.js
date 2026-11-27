@@ -71,7 +71,7 @@
       if (stand) {
         h += `<div class="wu-raster">`;
         if (teile.includes("plan")) h += d.plan ? (() => { const z = planZeilen(d.plan); return block("Änderungen im Stundenplan", z.length, z.map(x => { const [m, k] = planArt(x); return zeile(`${wann(x)} ${esc(x.von)}`, esc(planWas(x)) + (x.raum ? ` <span class="wu-raum">${esc(x.raum)}${x.raumAlt && x.raumAlt !== x.raum ? ` <s>${esc(x.raumAlt)}</s>` : ""}</span>` : ""), m, k, esc(x.text)); }), "Keine Änderungen bis Ende nächster Woche.", 5); })() : fehlt("plan");
-        if (teile.includes("pruefungen")) h += d.pruefungen ? (() => { const z = d.pruefungen.slice().sort((a, b) => (a.tag + a.von).localeCompare(b.tag + b.von)); return block("Prüfungen", z.length, z.map(x => zeile(`${wann(x)} ${esc(x.von)}`, esc([x.fach, x.klassen].filter(Boolean).join(" · ") || x.name) + (x.raeume ? ` <span class="wu-raum">${esc(x.raeume)}</span>` : ""), x.art, "", esc([x.name, x.anzahl != null ? x.anzahl + " Schüler:innen" : "", x.text].filter(Boolean).join(" · ")))), "Keine Prüfungen in den nächsten sechs Wochen.", 4); })() : fehlt("pruefungen");
+        if (teile.includes("pruefungen")) h += d.pruefungen ? (() => { const z = pruefMitHinweisen(); return block("Prüfungen", z.length, z.map(x => zeile(`${wann(x)} ${esc(x.von)}`, esc([x.fach, x.klassen].filter(Boolean).join(" · ") || x.name) + (x.raeume ? ` <span class="wu-raum">${esc(x.raeume)}</span>` : ""), x.hinweise.length ? "Überschneidung" : x.art, x.hinweise.length ? "warn" : "", esc([x.hinweise.length ? "Achtung: " + x.hinweise.join("; ") : "", x.hinweise.length ? x.art : "", x.name, x.anzahl != null ? x.anzahl + " Schüler:innen" : "", x.text].filter(Boolean).join(" · ")))), "Keine Prüfungen in den nächsten sechs Wochen.", 4); })() : fehlt("pruefungen");
         if (teile.includes("hausaufgaben")) h += d.hausaufgaben ? (() => { const hI = heuteIso(), z = d.hausaufgaben.filter(x => x.faellig >= hI); return block("Hausaufgaben fällig", z.length, z.map(x => zeile(x.faellig === hI ? "heute" : tagKurz(x.faellig), esc([x.fach, x.klasse].filter(Boolean).join(" · ")), x.eigen ? "meine" : "", "neu", esc(x.text + (x.bemerkung ? " · " + x.bemerkung : "")))), "Keine Hausaufgaben mit Termin ab heute.", 4); })() : fehlt("hausaufgaben");
         if (teile.includes("offen")) h += d.offen ? (() => { const z = d.offen.liste.slice().sort((a, b) => (b.tag + b.von).localeCompare(a.tag + a.von)); return block("Offene Klassenbuch-Stunden", z.length, z.map(x => zeile(`${tagKurz(x.tag)} ${esc(x.von)}`, esc([x.fach, x.klassen].filter(Boolean).join(" · ")), [x.anwesenheit ? "Anwesenheit" : "", x.thema ? "Lehrstoff" : ""].filter(Boolean).join(" + ") || "offen", "warn", "")), "Alles eingetragen.", 4); })() : fehlt("offen");
         h += `</div>`;
@@ -289,8 +289,36 @@
   if (an().length) holen();
   // Nach einer Pause (Tab war im Hintergrund) neu lesen, höchstens alle 10 Minuten
   document.addEventListener("visibilitychange", () => { if (!document.hidden && an().length && !laeuft && (!stand || Date.now() - stand.stand > 6e5)) holen(); });
+  /* ---- Prüfungen für den Wochenplaner, mit Hinweisen auf Überschneidungen (ab 0.44) ----
+     Geprüft wird nur, was WebUntis für deine Prüfungen liefert, und was in deinen Kalendern steht:
+     zwei Prüfungen einer Klasse am selben Tag, mehr als drei in einer Woche, zeitgleiche Prüfungen, Prüfung während eines Kalendertermins. */
+  const pruefListe = () => an().includes("pruefungen") && stand && stand.daten && Array.isArray(stand.daten.pruefungen) ? stand.daten.pruefungen : [];
+  const pruefKl = x => String(x.klassen || "").split(",").map(k => k.trim()).filter(Boolean);
+  const pruefMo = iso => { const d = new Date(iso + "T12:00"); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return isoTag(d); };
+  const pruefName = x => [x.art, x.fach, x.klassen].filter(Boolean).join(" ") || x.name || "Prüfung";
+  const schneidet = (a1, a2, b1, b2) => a1 && a2 && b1 && b2 && a1 < b2 && b1 < a2;
+  function pruefMitHinweisen() {
+    const l = pruefListe().slice().sort((a, b) => (a.tag + a.von).localeCompare(b.tag + b.von)).map(x => Object.assign({}, x, { hinweise: [] }));
+    const jeWoche = {};
+    l.forEach((x, i) => {
+      for (const k of pruefKl(x)) { const s = pruefMo(x.tag) + "|" + k; (jeWoche[s] = jeWoche[s] || []).push(i); }
+      l.forEach((y, j) => {
+        if (j <= i || y.tag !== x.tag) return;
+        const gem = pruefKl(x).filter(k => pruefKl(y).includes(k));
+        if (schneidet(x.von, x.bis, y.von, y.bis)) { x.hinweise.push(`zeitgleich mit ${pruefName(y)} (${y.von})`); y.hinweise.push(`zeitgleich mit ${pruefName(x)} (${x.von})`); }
+        else if (gem.length) { x.hinweise.push(`${gem.join(", ")} schreibt am selben Tag auch ${[y.art, y.fach].filter(Boolean).join(" ") || "eine Prüfung"}`); y.hinweise.push(`${gem.join(", ")} schreibt am selben Tag auch ${[x.art, x.fach].filter(Boolean).join(" ") || "eine Prüfung"}`); }
+      });
+      // Kalendertermine mit Uhrzeit am selben Tag (aus den eingebundenen Kalendern der Startseite)
+      try { if (typeof termineAm === "function") for (const t of termineAm(x.tag).filter(t => t.art === "kal" && !t.weg && t.zeit && t.bis)) if (schneidet(x.von, x.bis, t.zeit, t.bis)) x.hinweise.push(`überschneidet sich mit dem Termin „${typeof titelSicher === "function" ? titelSicher(t.titel) : "Termin"}“ (${t.zeit} bis ${t.bis})`); } catch (e) {}
+    });
+    for (const s in jeWoche) if (jeWoche[s].length > 3) for (const i of jeWoche[s]) l[i].hinweise.push(`${s.split("|")[1]} hat in dieser Woche ${jeWoche[s].length} Prüfungen`);
+    return l;
+  }
+  /* Für „Woche planen“ und planung/stundenplan.md (start-a.js): Prüfungen eines Tages als Textzeilen, Hinweise getrennt */
+  const pruefungen = iso => pruefMitHinweisen().filter(x => x.tag === iso).map(x => ({ text: `${x.von}${x.bis ? "–" + x.bis : ""} ${pruefName(x)}${x.raeume ? " (" + x.raeume + ")" : ""}${x.anzahl != null ? ", " + x.anzahl + " Arbeiten" : ""}`, hinweise: x.hinweise.slice() }));
+
   /* Für die Wochenansicht (start-a.js): Änderungen eines Tages, Doppelstunden zusammengefasst. Leer, solange der Bereich aus ist. */
   const aenderungen = iso => !an().includes("plan") || !stand || !stand.daten || !stand.daten.plan ? []
     : planZeilen(stand.daten.plan.filter(x => x.tag === iso), true).map(x => ({ von: x.von, bis: x.bis, fach: x.fach, was: planWas(x), marke: planArt(x)[0], aus: /^CANCELL?ED$/i.test(x.status), raum: x.raum, raumAlt: x.raumAlt, text: x.text }));
-  window.saUntis = { holen, aenderungen, spaetSofort, _test: { planArt, planWas, planZeilen } };
+  window.saUntis = { holen, aenderungen, pruefungen, spaetSofort, _test: { planArt, planWas, planZeilen } };
 })();

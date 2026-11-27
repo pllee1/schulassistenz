@@ -947,22 +947,25 @@ $("#w-vor").addEventListener("click",()=>{wocheOffset++;renderWoche()});
 $("#w-heute").addEventListener("click",()=>{wocheOffset=0;renderWoche()});
 $("#w-plan").addEventListener("click",zeigePlanEinrichten);
 function wochenText(off){
-  const mo=montag(off);const zeilen=[];const heute=isoTag(new Date());
+  const mo=montag(off);const zeilen=[];const heute=isoTag(new Date());const warn=[];
   for(let i=0;i<5;i++){
     const d=new Date(mo);d.setDate(mo.getDate()+i);const iso=isoTag(d);
     const std=plan.events.filter(e=>isoTag(e.start)===iso).map(e=>{const aus=e.status==="CANCELLED"||/entf[aä]llt|ausfall/i.test((e.titel||"")+" "+(e.info||""));
       return `${hhmm(e.start)}–${e.ende?hhmm(e.ende):"?"} ${gruppeZu(e)||e.titel||"Unterricht"}${e.raum?" ("+e.raum+")":""}${aus?" entfällt":""}`});
     const kt=termineAm(iso).filter(t=>t.art==="kal"&&!t.weg).map(t=>`${t.zeit?t.zeit+(t.bis?"–"+t.bis:"")+" ":"ganztägig "}${titelSicher(t.titel)}`);
-    zeilen.push(`${TAGE[i]} ${d.getDate()}.${d.getMonth()+1}.: ${std.length?std.join("; "):"kein Unterricht"}${kt.length?" | Termine: "+kt.join("; "):""}`);
+    // Prüfungen aus WebUntis (untis.js, nur wenn der Bereich „Prüfungen“ eingeschaltet ist), mit Hinweisen auf Überschneidungen
+    const pr=window.saUntis&&window.saUntis.pruefungen?window.saUntis.pruefungen(iso):[];
+    for(const p of pr)for(const h of p.hinweise)warn.push(`${TAGE[i]} ${d.getDate()}.${d.getMonth()+1}., ${p.text}: ${h}`);
+    zeilen.push(`${TAGE[i]} ${d.getDate()}.${d.getMonth()+1}.: ${std.length?std.join("; "):"kein Unterricht"}${kt.length?" | Termine: "+kt.join("; "):""}${pr.length?" | Prüfungen: "+pr.map(p=>p.text).join("; "):""}`);
   }
   const auf=(ordner.aufgaben||[]).filter(a=>!/^(erledigt|gestrichen)/i.test(a.status));
   const fr=new Date(mo);fr.setDate(mo.getDate()+6);const bis=isoTag(fr);
   const rel=auf.filter(a=>!a.datum||a.datum<=bis).slice(0,25).map(a=>`- ${a.art}: ${titelSicher(a.was)}${a.datum?(a.bis?" bis ":" am ")+a.datum+(a.zeit?" "+a.zeit:""):""}${a.dauer?" ("+a.dauer+" min)":""} [${a.status}]`);
-  return {mo,zeilen,rel,heute};
+  return {mo,zeilen,rel,heute,warn};
 }
 function stundenplanMd(){
   const t=[`# Stundenplan (aus der Startseite, ${plan.quelle}, Stand ${isoTag(new Date(plan.stand))})`,"","Unterricht als feste Blöcke, dazu Termine aus weiteren Kalendern (ohne Namen). Lerngruppen als Kürzel.",""];
-  for(let off=0;off<3;off++){const w=wochenText(off);t.push(`## KW ${kw(w.mo)}`,...w.zeilen.map(z=>"- "+z),"")}
+  for(let off=0;off<3;off++){const w=wochenText(off);t.push(`## KW ${kw(w.mo)}`,...w.zeilen.map(z=>"- "+z),...(w.warn.length?["","Überschneidungen bei Prüfungen:",...w.warn.map(z=>"- "+z)]:[]),"")}
   return t.join("\n");
 }
 async function stundenplanSpeichern(nachfragen){
@@ -976,6 +979,7 @@ $("#w-planen").addEventListener("click",()=>{const k=ALLE.find(x=>x.id==="woche"
   const w=wochenText(wocheOffset);
   let a=`Plane meine Schulwoche KW ${kw(w.mo)} ab ${w.mo.toLocaleDateString("de-DE")}.`;
   if(plan.events.length||kalListe().length)a+=`\n\nUnterricht (feste Blöcke, aus WebUntis) und Termine aus meinen Kalendern:\n${w.zeilen.join("\n")}`;
+  if(w.warn.length)a+=`\n\nÜberschneidungen bei Prüfungen (aus WebUntis, bitte am Anfang nennen und einen Ausweg vorschlagen):\n${w.warn.map(z=>"- "+z).join("\n")}`;
   if(w.rel.length)a+=`\n\nOffene Punkte aus meiner Aufgabenliste:\n${w.rel.join("\n")}`;
   oeffne({...k,auftrag:a});stundenplanSpeichern(false)});
 

@@ -82,6 +82,10 @@ Die WebUntis-Adresse deiner Schule nimmt der Helfer aus dem Stundenplan-Link. Fe
 
 Der Helfer liest nur: Er ruft ausschließlich die vier Abfragen auf, die auch WebUntis selbst für diese Seiten benutzt, und ändert nichts. Namen von Schüler:innen und Lehrkräften übernimmt er nicht (bei Prüfungen nur die Anzahl). Die Daten stehen nur im geöffneten Tab, werden nicht gespeichert und gehen nicht an Claude. Fehlzeiten kommen weiter über den Export (nächster Abschnitt), weil dort Namen stehen, die die Startseite erst durch Kürzel ersetzt.
 
+## Prüfungen im Wochenplan, mit Warnung bei Überschneidungen (ab 0.44)
+
+Ist bei „WebUntis direkt lesen“ der Bereich „Prüfungen“ eingeschaltet, gehen die Prüfungstermine mit an den Wochenplaner: „Woche planen“ nennt sie je Tag, und die Datei `planung/stundenplan.md` enthält sie ebenfalls. Der Helfer prüft dabei auf Überschneidungen und markiert sie im WebUntis-Kasten mit „Überschneidung“: zwei Prüfungen einer Klasse am selben Tag, mehr als drei in einer Woche, zeitgleiche Prüfungen und Prüfungen während eines Termins aus deinen Kalendern. Er sieht nur die Prüfungen, die WebUntis dir zeigt. Arbeiten einer Klasse bei anderen Lehrkräften kennt er nicht.
+
 ## Lehrstoff aus der Live-Beobachtung in WebUntis eintragen (ab 0.38)
 
 Das ist die einzige Stelle, an der der Helfer in WebUntis schreibt. Eigener Schalter unter ⚙ „Einrichtung & Daten“ › „WebUntis direkt lesen“ › „In WebUntis eintragen“, anfangs aus.
