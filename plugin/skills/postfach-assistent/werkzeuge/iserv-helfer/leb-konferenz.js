@@ -1,4 +1,4 @@
-/* Schulassistenz-Helfer – LEB-online, Bewertungsformular der Klassenbewertung (ab 0.42): für die Konferenz-Mappe mitlesen
+/* Schulassistenz-Helfer – LEB-online, Bewertungsformular der Klassenbewertung (ab 0.43): für die Konferenz-Mappe mitlesen
    Läuft nur, wenn die Konferenz-Mappe auf der Startseite eingeschaltet ist (chrome.storage.local saKonfAn).
    Liest beim Öffnen des Formulars, was dort steht: Fehltage (gesamt, unentschuldigt), die AV/SV-Stufen (eigene Auswahl und,
    soweit auf der Seite sichtbar, die Bewertungen der Fachlehrkräfte), errechneter und erwarteter Abschluss, Zeugnisart.
