@@ -749,5 +749,6 @@ Bitte prüfe die Auswertung und sag mir, was als Nächstes zu tun ist. Entwürfe
 
 window.saFehlzeiten={zeigen,aktualisieren:()=>seitenleiste().catch(()=>{}),
   /* ganze Fehltage je Kürzel aus dem gespeicherten Stand (für die Konferenz-Mappe) */
-  tage:async gid=>{const s=await standLesen(gid);return s?{stand:s.stand,quelle:s.quelle,tage:ganzeTage(s.zeilen)}:null},_test:{pdfZeilen,nameAusDatei,textPseudo,namenWoerterLaden,vermerkeFuer,aktenSummen:()=>aktenSummen(),setF:x=>{F=x},tabelleLesen,verarbeiten,ampel,regeln,fristEnde,datumISO,pseudoZeilen,cfbStream,biffZeilen}};
+  tage:async gid=>{const s=await standLesen(gid);if(!s)return null;const stunden=new Map();for(const z of s.zeilen){const x=stunden.get(z.k)||{std:0,unent:0,versp:0};if(z.verspaetung)x.versp++;else{x.std+=z.std;if(z.status==="unentschuldigt")x.unent+=z.std}stunden.set(z.k,x)}
+    return {stand:s.stand,quelle:s.quelle,tage:ganzeTage(s.zeilen),stunden}},_test:{pdfZeilen,nameAusDatei,textPseudo,namenWoerterLaden,vermerkeFuer,aktenSummen:()=>aktenSummen(),setF:x=>{F=x},tabelleLesen,verarbeiten,ampel,regeln,fristEnde,datumISO,pseudoZeilen,cfbStream,biffZeilen}};
 })();

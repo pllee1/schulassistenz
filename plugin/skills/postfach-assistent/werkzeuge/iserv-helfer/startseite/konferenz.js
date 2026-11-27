@@ -142,14 +142,14 @@ function fachnoten(noten){
 const fmt=x=>x==null?"":x.toFixed(1).replace(".",",");
 const jgAus=(...q)=>{for(const x of q){const m=String(x||"").match(/^\D*?(\d{1,2})/);if(m)return +m[1]}return 0};
 
-function prognose(kind,jg){
+function prognose(kind,jg,kurse){
   if(!window.saAVO||!(jg===9||jg===10))return null;
   const fn=fachnoten(kind.noten||[]);const grades={},levels={};let wpkName="",wpkFrz=false;
   for(const f of fn)if(f.k&&!grades[f.k]){grades[f.k]=f.note;if(f.k==="WPK"){wpkName=f.fach.replace(/^WPK\s*/i,"");wpkFrz=/franz/i.test(f.fach)}}
-  for(const k of ["D","M","E","NW"]){const c=(kind.kurse||{})[k];if(c&&c.a)levels[k]=c.a}
+  for(const k of ["D","M","E","NW"]){const c=(kurse||kind.kurse||{})[k];if(c&&c.a)levels[k]=c.a}
   if(!fn.length)return {r:null,text:{titel:"keine Noten",gruende:["Noch keine Einzelnoten aus der LEB-Lernstandskontrolle"]}};
   const fehlKurs=["D","M","E","NW"].filter(k=>!levels[k]);
-  if(fehlKurs.length)return {r:null,text:{titel:"keine Prognose",gruende:["Kurs E/G fehlt in den LEB-Niveaustufen: "+fehlKurs.map(k=>KURZ[k]).join(", ")]}};
+  if(fehlKurs.length)return {r:null,text:{titel:"keine Prognose",gruende:["Kurs E/G fehlt (in LEB nicht eingetragen, links von Hand nachtragen): "+fehlKurs.map(k=>KURZ[k]).join(", ")]}};
   const r=saAVO.check({jg,stand:"prognose",wpkFrz,wpkName,muendlich:"",grades,levels});
   // „Ohne Note“ nur für Fächer, die das Kind laut LEB hat (Eintrag ohne Note), nicht für alle Fächer der AVO
   const belegt=new Set((kind.noten||[]).map(n=>fachKey(n.fach)).filter(Boolean));
@@ -186,13 +186,71 @@ async function laden(gid){
 }
 async function speichern(K){
   const root=await sdSchreib();const a=await root.getDirectoryHandle("ausgaben",{create:true});const d=await a.getDirectoryHandle("konferenz",{create:true});
-  const sauber={gid:K.gid,jg:K.jg,stand:K.stand,quellen:K.quellen,kinder:K.kinder};
+  const sauber={gid:K.gid,jg:K.jg,stand:K.stand,quellen:K.quellen,kinder:K.kinder};   // nur Kürzel, keine Namen
   await schreibe(d,DATEI(K.gid)+".json",JSON.stringify(sauber,null,1));
   await schreibe(d,DATEI(K.gid)+".tsv",await tabelle(K,"tsv"));
 }
 
+/* ---------- Kurse: LEB, von Hand, Akte, eigene Kurs-Lerngruppe ---------- */
+const KURS_FACH={D:"Deutsch",M:"Mathematik",E:"Englisch",NW:"Naturwissenschaften"};
+const KURS_ZEILE=/^- (\d{4}-\d{2}-\d{2}) \| [^|]*\| Kurs (Deutsch|Mathematik|Englisch|Naturwissenschaften): ([EG])-Kurs[^|]*\|[^|]*\| (bestätigt|offen)\s*$/gm;
+function akteVon(gid,k){const g=ordner.gruppen.find(x=>x.id===gid);const a=g&&g.akten.find(x=>x.kuerzel===k);return a?a.text||"":""}
+function kurseAusAkte(text){const o={};for(const m of String(text).matchAll(KURS_ZEILE)){const s=Object.keys(KURS_FACH).find(x=>KURS_FACH[x]===m[2]);if(s)o[s]=m[3]}return o}
+const feldVon=(t,n)=>((String(t||"").match(new RegExp("^"+n+":\\s*(.+)$","mi"))||[])[1]||"").trim();
+function kurseAusGruppen(gid,k){
+  const o={};const v=(typeof verkn!=="undefined"?verkn:[]).find(x=>x.kuerzel.some(y=>y.k===k&&y.g===gid));if(!v)return o;
+  for(const y of v.kuerzel){if(y.g===gid)continue;const g=ordner.gruppen.find(x=>x.id===y.g);if(!g)continue;
+    const s=fachKey(feldVon(g.gruppeText,"fach"));const kurs=feldVon(g.gruppeText,"kurs")+" "+y.g;
+    const st=/(^|[\s-])E(-?kurs)?\b|erweitert/i.test(kurs)?"E":/(^|[\s-])G(-?kurs)?\b|grundkurs/i.test(kurs)?"G":"";
+    if(KURS_FACH[s]&&st&&!o[s])o[s]={a:st,g:y.g}}
+  return o;
+}
+/* Wirksamer Kurs je Fach: LEB-Niveaustufen > von Hand (Mappe) > Akte > eigene Kurs-Lerngruppe */
+function kurseEff(k,kind){
+  const o={};const akte=kurseAusAkte(akteVon(K.gid,k)),gr=kurseAusGruppen(K.gid,k),hand=kind.kurseHand||{};
+  for(const s of Object.keys(KURS_FACH)){const l=(kind.kurse||{})[s];
+    if(l&&l.a)o[s]={...l,q:"leb"};else if(hand[s])o[s]={a:hand[s],q:"hand"};else if(akte[s])o[s]={a:akte[s],q:"akte"};else if(gr[s])o[s]={a:gr[s].a,q:"gruppe",g:gr[s].g}}
+  return o;
+}
+async function akteSchreiben(k,zeilenListe){
+  const sd=await sdSchreib();const gd=await (await sd.getDirectoryHandle("lerngruppen")).getDirectoryHandle(K.gid);
+  const fh=await gd.getFileHandle(k+".md");let t=await (await fh.getFile()).text();let n=0;
+  for(const z of zeilenListe){if(kurseAusAkte(t)[z.s]===z.a)continue;t=abschnittErgaenzen(t,"Lernstand",z.zeile);n++}
+  if(n){const w=await fh.createWritable();await w.write(t);await w.close()}
+  return n;
+}
+const kursZeile=(s,a,quelle,art)=>({s,a,zeile:`- ${heuteISO()} | ${art} | Kurs ${KURS_FACH[s]}: ${a}-Kurs | Quelle: ${quelle} | bestätigt`});
+async function aktenNeuLesen(){try{if(typeof ordnerLesen==="function"&&typeof ordnerHandle!=="undefined"){await ordnerLesen(ordnerHandle);if(typeof renderOrdner==="function")renderOrdner()}}catch{}}
+
+/* ---------- AV/SV und Fehltage aus LEB-online (vom Helfer beim Öffnen der Bewertungsformulare gemerkt) ---------- */
+async function lebUebernehmen(namen){
+  if(!(window.chrome&&chrome.storage&&chrome.storage.local))return {neu:0,offen:0};
+  const {saLebKonf={}}=await chrome.storage.local.get("saLebKonf");let neu=0,offen=0;
+  for(const [id,d] of Object.entries(saLebKonf)){
+    const treffer=new Set();for(const t of d.kandidaten||[]){const k=zuordnen(t,namen);if(k)treffer.add(k)}
+    if(treffer.size!==1){offen++;continue}
+    const k=[...treffer][0];K.kinder[k]=K.kinder[k]||{};
+    K.kinder[k].leb={halbjahr:d.halbjahr,stand:new Date(d.zeit).toISOString().slice(0,10),fehltage:d.fehltage,unent:d.unent,av:d.av,sv:d.sv,errechnet:d.errechnet,erwartet:d.erwartet,zeugnisart:d.zeugnisart,
+      faecher:(d.faecher||[]).map(f=>({fach:f.fach,werte:f.werte})),summen:d.summen||{av:{},sv:{}},aufbau:d.aufbau||""};
+    delete saLebKonf[id];neu++}
+  if(neu){await chrome.storage.local.set({saLebKonf});if(!K.quellen.includes("LEB Klassenbewertung"))K.quellen.push("LEB Klassenbewertung");K.stand=heuteISO();await speichern(K)}
+  return {neu,offen};
+}
+function asvText(l){
+  if(!l)return "";const z=(o)=>Object.entries(o||{}).sort().map(([s,n])=>`${n}×${s}`).join(" ");
+  const sum={av:{},sv:{}};
+  if(l.faecher&&l.faecher.length)for(const f of l.faecher){if(f.werte[0])sum.av[f.werte[0]]=(sum.av[f.werte[0]]||0)+1;if(f.werte[1])sum.sv[f.werte[1]]=(sum.sv[f.werte[1]]||0)+1}
+  else{sum.av=l.summen.av;sum.sv=l.summen.sv}
+  const teile=[];if(Object.keys(sum.av).length||Object.keys(sum.sv).length)teile.push(`Fachlehrkräfte AV ${z(sum.av)||"–"}, SV ${z(sum.sv)||"–"}`);
+  if(l.av||l.sv)teile.push(`Klassenbewertung AV ${l.av||"–"}, SV ${l.sv||"–"}`);
+  return teile.join("; ");
+}
+
 /* ---------- Übersicht ---------- */
 async function fehltage(gid){try{return window.saFehlzeiten&&saFehlzeiten.tage?await saFehlzeiten.tage(gid):null}catch{return null}}
+function spalte(f){const k=fachKey(f);if(/franz/i.test(f))return "Franz.";if(/spanisch/i.test(f))return "Span.";
+  if(k==="WPK"){const r=f.replace(/^\s*(WPK|Wahlpflicht\S*)\s*/i,"");const t=(r.split(/\s+-\s+/).pop()||r).trim();return "WPK "+(t.length>12?t.slice(0,11)+"…":t)}
+  return KURZ[k]||(f.length>10?f.slice(0,9)+"…":f)}
 function faecherReihe(K){
   const f=new Map();for(const k of Object.values(K.kinder))for(const x of fachnoten(k.noten||[]))if(!f.has(x.fach))f.set(x.fach,x.k);
   const ord=Object.keys(KURZ);return [...f.entries()].sort((a,b)=>(ord.indexOf(a[1])+1||99)-(ord.indexOf(b[1])+1||99)||a[0].localeCompare(b[0],"de")).map(x=>x[0]);
@@ -200,19 +258,27 @@ function faecherReihe(K){
 async function zeilen(K){
   const ft=await fehltage(K.gid);const faecher=faecherReihe(K);
   const out=Object.keys(K.kinder).sort((a,b)=>a.localeCompare(b,"de",{numeric:true})).map(k=>{
-    const kind=K.kinder[k];const fn=new Map(fachnoten(kind.noten||[]).map(x=>[x.fach,x]));
-    const t=ft&&ft.tage&&ft.tage.get(k);const p=prognose(kind,K.jg);
-    return {k,kurse:kind.kurse||{},fn,ft:t?{ganz:t.unentschuldigt+t.entschuldigt+t.offen,unent:t.unentschuldigt,offen:t.offen}:null,p}});
+    const kind=K.kinder[k];const fn=new Map(fachnoten(kind.noten||[]).map(x=>[x.fach,x]));const kurse=kurseEff(k,kind);
+    const t=ft&&ft.tage&&ft.tage.get(k);const st=ft&&ft.stunden&&ft.stunden.get(k);const p=prognose(kind,K.jg,kurse);
+    const l=kind.leb||null;
+    const versp=st&&st.versp?st.versp:0,vText=versp?` · ${versp}× zu spät`:"";
+    const ampelTip=`Fehlzeiten-Ampel${ft&&ft.stand?" (Stand "+datumDE(ft.stand)+")":""}: T = ganze Fehltage, Std. = Fehlstunden ohne Verspätungen${st&&st.unent?" (davon "+fmtStd(st.unent)+" unentschuldigt)":""}, zu spät = Zahl der Verspätungen`;
+    const fz=l&&l.fehltage!==""&&l.fehltage!=null?{text:`${l.fehltage}${l.unent&&l.unent!=="0"?" ("+l.unent+")":""}${vText}`,tip:`Fehltage laut LEB-online (Klassenbewertung); in Klammern: davon unentschuldigt${versp?". Verspätungen aus der "+ampelTip:""}`,tage:l.fehltage,unent:l.unent,versp}
+      :t||st?{text:`${t?t.unentschuldigt+t.entschuldigt+t.offen:0} T${st?" · "+fmtStd(st.std)+" Std.":""}${vText}`,tip:ampelTip,tage:t?t.unentschuldigt+t.entschuldigt+t.offen:0,unent:t?t.unentschuldigt:0,std:st?st.std:null,ustd:st?st.unent:null,versp}:null;
+    return {k,kurse,fn,fz,asv:asvText(l),leb:l,p}});
   return {faecher,out,ftStand:ft&&ft.stand};
 }
-const kursText=c=>!c||!c.a?"–":c.a+(c.n&&c.n!==c.a?"→"+c.n:"");
-async function tabelle(K,form){
+const fmtStd=n=>String(Math.round(n*10)/10).replace(".",",");
+const MARK={leb:"",hand:"✎",akte:"*",gruppe:"°"};
+const kursText=c=>!c||!c.a?"–":c.a+(c.n&&c.n!==c.a?"→"+c.n:"")+(MARK[c.q]||"");
+async function tabelle(K,form,namen){
   const {faecher,out,ftStand}=await zeilen(K);
-  const kopf=["Kuerzel","Kurs_D","Kurs_M","Kurs_E","Kurs_NW",...faecher.map(f=>KURZ[fachKey(f)]||f),"Fehltage","davon_unent","Prognose","Begruendung"];
-  const z=out.map(x=>[x.k,...["D","M","E","NW"].map(s=>kursText(x.kurse[s])),...faecher.map(f=>{const v=x.fn.get(f);return v?`${fmt(v.wert)} (${v.anzahl})`:""}),
-    x.ft?String(x.ft.ganz):"",x.ft?String(x.ft.unent):"",x.p?x.p.text.titel:"",x.p?x.p.text.gruende.join("; "):""]);
-  const info=`# Konferenz-Mappe ${K.gid} · Stand ${K.stand} · Quellen: ${(K.quellen||[]).join(", ")} · Fachschnitt aus LEB-Einzelnoten (mündlich ${Math.round(anteilM()*100)} %, schriftlich ${100-Math.round(anteilM()*100)} %), in Klammern Zahl der Noten; Kurs „E→G“ = Wechsel zum nächsten Halbjahr; Fehltage = ganze Tage${ftStand?" (Fehlzeiten-Stand "+ftStand+")":" (kein Fehlzeiten-Stand)"}; Prognose nach AVO-Sek I, ohne mündliches Prüfungsfach · nur Kürzel`;
+  const kopf=["Kuerzel",...(namen?["Vorname","Nachname"]:[]),"Kurs_D","Kurs_M","Kurs_E","Kurs_NW",...faecher.map(spalte),"Fehltage","davon_unent","Fehlstunden","Verspaetungen","AV_SV","Abschluss_erwartet_LEB","Prognose","Begruendung"];
+  const z=out.map(x=>[x.k,...(namen?[(namen[x.k]||{}).vor||"",(namen[x.k]||{}).nach||""]:[]),...["D","M","E","NW"].map(s=>kursText(x.kurse[s])),...faecher.map(f=>{const v=x.fn.get(f);return v?`${fmt(v.wert)} (${v.anzahl})`:""}),
+    x.fz?String(x.fz.tage):"",x.fz?String(x.fz.unent||0):"",x.fz&&x.fz.std!=null?fmtStd(x.fz.std):"",x.fz&&x.fz.versp?String(x.fz.versp):"",x.asv,x.leb&&x.leb.erwartet||"",x.p?x.p.text.titel:"",x.p?x.p.text.gruende.join("; "):""]);
+  const info=`# Konferenz-Mappe ${K.gid} · Stand ${K.stand} · Quellen: ${(K.quellen||[]).join(", ")} · Fachschnitt aus LEB-Einzelnoten (mündlich ${Math.round(anteilM()*100)} %, schriftlich ${100-Math.round(anteilM()*100)} %), in Klammern Zahl der Noten; Kurs „E→G“ = Wechsel zum nächsten Halbjahr, ✎ = von Hand, * = aus der Akte, ° = aus der eigenen Kurs-Lerngruppe; Fehltage aus LEB-online (Klassenbewertung), sonst ganze Tage aus der Fehlzeiten-Ampel${ftStand?" (Stand "+ftStand+")":""}; AV/SV: Stufen a–e der Fachlehrkräfte bzw. der Klassenbewertung; Prognose nach AVO-Sek I, ohne mündliches Prüfungsfach${namen?"":" · nur Kürzel"}`;
   if(form==="tsv")return [info,kopf.join("\t"),...z.map(r=>r.join("\t"))].join("\n")+"\n";
+  if(form==="csv"){const q=v=>{v=String(v??"");return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return "﻿"+[kopf,...z].map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
   return {kopf,z,info,faecher,out};
 }
 
@@ -225,7 +291,7 @@ css.textContent=`.kf-tab{width:100%;border-collapse:collapse;font-size:13px}.kf-
 .kf-tab .pg b{display:block}.kf-tab .pg ul{margin:2px 0 0;padding-left:16px;font-size:12px;color:var(--muted)}
 .kf-wrap{overflow-x:auto}.kf-drop{border:1.5px dashed var(--line);border-radius:10px;padding:12px;text-align:center;font-size:13.5px;color:var(--muted)}.kf-drop.ueber{border-color:var(--accent);color:var(--ink)}
 .kf-hinweis{border-left:4px solid var(--warn);background:var(--warn-soft);border-radius:8px;padding:8px 12px;font-size:13px}
-.kf-hinweis ul{margin:4px 0 0;padding-left:18px}.kf-aufbau{width:100%;min-height:160px;font-family:var(--f-mono);font-size:11.5px}`;
+.kf-hinweis ul{margin:4px 0 0;padding-left:18px}.kf-tab select.kf-kurs{font:inherit;font-family:var(--f-mono);padding:0 2px;background:transparent;color:inherit;border:1px dashed var(--line);border-radius:4px}.kf-tab .kf-q{font-size:11px;color:var(--muted);margin-left:1px}.kf-tab td.asv{font-size:12px;min-width:120px}.kf-tab td.pg{min-width:240px}.kf-aufbau{width:100%;min-height:160px;font-family:var(--f-mono);font-size:11.5px}`;
 document.head.appendChild(css);
 
 let K=null;           // {gid, jg, stand, quellen, kinder:{Kürzel:{noten, kurse}}}
@@ -238,30 +304,56 @@ async function zeigen(gid){
   if(!AN()){
     slot.innerHTML=`<div class="panel"><h4>Konferenz-Mappe</h4><p>Für Zeugnis- und Pädagogische Konferenzen: Du druckst in LEB-online unter <b>Klassenbewertungen › Berichte</b> die PDFs „Lernstandskontrolle“ (alle Schüler) und „Niveaustufen“ und ziehst sie hier hinein. Der Helfer liest sie nur in diesem Fenster, ersetzt Namen durch Kürzel und zeigt je Kind Kurse, Fachschnitte aller Fächer, ganze Fehltage und eine Abschlussprognose mit Begründung. LEB-online selbst wird dabei nicht aufgerufen.</p>
       <div class="actions"><button class="btn primary" id="kf-an">Konferenz-Mappe einschalten</button></div></div>`;
-    $("#kf-an").addEventListener("click",()=>{store.set("konf-an",true);zeigen(gid)});return}
+    $("#kf-an").addEventListener("click",()=>{store.set("konf-an",true);try{chrome.storage.local.set({saKonfAn:true})}catch{}zeigen(gid)});return}
+  try{chrome.storage.local.set({saKonfAn:true})}catch{}
   if(ordner.zustand!=="an"||!sdRoot()){slot.innerHTML=`<div class="panel"><h4>Konferenz-Mappe</h4><p>Dafür braucht die Seite deine Kürzellisten. Bitte unter „Lerngruppen“ zuerst den Datenordner verbinden.</p></div>`;return}
   if(!K||K.gid!==gid){ohne=[];aufbau="";const g=ordner.gruppen.find(x=>x.id===gid);
     K=(await laden(gid))||{gid,jg:jgAus(gid),stand:"",quellen:[],kinder:{}};if(!K.jg)K.jg=jgAus(gid,g&&g.gruppeText)}
   await zeichnen();
 }
+/* Fehltage für das LEB-Formular bereitlegen: ganze Fehltage aus der Fehlzeiten-Ampel je Kind, mit Namen NUR in diesem Browser
+   (chrome.storage.local saKonfFehltage), damit leb-konferenz.js im Bewertungsformular das richtige Kind findet und die Felder
+   vorausfüllen kann. Speichern in LEB-online bleibt bei der Lehrkraft. */
+async function fehltageBereitlegen(namen){
+  try{if(!(window.chrome&&chrome.storage&&chrome.storage.local))return;const ft=await fehltage(K.gid);if(!ft||!ft.tage)return;
+    const kinder=[];for(const [k,t] of ft.tage){const n=namen[k];if(!n||!n.nach)continue;kinder.push({vor:n.vor||"",nach:n.nach,tage:t.unentschuldigt+t.entschuldigt+t.offen,unent:t.unentschuldigt,offen:t.offen})}
+    for(const k of Object.keys(namen))if(!ft.tage.has(k)&&namen[k].nach)kinder.push({vor:namen[k].vor||"",nach:namen[k].nach,tage:0,unent:0,offen:0});
+    await chrome.storage.local.set({saKonfFehltage:{zeit:Date.now(),gid:K.gid,stand:ft.stand||"",quelle:ft.quelle||"",kinder}})}catch{}
+}
 async function zeichnen(meldung){
   const slot=$("#panel-slot");const namen=await namenLesen(K.gid);const zeigeNamen=store.get("namen-zeigen",true);
+  fehltageBereitlegen(namen);
+  let lebInfo={neu:0,offen:0};try{lebInfo=await lebUebernehmen(namen)}catch{}
   const n=Object.keys(K.kinder).length;
-  let tab="";
+  let tab="",aktenNeu=[];
   if(n){const t=await tabelle(K,"html");
-    tab=`<div class="kf-wrap"><table class="kf-tab"><thead><tr><th>Kürzel</th><th title="Kurs Deutsch">D</th><th title="Kurs Mathematik">M</th><th title="Kurs Englisch">E</th><th title="Kurs Naturwissenschaften">NW</th>${t.faecher.map(f=>`<th title="${esc(f)}">${esc(KURZ[fachKey(f)]||f.slice(0,8))}</th>`).join("")}<th title="ganze Fehltage (davon unentschuldigt)">Fehlt.</th><th>Prognose (AVO)</th></tr></thead><tbody>`+
+    for(const x of t.out)for(const s of Object.keys(KURS_FACH)){const c=x.kurse[s];if(c&&c.q==="leb"&&c.a&&kurseAusAkte(akteVon(K.gid,x.k))[s]!==c.a&&akteVon(K.gid,x.k))aktenNeu.push({k:x.k,s,a:c.a})}
+    const kursZelle=(x,s)=>{const c=x.kurse[s];if(c&&c.q==="leb")return `<td class="kurs" title="LEB-online Niveaustufen">${esc(kursText(c))}</td>`;
+      const tip=!c?"In LEB nicht eingetragen: von Hand wählen (kommt auch in die Akte)":c.q==="hand"?"von Hand eingetragen":c.q==="akte"?"aus der Akte":`aus deiner Kurs-Lerngruppe ${c.g}`;
+      return `<td class="kurs"><select class="kf-kurs${c?" "+c.q:""}" data-k="${esc(x.k)}" data-s="${s}" title="${esc(tip)}"><option value="">–</option><option${c&&c.a==="E"?" selected":""}>E</option><option${c&&c.a==="G"?" selected":""}>G</option></select>${c?`<span class="kf-q">${MARK[c.q]}</span>`:""}</td>`};
+    tab=`<div class="kf-wrap"><table class="kf-tab"><thead><tr><th>Kürzel</th><th title="Kurs Deutsch">D</th><th title="Kurs Mathematik">M</th><th title="Kurs Englisch">E</th><th title="Kurs Naturwissenschaften">NW</th>${t.faecher.map(f=>`<th title="${esc(f)}">${esc(spalte(f))}</th>`).join("")}<th title="Fehltage. Aus LEB-online: Zahl (davon unentschuldigt). Aus der Fehlzeiten-Ampel: T = ganze Tage, Std. = Fehlstunden; dazu Verspätungen. Zeiger auf eine Zelle für Einzelheiten.">Fehlt.</th><th>AV / SV</th><th>Prognose (AVO)</th></tr></thead><tbody>`+
       t.out.map(x=>{const nmn=namen[x.k]&&zeigeNamen?`<div class="nm">${esc([namen[x.k].vor,namen[x.k].nach].filter(Boolean).join(" "))}</div>`:"";
-        return `<tr><td class="k">${esc(x.k)}${nmn}</td>${["D","M","E","NW"].map(s=>`<td class="kurs">${esc(kursText(x.kurse[s]))}</td>`).join("")}`+
-          t.faecher.map(f=>{const v=x.fn.get(f);return v?`<td class="z${v.wert>=4.5?" schwach":""}" title="${v.anzahl} ${v.anzahl===1?"Note":"Noten"}${v.m!=null?" · mündl. "+fmt(v.m):""}${v.s!=null?" · schriftl. "+fmt(v.s):""}">${fmt(v.wert)}</td>`:`<td class="z">–</td>`}).join("")+
-          `<td class="z">${x.ft?esc(x.ft.ganz+(x.ft.unent?" ("+x.ft.unent+")":"")):"–"}</td><td class="pg">${x.p?`<b>${esc(x.p.text.titel)}</b><ul>${x.p.text.gruende.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`:"–"}</td></tr>`}).join("")+
+        const lebAbschl=x.leb&&(x.leb.erwartet||x.leb.errechnet)?`<li>LEB: ${x.leb.errechnet?"errechnet "+esc(x.leb.errechnet):""}${x.leb.errechnet&&x.leb.erwartet?", ":""}${x.leb.erwartet?"erwartet "+esc(x.leb.erwartet):""}</li>`:"";
+        return `<tr><td class="k">${esc(x.k)}${nmn}</td>${["D","M","E","NW"].map(s=>kursZelle(x,s)).join("")}`+
+          t.faecher.map(f=>{const v=x.fn.get(f);return v?`<td class="z${v.wert>=4.5?" schwach":""}" title="${esc(f)}: ${v.anzahl} ${v.anzahl===1?"Note":"Noten"}${v.m!=null?" · mündl. "+fmt(v.m):""}${v.s!=null?" · schriftl. "+fmt(v.s):""}">${fmt(v.wert)}</td>`:`<td class="z">–</td>`}).join("")+
+          `<td class="z" title="${x.fz?esc(x.fz.tip):"keine Fehlzeiten bekannt"}">${x.fz?esc(x.fz.text):"–"}</td>`+
+          `<td class="asv" title="${x.leb&&x.leb.faecher&&x.leb.faecher.length?esc(x.leb.faecher.map(f=>f.fach+": "+f.werte.join("/")).join(" · ")):""}">${x.asv?esc(x.asv):"–"}</td>`+
+          `<td class="pg">${x.p?`<b>${esc(x.p.text.titel)}</b><ul>${x.p.text.gruende.map(g=>`<li>${esc(g)}</li>`).join("")}${lebAbschl}</ul>`:"–"}</td></tr>`}).join("")+
       `</tbody></table></div><p class="note">${esc(t.info.replace(/^# /,""))}</p>`}
+  const asvFehlt=n&&!Object.values(K.kinder).some(k=>k.leb);
+  const aufbauLeb=Object.values(K.kinder).map(k=>k.leb&&k.leb.aufbau).find(Boolean)||"";
   slot.innerHTML=`<div class="panel" role="region" aria-label="Konferenz-Mappe"><h4>Konferenz-Mappe ${esc(K.gid)}${K.stand?` <small style="font-weight:400;font-size:13px;color:var(--muted)">Stand ${esc(datumDE(K.stand))}</small>`:""}</h4>
     ${meldung?`<div class="kf-hinweis">${meldung}</div>`:""}
+    ${lebInfo.neu?`<div class="kf-hinweis">${lebInfo.neu} ${lebInfo.neu===1?"Bewertungsformular":"Bewertungsformulare"} aus LEB-online übernommen (Fehltage, AV/SV, Abschluss).</div>`:""}
+    ${lebInfo.offen?`<div class="kf-hinweis">${lebInfo.offen} gemerkte ${lebInfo.offen===1?"Formular passt":"Formulare passen"} zu keinem Kind dieser Lerngruppe (andere Klasse oder Name abweichend geschrieben). Sie verfallen nach 12 Stunden.</div>`:""}
     <div class="kf-drop" id="kf-drop">LEB-PDFs hierher ziehen („Lernstandskontrolle“ für alle Schüler, „Niveaustufen“) oder <label class="btn small ghost" style="display:inline-flex">auswählen<input type="file" id="kf-datei" accept=".pdf" multiple hidden></label></div>
+    ${asvFehlt?`<p class="note"><b>AV/SV und Fehltage aus LEB-online:</b> Öffne in LEB-online <b>Klassenbewertungen › ${esc(K.gid.split("-")[0])} › Schüler › Bewerten</b> nacheinander für jedes Kind (am besten mit „AV / SV einblenden“). Der Helfer merkt sich dabei Fehltage, AV/SV und Abschluss, er ändert nichts. Danach diese Mappe neu öffnen.</p>`:""}
+    ${aufbauLeb&&!Object.values(K.kinder).some(k=>k.leb&&(k.leb.faecher.length||Object.keys(k.leb.summen.av||{}).length))?`<div class="kf-hinweis"><b>Die AV/SV der Fachlehrkräfte habe ich auf der LEB-Seite noch nicht gefunden.</b> Hier der Aufbau ohne Namen; schick ihn Claude, dann wird es angepasst.<textarea class="kf-aufbau" readonly>${esc(aufbauLeb)}</textarea><button class="btn small" id="kf-aufbau-leb">Aufbau kopieren</button></div>`:""}
     ${ohne.length?`<div class="kf-hinweis"><b>${ohne.length} ${ohne.length===1?"Name":"Namen"} nicht zugeordnet</b> (nur hier sichtbar, nicht gespeichert). Bitte in „Namen & Kürzel“ ergänzen oder die Schreibweise angleichen:<ul>${ohne.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
     ${aufbau?`<div class="kf-hinweis"><b>Diesen Bericht kenne ich noch nicht.</b> Unten steht sein Aufbau ohne Namen. Wenn du ihn kopierst und Claude schickst, kann er eingebaut werden.<textarea class="kf-aufbau" id="kf-aufbau" readonly>${esc(aufbau)}</textarea><button class="btn small" id="kf-aufbau-kopie">Aufbau kopieren</button></div>`:""}
+    ${aktenNeu.length?`<div class="kf-hinweis"><b>${aktenNeu.length} ${aktenNeu.length===1?"Kurs":"Kurse"} aus LEB stehen noch nicht in den Akten.</b> <button class="btn small" id="kf-akten">In die Akten schreiben (Bereich Lernstand)</button></div>`:""}
     ${n?tab:`<p class="note">Noch keine Daten für ${esc(K.gid)}.</p>`}
-    <div class="actions">${n?`<button class="btn primary" id="kf-claude">Tischvorlage mit Claude</button><button class="btn ghost" id="kf-kopie">Tabelle kopieren (nur Kürzel)</button>`:""}
+    <div class="actions">${n?`<button class="btn primary" id="kf-claude">Tischvorlage mit Claude</button><button class="btn ghost" id="kf-kopie">Tabelle kopieren (nur Kürzel)</button><button class="btn ghost" id="kf-export" title="Excel-Datei (CSV) mit Vor- und Nachnamen, wird nur auf diesem Rechner gespeichert">Mit Namen exportieren</button>`:""}
       <label style="display:inline-flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="kf-namen"${zeigeNamen?" checked":""}> Namen zeigen</label>
       ${n?`<button class="btn ghost small" id="kf-leeren">Daten löschen</button>`:""}<span class="toast" id="kf-toast" role="status"></span></div></div>`;
   const drop=$("#kf-drop");
@@ -270,9 +362,24 @@ async function zeichnen(meldung){
   $("#kf-datei").addEventListener("change",e=>einlesen([...e.target.files]));
   $("#kf-namen").addEventListener("change",e=>{store.set("namen-zeigen",e.target.checked);zeichnen()});
   if($("#kf-aufbau-kopie"))$("#kf-aufbau-kopie").addEventListener("click",()=>kopieren(aufbau));
+  if($("#kf-aufbau-leb"))$("#kf-aufbau-leb").addEventListener("click",()=>kopieren(aufbauLeb));
   if($("#kf-kopie"))$("#kf-kopie").addEventListener("click",async()=>kopieren(await tabelle(K,"tsv")));
+  if($("#kf-export"))$("#kf-export").addEventListener("click",async()=>{
+    const csv=await tabelle(K,"csv",namen);const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    a.download=`Konferenz-${K.gid}-${heuteISO()}-mit-Namen.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+    const x=$("#kf-toast");if(x)x.textContent="Gespeichert im Download-Ordner. Enthält Namen: nicht an Claude geben."});
   if($("#kf-claude"))$("#kf-claude").addEventListener("click",anClaude);
-  if($("#kf-leeren"))$("#kf-leeren").addEventListener("click",async()=>{if(!confirm(`Konferenz-Daten von ${K.gid} löschen?`))return;K={gid:K.gid,jg:K.jg,stand:"",quellen:[],kinder:{}};ohne=[];
+  slot.querySelectorAll("select.kf-kurs").forEach(sel=>sel.addEventListener("change",async()=>{
+    const k=sel.dataset.k,s=sel.dataset.s,a=sel.value;K.kinder[k]=K.kinder[k]||{};const h=K.kinder[k].kurseHand=K.kinder[k].kurseHand||{};
+    if(a)h[s]=a;else delete h[s];let msg="";
+    try{await speichern(K);if(a&&akteVon(K.gid,k)){const m=await akteSchreiben(k,[kursZeile(s,a,"Lehrkraft (Startseite, Konferenz-Mappe)","Beobachtung")]);if(m){await aktenNeuLesen();msg=`Kurs ${KURS_FACH[s]} ${a} für ${k} in die Akte geschrieben.`}}}
+    catch(e){msg="Speichern ging nicht: "+esc(e.message||e)}
+    zeichnen(msg)}));
+  if($("#kf-akten"))$("#kf-akten").addEventListener("click",async()=>{let m=0;
+    try{const pro={};for(const x of aktenNeu)(pro[x.k]=pro[x.k]||[]).push(kursZeile(x.s,x.a,"LEB-online Niveaustufen (Startseite, Konferenz-Mappe)","Beleg"));
+      for(const [k,l] of Object.entries(pro))m+=await akteSchreiben(k,l);await aktenNeuLesen();zeichnen(`${m} ${m===1?"Kurs":"Kurse"} in die Akten geschrieben.`)}
+    catch(e){zeichnen("In die Akten schreiben ging nicht: "+esc(e.message||e))}});
+  if($("#kf-leeren"))$("#kf-leeren").addEventListener("click",async()=>{if(!confirm(`Konferenz-Daten von ${K.gid} löschen? Die Akten bleiben unverändert.`))return;K={gid:K.gid,jg:K.jg,stand:"",quellen:[],kinder:{}};ohne=[];
     try{const d=await (await (await sdSchreib()).getDirectoryHandle("ausgaben")).getDirectoryHandle("konferenz");for(const e of [".json",".tsv"])try{await d.removeEntry(DATEI(K.gid)+e)}catch{}}catch{}zeichnen("Gelöscht.")});
 }
 async function kopieren(t){try{await navigator.clipboard.writeText(t);const x=$("#kf-toast");if(x){x.textContent="Kopiert";setTimeout(()=>x.textContent="",2000)}}catch{}}
