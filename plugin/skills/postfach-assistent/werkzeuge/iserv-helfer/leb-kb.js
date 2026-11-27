@@ -1,5 +1,5 @@
 /* Schulassistenz-Helfer – LEB-online, Klassenbewertungen
-   Ab 0.40: Vorschläge von Claude zum Arbeits- und Sozialverhalten ins geöffnete Formular füllen (siehe „Vorschläge“ weiter unten).
+   Ab 0.42: Vorschläge von Claude zum Arbeits- und Sozialverhalten ins geöffnete Formular füllen (siehe „Vorschläge“ weiter unten).
    Der Helfer setzt nur die Felder Arbeitsverhalten, Sozialverhalten und die drei Bemerkungen. Er klickt nicht auf Speichern,
    ruft keine Adresse auf und löst keine Ereignisse der Seite aus. Gespeichert wird nur, wenn die Lehrkraft selbst auf Speichern klickt.
    Die Vorschläge enthalten nur Kürzel und liegen im Speicher des Helfers in diesem Browser. Namen setzt der Helfer erst hier im Formular ein.
@@ -100,7 +100,7 @@
     const t = root.querySelector("textarea"); try { await navigator.clipboard.writeText(t.value); } catch (e) { t.select(); document.execCommand("copy"); }
     root.querySelector("#ok").textContent = "kopiert";
   });
-  /* ---- Vorschläge (ab 0.40) ---- */
+  /* ---- Vorschläge (ab 0.42) ---- */
   const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const KUERZEL = /^[A-Za-zÄÖÜ]{1,4}\d{1,3}$/;
   function lesen(text) {

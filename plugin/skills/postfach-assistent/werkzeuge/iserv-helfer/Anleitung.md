@@ -108,7 +108,7 @@ Wie bei WebUntis kann die Startseite auf „Heute“ einen Kasten **IServ** zeig
 
 Der Helfer liest nur (ausschließlich lesende Abrufe auf eine feste Liste von Adressen). Einzige Ausnahme ist das Gelesen-Zeichen einer Mail, das er auf deinen Klick setzt oder zurücknimmt. Er löscht, verschiebt und sendet nichts. Klarnamen ersetzt er schon im Hintergrund durch Kürzel. Mit „Namen zeigen“ im Kasten blendest du die Namen ein und wieder aus (anfangs aus). Das gilt nur für die Anzeige in diesem Browser. Unbekannte Absender bekommen wie im Helfer-Fenster ein Kürzel P1, P2 … (Zuordnung unter Einstellungen des Helfers › „Weitere Personen“). Nichts wird gespeichert, nichts geht an Claude.
 
-## LEB-online, Klassenbewertung: AV/SV-Vorschläge einfüllen (ab 0.40)
+## LEB-online, Klassenbewertung: AV/SV-Vorschläge einfüllen (ab 0.42)
 
 1. Startseite, Kachel „Arbeits- und Sozialverhalten“: Claude schlägt je Kind Stufe und Zusatzbemerkung vor und gibt am Ende eine Liste für LEB-online aus (eine Zeile je Kind, nur Kürzel).
 2. In LEB-online unter Klassenbewertungen das Bewertungsformular eines Kindes öffnen. Unten rechts erscheint der Kasten „Arbeits- und Sozialverhalten“. Beim ersten Mal die Liste aus Claude einfügen und „Vorschläge übernehmen“ klicken. Sie bleibt im Helfer gespeichert (nur Kürzel), bis du sie löschst.
@@ -120,6 +120,10 @@ Der Helfer setzt nur Arbeitsverhalten, Sozialverhalten und die drei Bemerkungsfe
 ## LEB-online, Klassenbewertung: Textbausteine ablesen (ab 0.34, einmalig)
 
 Vorstufe für „Claude schlägt Bemerkungen zum Arbeits- und Sozialverhalten vor, der Helfer füllt vor“. Öffnest du in LEB-online unter Klassenbewertungen das Bewertungsformular eines Kindes, erscheint unten rechts ein Kasten „Textbausteine ablesen“. Ein Klick zeigt den Aufbau des Formulars (Feldnamen, Feldarten) und die Auswahllisten der Textbausteine. Eingetragene Werte liest der Helfer nicht, Überschriften macht er unkenntlich, und der Text läuft zusätzlich durch deine Kürzelliste. Er klickt nichts, ruft nichts auf und speichert nichts. Den Text kopierst du selbst und gibst ihn an Claude.
+
+## Konferenz-Mappe aus LEB-online (ab 0.41)
+Für Zeugnis- und Pädagogische Konferenzen als Klassenleitung: In der Lerngruppe den Reiter **Konferenz** öffnen und einmal einschalten (anfangs aus). In LEB-online druckst du unter **Klassenbewertungen › Berichte** selbst die PDFs **„Lernstandskontrolle“** (Leistungsart beide, Schüler „Alle Schüler“) und **„Niveaustufen“** und ziehst sie in die Mappe. Der Helfer ruft LEB-online dafür nicht auf, liest die PDFs nur in diesem Fenster und ersetzt die Namen über die Kürzelliste der Lerngruppe.
+Angezeigt werden je Kind: Kurse E/G in Deutsch, Mathe, Englisch, NaWi (aktuell → nächstes Halbjahr), der Schnitt jedes Fachs aus den Einzelnoten (mündlich/fachspezifisch 60 %, schriftlich 40 %; änderbar in meine-einstellungen.js unter `konferenz: { muendlich: 60 }`), die ganzen Fehltage aus der Fehlzeiten-Ampel und eine Abschlussprognose nach AVO-Sek I mit Begründung (Regeln des Abschluss-Checks, ohne mündliches Prüfungsfach). Gespeichert wird nur mit Kürzeln unter `ausgaben/konferenz/`. „Tischvorlage mit Claude“ gibt die Tabelle an den Skill zeugnis-vorbereiten. Namen, die nicht zugeordnet werden konnten, stehen nur im Fenster. Einen unbekannten LEB-Bericht zeigt die Mappe als Aufbau ohne Namen zum Kopieren, damit er eingebaut werden kann.
 
 ## Was die Erweiterung ersetzt
 
